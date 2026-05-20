@@ -1,0 +1,4 @@
+# AUTH-08 — rendered at container boot by nginx's envsubst entrypoint from
+# ../templates/00-rate-limits.conf.template. Never commit the rendered form;
+# it embeds the VPS public IP and operator whitelist.
+00-rate-limits.conf

@@ -1,0 +1,9 @@
+Bonjour {{ full_name }},
+
+Votre document de vérification n'a pas pu être validé.
+
+Motif : {{ reviewer_note }}
+
+Vous pouvez soumettre un nouveau document depuis votre espace : {{ verification_url }}
+
+— L'équipe VitaChain

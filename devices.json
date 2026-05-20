@@ -1,0 +1,19 @@
+{
+  "base_url": "http://localhost:8000",
+  "ingest_url": "http://localhost:8000/api/v1/katara/ingest",
+  "_comment": "Run 'python scripts/katara_pair.py' to pair devices and auto-fill api_key. Never edit api_key by hand.",
+  "devices": [
+    {
+      "device_id": "ESP-KAT-001",
+      "parcel_id": "a59d6acb-64c5-4512-a63b-c2bc2c044bf0",
+      "api_key": "vk_c22332d367e937765dea12a3c3c72a6c",
+      "label": "P1"
+    },
+    {
+      "device_id": "ESP-KAT-002",
+      "parcel_id": "REMPLACE_MOI",
+      "api_key": "vk_REMPLACE_MOI",
+      "label": "parcelle-2"
+    }
+  ]
+}

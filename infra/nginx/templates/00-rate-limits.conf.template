@@ -1,0 +1,95 @@
+# AUTH-08 — NGINX rate limiting zones (http {}-scope directives).
+# Rendered by the nginx:1.27-alpine entrypoint's envsubst pass before NGINX
+# boots. Output: /etc/nginx/conf.d/00-rate-limits.conf. Loaded before
+# default.conf thanks to the `00-` lexicographic prefix.
+#
+# Template variables expanded by envsubst (see infra/docker-compose.yml):
+#   ${VPS_PUBLIC_IP}                       — VPS own egress IP (whitelisted)
+#   ${RATELIMIT_WHITELIST_IPS_NGINX_LINES} — operator-supplied extra entries,
+#                                            already formatted as `<ip> 1;`
+#                                            lines (newline-separated), built
+#                                            by deploy.sh from $RATELIMIT_WHITELIST_IPS.
+#
+# Bucket calibration: see docs/runbook.md §"AUTH-08 — Rate limits & abuse
+# playbook" and docs/stories/AUTH-08 §4.2.
+
+# ---- Whitelist of IPs that bypass per-IP rate limits ------------------------
+# Match returns 1 ⇒ $limit_key becomes "" ⇒ limit_req short-circuits.
+# Match returns 0 ⇒ $limit_key = $binary_remote_addr ⇒ normal enforcement.
+geo $ratelimit_whitelist {
+    default                 0;
+
+    # VPS own public IP — Uptime Kuma probes + Next.js SSR egress + cron-driven
+    # outbound calls (renew-cert, backup-db) all leave from here.
+    ${VPS_PUBLIC_IP}        1;
+
+    # Healthchecks.io egress range — documented at healthchecks.io/docs/.
+    # Re-verify quarterly per runbook drill.
+    52.21.110.144/29        1;
+
+    # Operator-supplied demo-day field laptops + on-call workstations.
+    # Filled from infra/.env $RATELIMIT_WHITELIST_IPS (CSV → newline by deploy.sh).
+    ${RATELIMIT_WHITELIST_IPS_NGINX_LINES}
+}
+
+map $ratelimit_whitelist $limit_key {
+    0     $binary_remote_addr;
+    1     "";   # empty key = limit_req treats request as un-keyed = skipped
+}
+
+# ---- IoT ingest key — keys by device API key header, falls back to IP -----
+# Rationale: a leaked key replayed from N IPs must NOT amplify; the bucket
+# identity is the key, not the source IP. When the header is absent we fall
+# back to per-IP keying so unauthenticated probes still get capped.
+map $http_x_device_api_key $iot_key {
+    default     $http_x_device_api_key;
+    ""          $binary_remote_addr;
+}
+
+# ---- Method-aware skip keys -------------------------------------------------
+# NGINX `limit_req zone=...` does NOT accept variables in the zone name, so
+# we cannot pick "mutate_strict vs public_read" via a $variable. The idiomatic
+# workaround: declare a second bucket for the mutating zone with a key that
+# yields the EMPTY string on GET/HEAD. An empty key skips the bucket entirely
+# (NGINX docs: "If the value of the key is empty or zero length the limit is
+# not applied"). We then stack TWO limit_req directives in the location: the
+# strict zone fires only for POST/PUT/PATCH/DELETE, the loose zone fires for
+# every request.
+map $request_method $meals_strict_key {
+    GET           "";
+    HEAD          "";
+    default       $limit_key;
+}
+map $request_method $ads_strict_key {
+    GET           "";
+    HEAD          "";
+    default       $limit_key;
+}
+
+# ---- The nine buckets (10 MB each ≈ 160k unique keys) ----------------------
+# Rate units: r/m (per minute). Bursts are set per-location (see default.conf).
+# Two extra zones (meals_strict / ads_strict) are method-conditional siblings
+# of `mutate_strict` — same 10r/m ceiling, but keyed on the maps above so a
+# GET on the same path skips them.
+limit_req_zone $limit_key         zone=auth_grant:10m       rate=5r/m;
+limit_req_zone $limit_key         zone=auth_register:10m    rate=3r/m;
+limit_req_zone $limit_key         zone=auth_upload:10m      rate=2r/m;
+limit_req_zone $limit_key         zone=public_write:10m     rate=6r/m;
+limit_req_zone $limit_key         zone=public_read:10m      rate=60r/m;
+limit_req_zone $limit_key         zone=mutate_strict:10m    rate=10r/m;
+limit_req_zone $meals_strict_key  zone=meals_strict:10m     rate=10r/m;
+limit_req_zone $ads_strict_key    zone=ads_strict:10m       rate=10r/m;
+limit_req_zone $iot_key           zone=iot_ingest:10m       rate=4r/m;
+
+# ---- Connection caps -------------------------------------------------------
+limit_conn_zone $binary_remote_addr  zone=perip:10m;
+limit_conn_zone $server_name         zone=perserver:10m;
+
+# ---- Observability + canonical status code ---------------------------------
+# WARN-level so Sentry's NGINX log integration (INF-08) picks up throttle events.
+# 429 (RFC 6585) is the correct status; NGINX's historical default 503 would
+# taint Uptime Kuma's outage detection.
+limit_req_log_level    warn;
+limit_req_status       429;
+limit_conn_log_level   warn;
+limit_conn_status      429;

@@ -1,0 +1,127 @@
+# VitaChain — pre-commit (INF-05).
+# Runs the cheap subset of CI locally before the commit lands. Same tools as
+# CI, same configs, same exit codes. Heavy jobs (`next build`, docker build,
+# db replay) stay in CI; pre-commit is for "would have failed fast anyway"
+# feedback so contributors don't pay the GitHub round-trip for typos.
+#
+# One-time setup:    make hooks-install
+# Run against repo:  make hooks-run
+
+minimum_pre_commit_version: '3.7.0'
+
+default_install_hook_types: [pre-commit, pre-push]
+default_stages: [pre-commit]
+
+repos:
+  # -- Standard hygiene -------------------------------------------------------
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: mixed-line-ending
+        args: ['--fix=lf']
+        exclude: '\.(bat|ps1)$'
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ['--maxkb=2048']    # PRD BR-F2 — 2 MB per FarMarket photo.
+      - id: detect-private-key
+      - id: check-yaml
+        args: ['--unsafe']        # allow GH Actions custom tags.
+      - id: check-json
+      - id: check-toml
+
+  # -- Python (backend) -------------------------------------------------------
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.7.4
+    hooks:
+      - id: ruff
+        args: ['--fix']
+        files: '^backend/'
+      - id: ruff-format
+        files: '^backend/'
+
+  # -- Shell ------------------------------------------------------------------
+  - repo: https://github.com/koalaman/shellcheck-precommit
+    rev: v0.10.0
+    hooks:
+      - id: shellcheck
+
+  # -- Dockerfiles ------------------------------------------------------------
+  - repo: https://github.com/hadolint/hadolint
+    rev: v2.13.0-beta
+    hooks:
+      - id: hadolint-docker
+        # Args mirror the CI job — keep the ignore list in sync.
+        args: ['--ignore', 'DL3008', '--ignore', 'DL3015']
+
+  # -- YAML -------------------------------------------------------------------
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.35.1
+    hooks:
+      - id: yamllint
+        args: ['-c', '.yamllint.yml']
+        files: '\.(yml|yaml)$'
+
+  # -- Local hooks (no upstream repo) ----------------------------------------
+  - repo: local
+    hooks:
+      - id: auth-05-boundary
+        name: 'AUTH-05 — service-role / JWT / NEXT_PUBLIC_ boundary'
+        entry: bash scripts/check-secrets-boundary.sh
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      - id: auth-05-compose-args
+        name: 'AUTH-05 — docker-compose build-args shape (NEXT_PUBLIC_ only)'
+        entry: bash scripts/check-compose-build-args.sh
+        language: system
+        pass_filenames: false
+        files: '^infra/docker-compose\.yml$'
+
+      - id: auth-02-role-parity
+        name: 'AUTH-02 — TS ↔ SQL role enum parity'
+        entry: bash scripts/check-role-enum-parity.sh
+        language: system
+        pass_filenames: false
+        files: '^(frontend/src/lib/auth/roles\.ts|db/migrations/0001_extensions_and_enums\.sql)$'
+
+      - id: auth-03-jwt-config
+        name: 'AUTH-03 — JWT config (supabase/config.toml)'
+        entry: bash scripts/verify-jwt-config.sh
+        language: system
+        pass_filenames: false
+        files: '^(supabase/config\.toml|backend/app/core/security\.py|scripts/verify-jwt-config\.sh)$'
+
+      - id: auth-04-rls-enabled
+        name: 'AUTH-04 — RLS enabled on every public.* table'
+        entry: bash scripts/verify-rls-enabled.sh
+        language: system
+        pass_filenames: false
+        files: '^(db/migrations/.*\.sql|scripts/verify-rls-enabled\.sh)$'
+
+      - id: frontend-lint
+        name: 'frontend — eslint (changed files only)'
+        entry: bash -c 'cd frontend && npx --no-install eslint --max-warnings=0 $(printf "../%s " "$@" | sed "s|../frontend/||g")' --
+        language: system
+        files: '^frontend/.*\.(ts|tsx|js|jsx)$'
+        require_serial: true
+
+      - id: frontend-typecheck
+        # Heavier — pre-push only.
+        name: 'frontend — tsc --noEmit (pre-push)'
+        entry: bash -c 'cd frontend && npm run typecheck'
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+        files: '^frontend/'
+
+      - id: backend-pytest
+        # Heavier — pre-push only.
+        name: 'backend — pytest (pre-push)'
+        entry: bash -c 'cd backend && { . .venv/Scripts/activate 2>/dev/null || . .venv/bin/activate; } && pytest -q'
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+        files: '^backend/'

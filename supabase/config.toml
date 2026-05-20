@@ -1,0 +1,81 @@
+# Supabase CLI config for the VitaChain project.
+# Authoritative migrations live under db/migrations/ and are applied via
+# `make -C db push` (psql). This file exists so `supabase` CLI commands
+# (start/stop/local-dev) work for engineers who prefer the CLI for local
+# development against a Dockerised Postgres + Auth stack.
+#
+# project_id MUST match the slug shown at app.supabase.com/project/<slug>.
+# It is committed; the access token and project ref are not (see .gitignore).
+
+project_id = "vitachain"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 17    # matches live Supabase project (verified 2026-05-14)
+
+[studio]
+enabled = true
+port = 54323
+
+[inbucket]
+enabled = true
+port = 54324
+
+[storage]
+enabled = true
+file_size_limit = "50MiB"
+
+[auth]
+enabled = true
+site_url = "http://vitachain.ma"
+additional_redirect_urls = [
+    "http://vitachain.ma/auth/callback",
+    "http://localhost:3000/auth/callback",
+]
+# AUTH-03 — explicit token lifetimes (PRD §7.1).
+# The Dashboard (Authentication → Configuration) is the runtime authority for
+# the hosted Auth service; these lines are the source-controlled intent record
+# and are asserted by scripts/verify-jwt-config.sh in CI + pre-commit.
+jwt_expiry = 3600                      # 1h access token
+enable_refresh_token_rotation = true   # single-use refresh tokens
+refresh_token_reuse_interval = 10      # 10s grace for concurrent-tab refresh
+enable_signup = true
+enable_anonymous_sign_ins = false
+
+[auth.email]
+enable_signup = true
+enable_confirmations = false      # MVD only — AUTH-01 §9 documents the post-MVD switch-back
+double_confirm_changes = true     # "Secure email change" — INF-02 §5.3
+secure_password_change = true
+mailer_otp_exp = 3600             # 1h — only meaningful once enable_confirmations flips ON
+
+[auth.email.password]
+min_length = 10                   # AUTH-01 — NIST SP 800-63B floor
+require_lowercase = true
+require_uppercase = true
+require_numbers = true
+require_special_chars = false     # Moroccan keyboard UX trade-off (AUTH-01 §2)
+hibp_check = true                 # Have-I-Been-Pwned k-anonymity prefix check
+
+[auth.rate_limit]
+sign_ups_per_hour = 4             # AUTH-01 — defence in depth below AUTH-08 NGINX layer
+token_refreshes_per_5min = 150
+email_sent_per_hour = 30          # only meaningful once enable_confirmations is ON
+
+[auth.hook.custom_access_token]
+# AUTH-02 — lifts profiles.role into the JWT as `user_role`.
+# The Dashboard UI under Authentication → Hooks → Custom Access Token is the
+# canonical activator; this block mirrors it for `supabase db push` replay.
+enabled = true
+uri = "pg-functions://postgres/public/custom_access_token_hook"
+
+[edge_runtime]
+enabled = false                   # not used in MVD

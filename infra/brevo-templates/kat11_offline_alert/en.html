@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<!--
+  KAT-11 — Offline-device alert email (EN — P1).
+
+  Mirror of the Brevo dashboard template; the live template id lives in
+  `.env` under `BREVO_TEMPLATE_KAT_OFFLINE_EN`.
+
+  Subject (set in the Brevo dashboard, not here):
+    "Device {{ params.device_id }} offline — {{ params.parcel_name }}"
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>VitaChain — Device offline</title>
+  </head>
+  <body style="font-family: 'Helvetica Neue', Arial, sans-serif; color: #1f2937; max-width: 600px; margin: 0 auto; padding: 24px;">
+    <h1 style="font-size: 20px; color: #b45309;">
+      Device offline: {{ params.device_id }}
+    </h1>
+
+    <p>Hi {{ params.farmer_name }},</p>
+
+    <p>
+      Your sensor <strong>{{ params.device_id }}</strong> on parcel
+      <strong>{{ params.parcel_name }}</strong> has not sent any readings
+      for more than an hour.
+    </p>
+
+    <table style="border-collapse: collapse; margin: 16px 0;">
+      <tr>
+        <td style="padding: 8px 12px; background: #f3f4f6;"><strong>Device</strong></td>
+        <td style="padding: 8px 12px;">{{ params.device_id }}</td>
+      </tr>
+      <tr>
+        <td style="padding: 8px 12px; background: #f3f4f6;"><strong>Parcel</strong></td>
+        <td style="padding: 8px 12px;">{{ params.parcel_name }}</td>
+      </tr>
+      <tr>
+        <td style="padding: 8px 12px; background: #f3f4f6;"><strong>Last reading received</strong></td>
+        <td style="padding: 8px 12px;">{{ params.last_seen_at }}</td>
+      </tr>
+      <tr>
+        <td style="padding: 8px 12px; background: #f3f4f6;"><strong>Silent for</strong></td>
+        <td style="padding: 8px 12px;">{{ params.minutes_silent }} minutes</td>
+      </tr>
+    </table>
+
+    <p>
+      Check the sensor's power, Wi-Fi connection, and antenna. You will
+      receive another message if the device is still silent 24 hours from
+      now.
+    </p>
+
+    <p style="margin-top: 24px;">
+      <a href="{{ params.dashboard_url }}"
+         style="background: #047857; color: #fff; padding: 10px 18px; text-decoration: none; border-radius: 6px;">
+        Open dashboard
+      </a>
+    </p>
+
+    <p style="font-size: 12px; color: #6b7280; margin-top: 32px;">
+      You are receiving this message because this device is linked to your
+      account. Detection is automatic — no further email is sent while the
+      device remains offline.
+    </p>
+  </body>
+</html>

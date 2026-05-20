@@ -1,0 +1,45 @@
+# VitaChain — gitleaks policy (INF-05).
+# Inherit the upstream ruleset; carve out the known-safe placeholders so the
+# secret-leak CI job never cries wolf on documentation / templates.
+
+title = "VitaChain leak policy"
+
+[extend]
+useDefault = true
+
+# -----------------------------------------------------------------------------
+# Documentation and templates legitimately show shaped values.
+# -----------------------------------------------------------------------------
+[[allowlist]]
+description = "Docs, story specs, and env templates may show example values."
+paths = [
+    '''\.env\.example$''',
+    '''docs/.*\.md$''',
+    '''Documents/.*\.md$''',
+    '''CONTRIBUTING\.md$''',
+    '''README\.md$''',
+]
+
+# -----------------------------------------------------------------------------
+# CI placeholder values (frontend build args + backend test env). Recognisable
+# by their literal "ci-placeholder-" prefix in .github/workflows/ci.yml.
+# -----------------------------------------------------------------------------
+[[allowlist]]
+description = "CI placeholder values used only inside the workflow."
+regexes = [
+    '''ci-placeholder-[a-z0-9-]+''',
+    '''https://ci\.example\.supabase\.co''',
+]
+
+# -----------------------------------------------------------------------------
+# The boundary script + leak policy intentionally embed the JWT header prefix
+# as a *rule*, not as a secret. Without this exception gitleaks would flag
+# its own configuration.
+# -----------------------------------------------------------------------------
+[[allowlist]]
+description = "Self-reference: boundary scanner and leak policy carry the JWT header prefix as a rule, not a value."
+paths = [
+    '''scripts/check-secrets-boundary\.sh$''',
+    '''\.gitleaks\.toml$''',
+    '''infra/scripts/verify\.sh$''',
+]

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<!--
+  AUTH-06 — KYC rejected email (FR — P0).
+
+  Source-of-truth lives in the Brevo dashboard. This file is a mirror so the
+  team can re-create the transactional template without dashboard archaeology.
+  The Brevo template id is captured in `.env` under
+  `BREVO_TEMPLATE_KYC_REJECTED_FR`.
+
+  Subject (set in the Brevo dashboard, not here):
+    "Action requise : votre vérification d'identité — VitaChain"
+
+  All `params.*` references must match the sender contract in
+  backend/app/workers/notifications_mailer/dispatcher.py — params are:
+    - full_name     : str   (may be empty)
+    - note          : str   (admin rejection reason; may be empty)
+    - resubmit_url  : str   (e.g. https://vitachain.ma/onboarding/verification)
+-->
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <title>Action requise — vérification d'identité VitaChain</title>
+  </head>
+  <body style="font-family: 'Helvetica Neue', Arial, sans-serif; color: #1f2937; max-width: 640px; margin: 0 auto; padding: 24px;">
+    <h1 style="font-size: 22px; color: #b91c1c;">
+      Action requise : vérification d'identité
+    </h1>
+
+    <p>Bonjour {{ params.full_name }},</p>
+
+    <p>
+      Nous avons examiné votre dossier KYC et nous ne sommes pas en mesure de
+      le valider en l'état. Vous pouvez soumettre un nouveau dossier pour
+      finaliser l'activation de votre compte.
+    </p>
+
+    {% if params.note %}
+    <div style="background: #fef2f2; padding: 16px 20px; border-left: 4px solid #b91c1c; margin: 16px 0; line-height: 1.55;">
+      <strong>Motif communiqué par notre équipe :</strong><br />
+      {{ params.note }}
+    </div>
+    {% endif %}
+
+    <p>
+      Veuillez vous assurer que les documents soumis sont lisibles, valides et
+      correspondent bien à votre identité avant de soumettre à nouveau.
+    </p>
+
+    <p style="margin-top: 24px;">
+      <a href="{{ params.resubmit_url }}"
+         style="display: inline-block; background: #b91c1c; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: 600; font-size: 15px;">
+        Soumettre à nouveau mon dossier
+      </a>
+    </p>
+
+    <p style="font-size: 12px; color: #6b7280; margin-top: 32px;">
+      Vous recevez ce message car vous avez soumis une demande de vérification
+      d'identité sur VitaChain. Pour toute question, contactez notre support.
+    </p>
+  </body>
+</html>

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<!--
+  KAT-09 — Diagnostic completion email (EN — stub).
+
+  Visual-only stub. I18N-06 ships the populated English copy; until then this
+  template can either be left empty in the Brevo dashboard (worker falls back
+  to FR per PRD §7.2) or pointed at the FR template id as a temporary measure.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Your agronomic diagnostic is ready</title>
+  </head>
+  <body style="font-family: 'Helvetica Neue', Arial, sans-serif; color: #1f2937; max-width: 640px; margin: 0 auto; padding: 24px;">
+    <h1 style="font-size: 22px; color: #047857;">
+      Your AI diagnostic is ready
+    </h1>
+
+    <p>Hi {{ params.farmer_name }},</p>
+
+    <!-- I18N-06: replace placeholder with full English copy. -->
+    <p>
+      The AI diagnostic for your parcel
+      <strong>{{ params.parcel_name }}</strong> just finished. Here are the
+      results:
+    </p>
+
+    <div style="background: #f9fafb; padding: 16px 20px; border-left: 4px solid #047857; margin: 16px 0; line-height: 1.55;">
+      {{ params.result_html }}
+    </div>
+
+    <p style="font-size: 12px; color: #6b7280; margin-top: 32px;">
+      Diagnostic #{{ params.diagnostic_id }} — VitaChain Katara.
+    </p>
+  </body>
+</html>

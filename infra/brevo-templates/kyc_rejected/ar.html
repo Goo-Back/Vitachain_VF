@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<!--
+  AUTH-06 — KYC rejected email (AR — P0).
+
+  Source-of-truth lives in the Brevo dashboard. This file is a mirror so the
+  team can re-create the transactional template without dashboard archaeology.
+  The Brevo template id is captured in `.env` under
+  `BREVO_TEMPLATE_KYC_REJECTED_AR`.
+
+  Subject (set in the Brevo dashboard, not here):
+    "إجراء مطلوب: التحقق من هويتك — VitaChain"
+
+  All `params.*` references must match the sender contract in
+  backend/app/workers/notifications_mailer/dispatcher.py — params are:
+    - full_name     : str   (may be empty)
+    - note          : str   (admin rejection reason; may be empty)
+    - resubmit_url  : str   (e.g. https://vitachain.ma/onboarding/verification)
+
+  RTL direction is set on the <html> element so the accent border flips to
+  the right edge, consistent with kat09_diagnostic_completion/ar.html.
+-->
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <title>إجراء مطلوب — التحقق من الهوية VitaChain</title>
+  </head>
+  <body style="font-family: 'Helvetica Neue', Arial, sans-serif; color: #1f2937; max-width: 640px; margin: 0 auto; padding: 24px;">
+    <h1 style="font-size: 22px; color: #b91c1c;">
+      إجراء مطلوب: التحقق من الهوية
+    </h1>
+
+    <p>مرحباً {{ params.full_name }}،</p>
+
+    <p>
+      لقد راجعنا ملف التحقق من هويتك ولم نتمكن من اعتماده في الوقت الراهن.
+      بإمكانك تقديم ملف جديد لإتمام تفعيل حسابك.
+    </p>
+
+    {% if params.note %}
+    <div style="background: #fef2f2; padding: 16px 20px; border-right: 4px solid #b91c1c; margin: 16px 0; line-height: 1.75;">
+      <strong>السبب الذي أفاد به فريقنا:</strong><br />
+      {{ params.note }}
+    </div>
+    {% endif %}
+
+    <p>
+      يُرجى التأكد من أن الوثائق المقدَّمة واضحة وصالحة وتطابق هويتك الشخصية
+      قبل إعادة التقديم.
+    </p>
+
+    <p style="margin-top: 24px;">
+      <a href="{{ params.resubmit_url }}"
+         style="display: inline-block; background: #b91c1c; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: 600; font-size: 15px;">
+        إعادة تقديم ملفي
+      </a>
+    </p>
+
+    <p style="font-size: 12px; color: #6b7280; margin-top: 32px;">
+      تلقيت هذا البريد الإلكتروني لأنك قدّمت طلب التحقق من الهوية على
+      VitaChain. لأي استفسار، يُرجى التواصل مع فريق الدعم لدينا.
+    </p>
+  </body>
+</html>

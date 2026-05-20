@@ -1,0 +1,7 @@
+# Supabase CLI working dirs — never commit.
+.branches/
+.temp/
+.env
+
+# Local-dev shadow data when `supabase start` is used.
+volumes/

@@ -1,0 +1,12 @@
+# Local smoke override (INF-04 local verification). Not deployed to the VPS.
+# Drops the host port to 8088 (Windows port-80 conflicts) and removes the
+# frontend dep so we don't need real Supabase build args.
+
+services:
+  nginx:
+    ports: !override
+      - "8088:80"
+    depends_on: !override
+      - backend
+  frontend:
+    profiles: ["disabled-in-smoke"]

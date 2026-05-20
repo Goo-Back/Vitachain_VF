@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Get-ChildItem \"$env:USERPROFILE\\\\.claude\\\\plugins\" -Recurse -ErrorAction SilentlyContinue | Select-Object FullName)"
+    ]
+  }
+}

@@ -1,0 +1,35 @@
+# VitaChain backend — tool config only. No build backend (this app ships as a
+# Docker image, not a Python package).
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = [".venv", "__pycache__"]
+
+[tool.ruff.lint]
+select = [
+    "E", "F", "I", "B", "UP",   # core + bugbear + isort + pyupgrade
+    "S",                         # bandit-lite security
+    "T20",                       # no stray print()
+    "ASYNC",                     # async/await foot-guns
+    "ANN",                       # type annotations
+    "PL",                        # pylint subset
+    "RUF",                       # ruff-native
+]
+ignore = [
+    "ANN401",   # allow `Any` in narrow places (e.g. Settings overrides)
+    "PLR2004",  # magic-value constants are fine in test assertions
+    "S101",     # asserts allowed (tests + Pydantic invariants)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S", "ANN", "PLR"]
+"app/core/config.py" = ["ANN"]  # pydantic-settings does the typing dance
+
+[tool.pytest.ini_options]
+addopts = "-ra -q --strict-markers"
+testpaths = ["tests"]
+asyncio_mode = "auto"
+markers = [
+    "integration: hits a live Supabase project (set SUPABASE_* env first)",
+]

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<!--
+  KAT-11 — Offline-device alert email (AR — P0, RTL).
+
+  Mirror of the Brevo dashboard template; the live template id lives in
+  `.env` under `BREVO_TEMPLATE_KAT_OFFLINE_AR`. The `dir="rtl"` on <html>
+  is what makes Brevo's renderer flip alignment in every mainstream client
+  (Gmail, Outlook, Apple Mail).
+
+  Subject (set in the Brevo dashboard, not here):
+    "الجهاز {{ params.device_id }} لا يستجيب — {{ params.parcel_name }}"
+-->
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <title>VitaChain — الجهاز غير متصل</title>
+  </head>
+  <body style="font-family: 'Helvetica Neue', Arial, sans-serif; color: #1f2937; max-width: 600px; margin: 0 auto; padding: 24px;">
+    <h1 style="font-size: 20px; color: #b45309;">
+      الجهاز لا يستجيب: {{ params.device_id }}
+    </h1>
+
+    <p>مرحباً {{ params.farmer_name }}،</p>
+
+    <p>
+      مستشعرك <strong>{{ params.device_id }}</strong> على القطعة
+      <strong>{{ params.parcel_name }}</strong> لم يرسل أي قراءة منذ
+      أكثر من ساعة.
+    </p>
+
+    <table style="border-collapse: collapse; margin: 16px 0;">
+      <tr>
+        <td style="padding: 8px 12px; background: #f3f4f6;"><strong>الجهاز</strong></td>
+        <td style="padding: 8px 12px;">{{ params.device_id }}</td>
+      </tr>
+      <tr>
+        <td style="padding: 8px 12px; background: #f3f4f6;"><strong>القطعة</strong></td>
+        <td style="padding: 8px 12px;">{{ params.parcel_name }}</td>
+      </tr>
+      <tr>
+        <td style="padding: 8px 12px; background: #f3f4f6;"><strong>آخر قراءة مستلمة</strong></td>
+        <td style="padding: 8px 12px;">{{ params.last_seen_at }}</td>
+      </tr>
+      <tr>
+        <td style="padding: 8px 12px; background: #f3f4f6;"><strong>مدة الصمت</strong></td>
+        <td style="padding: 8px 12px;">{{ params.minutes_silent }} دقيقة</td>
+      </tr>
+    </table>
+
+    <p>
+      تحقق من تغذية الجهاز، اتصاله بشبكة Wi-Fi، والهوائي. ستتلقى رسالة
+      أخرى إذا بقي الجهاز صامتاً بعد 24 ساعة إضافية.
+    </p>
+
+    <p style="margin-top: 24px;">
+      <a href="{{ params.dashboard_url }}"
+         style="background: #047857; color: #fff; padding: 10px 18px; text-decoration: none; border-radius: 6px;">
+        فتح لوحة التحكم
+      </a>
+    </p>
+
+    <p style="font-size: 12px; color: #6b7280; margin-top: 32px;">
+      تتلقى هذه الرسالة لأن هذا الجهاز مرتبط بحسابك. الكشف تلقائي ولن
+      ترسل رسائل إضافية ما دام الجهاز غير متصل.
+    </p>
+  </body>
+</html>

@@ -1,0 +1,23 @@
+# VitaChain frontend (INF-03). Repo-root .gitignore already covers most of this;
+# kept locally so a sub-cloned `frontend/` still behaves.
+
+# deps
+node_modules/
+.pnp.*
+.yarn/
+
+# next build artefacts
+.next/
+out/
+
+# env
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# misc
+*.log
+.DS_Store
+Thumbs.db
+next-env.d.ts

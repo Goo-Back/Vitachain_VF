@@ -1,0 +1,52 @@
+# =============================================================================
+# VitaChain — repo-root .gitignore
+# Source of truth for "do not commit". Module-local .gitignores extend this.
+# =============================================================================
+
+# Secrets — every flavor of .env except the templates.
+.env
+.env.*
+!.env.example
+!*/.env.example
+
+# Supabase CLI local state (also covered by supabase/.gitignore).
+supabase/.branches/
+supabase/.temp/
+supabase/.env
+supabase/volumes/
+
+# Node / Next.js (added when INF-03 lands; declared early so accidental
+# pnpm install during prototyping doesn't pollute the repo).
+node_modules/
+.next/
+.turbo/
+
+# Python (added when INF-04 lands).
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Editor / OS noise.
+.DS_Store
+Thumbs.db
+.vscode/
+!.vscode/extensions.json
+.idea/
+
+# Build & coverage.
+dist/
+build/
+coverage/
+
+# Logs.
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# CI / pre-commit (added when INF-05 lands).
+.pre-commit-cache/
+ci-local.log

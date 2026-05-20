@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<!--
+  KAT-06 — Threshold alert email (AR — P0).
+
+  Subject (set in the Brevo dashboard, not here):
+    "تنبيه: {{ params.metric_label }} خارج النطاق — {{ params.parcel_name }}"
+
+  PRD §7.2 RTL rule — the body sets dir="rtl" so Brevo's preview and most
+  inbox renderers honour the script direction.
+-->
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <title>تنبيه VitaChain</title>
+  </head>
+  <body style="font-family: 'Helvetica Neue', Arial, sans-serif; color: #1f2937; max-width: 600px; margin: 0 auto; padding: 24px; direction: rtl; text-align: right;">
+    <h1 style="font-size: 20px; color: #b91c1c;">
+      تنبيه: {{ params.metric_label }} خارج النطاق
+    </h1>
+
+    <p>مرحبًا {{ params.farmer_name }}،</p>
+
+    <p>
+      سجَّل المستشعر <strong>{{ params.device_id }}</strong> في القطعة
+      <strong>{{ params.parcel_name }}</strong> قيمةً خارج العتبات التي
+      ضبطتها.
+    </p>
+
+    <table style="border-collapse: collapse; margin: 16px 0;">
+      <tr>
+        <td style="padding: 8px 12px; background: #f3f4f6;"><strong>القياس</strong></td>
+        <td style="padding: 8px 12px;">{{ params.metric_label }}</td>
+      </tr>
+      <tr>
+        <td style="padding: 8px 12px; background: #f3f4f6;"><strong>القيمة المسجَّلة</strong></td>
+        <td style="padding: 8px 12px;">{{ params.metric_value }} {{ params.metric_unit }}</td>
+      </tr>
+      <tr>
+        <td style="padding: 8px 12px; background: #f3f4f6;"><strong>الحد الأدنى</strong></td>
+        <td style="padding: 8px 12px;">{{ params.threshold_min }} {{ params.metric_unit }}</td>
+      </tr>
+      <tr>
+        <td style="padding: 8px 12px; background: #f3f4f6;"><strong>الحد الأقصى</strong></td>
+        <td style="padding: 8px 12px;">{{ params.threshold_max }} {{ params.metric_unit }}</td>
+      </tr>
+      <tr>
+        <td style="padding: 8px 12px; background: #f3f4f6;"><strong>الحد المتجاوَز</strong></td>
+        <td style="padding: 8px 12px;">{{ params.crossed_bound }}</td>
+      </tr>
+      <tr>
+        <td style="padding: 8px 12px; background: #f3f4f6;"><strong>الطابع الزمني</strong></td>
+        <td style="padding: 8px 12px;">{{ params.reading_at }}</td>
+      </tr>
+    </table>
+
+    <p style="margin-top: 24px;">
+      <a href="{{ params.dashboard_url }}"
+         style="background: #047857; color: #fff; padding: 10px 18px; text-decoration: none; border-radius: 6px;">
+        فتح لوحة القيادة
+      </a>
+    </p>
+
+    <p style="font-size: 12px; color: #6b7280; margin-top: 32px;">
+      تتلقى هذه الرسالة لأنك فعّلت التنبيهات على هذه القطعة. يمكنك تعديل
+      العتبات مباشرة من صفحة القطعة.
+    </p>
+  </body>
+</html>

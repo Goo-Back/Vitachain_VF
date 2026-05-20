@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<!--
+  AUTH-06 — KYC rejected email (EN — P0).
+
+  Source-of-truth lives in the Brevo dashboard. This file is a mirror so the
+  team can re-create the transactional template without dashboard archaeology.
+  The Brevo template id is captured in `.env` under
+  `BREVO_TEMPLATE_KYC_REJECTED_EN`.
+
+  Subject (set in the Brevo dashboard, not here):
+    "Action required: your identity verification — VitaChain"
+
+  All `params.*` references must match the sender contract in
+  backend/app/workers/notifications_mailer/dispatcher.py — params are:
+    - full_name     : str   (may be empty)
+    - note          : str   (admin rejection reason; may be empty)
+    - resubmit_url  : str   (e.g. https://vitachain.ma/onboarding/verification)
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Action required — VitaChain identity verification</title>
+  </head>
+  <body style="font-family: 'Helvetica Neue', Arial, sans-serif; color: #1f2937; max-width: 640px; margin: 0 auto; padding: 24px;">
+    <h1 style="font-size: 22px; color: #b91c1c;">
+      Action required: identity verification
+    </h1>
+
+    <p>Hi {{ params.full_name }},</p>
+
+    <p>
+      We reviewed your KYC application and are unable to approve it at this
+      time. You may submit a new application to complete your account
+      activation.
+    </p>
+
+    {% if params.note %}
+    <div style="background: #fef2f2; padding: 16px 20px; border-left: 4px solid #b91c1c; margin: 16px 0; line-height: 1.55;">
+      <strong>Reason provided by our team:</strong><br />
+      {{ params.note }}
+    </div>
+    {% endif %}
+
+    <p>
+      Please make sure that the documents you submit are legible, valid, and
+      match your identity before resubmitting.
+    </p>
+
+    <p style="margin-top: 24px;">
+      <a href="{{ params.resubmit_url }}"
+         style="display: inline-block; background: #b91c1c; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: 600; font-size: 15px;">
+        Resubmit my application
+      </a>
+    </p>
+
+    <p style="font-size: 12px; color: #6b7280; margin-top: 32px;">
+      You received this email because you submitted an identity verification
+      request on VitaChain. For any questions, please contact our support team.
+    </p>
+  </body>
+</html>

@@ -1,0 +1,15 @@
+.venv/
+.env
+.env.*
+!.env.example
+__pycache__/
+**/__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+# tests/ is included so the `test` Dockerfile stage can COPY it; the `runner`
+# stage explicitly does NOT copy tests in, so production stays lean.
+docs/
+.git/
+*.md

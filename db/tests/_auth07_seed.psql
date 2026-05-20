@@ -1,0 +1,178 @@
+-- =============================================================================
+-- AUTH-07 — synthetic fixtures reused by auth07_role_matrix.sql and
+-- auth07_business_rules.sql. Included with \i from each. Runs as the
+-- migration runner (service-role) inside the file's outer `begin … rollback`.
+--
+-- The domain schemas (katara, farmarket, secondserve, botabaqa) and their
+-- per-table business-rule functions land in their owner stories (KAT-01..05,
+-- FAR-01..06, SEC-01..08, BOT-03..05). Each domain block here is guarded by
+-- `to_regclass()` so the seed remains green before/after each owner story
+-- merges. A missing table is *not* a defect of this seed — it is the
+-- documented intermediate state between AUTH-07 landing and the owner
+-- stories' merge window.
+-- =============================================================================
+
+\set ON_ERROR_STOP on
+
+-- Service-role-style claims so auth.users inserts pass the 0007 admin-guard.
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+
+do $$
+declare
+    farmer_a_id     uuid := gen_random_uuid();
+    farmer_b_id     uuid := gen_random_uuid();
+    restaurant_id   uuid := gen_random_uuid();
+    citizen_a_id    uuid := gen_random_uuid();
+    citizen_b_id    uuid := gen_random_uuid();
+    admin_id        uuid := gen_random_uuid();
+begin
+    -- Six identities cover all five role variants + the cross-role FARMER probe.
+    insert into auth.users (
+        id, instance_id, aud, role, email,
+        raw_user_meta_data, encrypted_password,
+        email_confirmed_at, created_at, updated_at
+    ) values
+        (farmer_a_id, '00000000-0000-0000-0000-000000000000',
+         'authenticated', 'authenticated',
+         format('auth07-farmer-a-%s@test.local', farmer_a_id),
+         jsonb_build_object('role','FARMER','locale','fr','full_name','AUTH-07 Farmer A'),
+         crypt('Abcdefg123', gen_salt('bf')),
+         now(), now(), now()),
+        (farmer_b_id, '00000000-0000-0000-0000-000000000000',
+         'authenticated', 'authenticated',
+         format('auth07-farmer-b-%s@test.local', farmer_b_id),
+         jsonb_build_object('role','FARMER','locale','fr','full_name','AUTH-07 Farmer B'),
+         crypt('Abcdefg123', gen_salt('bf')),
+         now(), now(), now()),
+        (restaurant_id, '00000000-0000-0000-0000-000000000000',
+         'authenticated', 'authenticated',
+         format('auth07-restaurant-%s@test.local', restaurant_id),
+         jsonb_build_object('role','RESTAURANT','locale','fr','full_name','AUTH-07 Restaurant'),
+         crypt('Abcdefg123', gen_salt('bf')),
+         now(), now(), now()),
+        (citizen_a_id, '00000000-0000-0000-0000-000000000000',
+         'authenticated', 'authenticated',
+         format('auth07-citizen-a-%s@test.local', citizen_a_id),
+         jsonb_build_object('role','CITIZEN','locale','fr','full_name','AUTH-07 Citizen A'),
+         crypt('Abcdefg123', gen_salt('bf')),
+         now(), now(), now()),
+        (citizen_b_id, '00000000-0000-0000-0000-000000000000',
+         'authenticated', 'authenticated',
+         format('auth07-citizen-b-%s@test.local', citizen_b_id),
+         jsonb_build_object('role','CITIZEN','locale','fr','full_name','AUTH-07 Citizen B'),
+         crypt('Abcdefg123', gen_salt('bf')),
+         now(), now(), now()),
+        (admin_id, '00000000-0000-0000-0000-000000000000',
+         'authenticated', 'authenticated',
+         format('auth07-admin-%s@test.local', admin_id),
+         jsonb_build_object('role','ADMIN','locale','fr','full_name','AUTH-07 Admin'),
+         crypt('Abcdefg123', gen_salt('bf')),
+         now(), now(), now());
+
+    -- The 0003 handle_new_user() trigger materialised public.profiles.
+    -- Promote the professionals to VERIFIED; FARMER-B stays PENDING so the
+    -- "unverified FARMER cannot publish" cell is exercisable in the same txn.
+    update public.profiles
+       set verification_status = 'VERIFIED'
+     where id in (farmer_a_id, restaurant_id);
+
+    -- Stash identity ids in transaction-local GUCs so the consumer files can
+    -- read them via current_setting('auth07.x'). Cleared on rollback.
+    perform set_config('auth07.farmer_a_id',   farmer_a_id::text,   true);
+    perform set_config('auth07.farmer_b_id',   farmer_b_id::text,   true);
+    perform set_config('auth07.restaurant_id', restaurant_id::text, true);
+    perform set_config('auth07.citizen_a_id',  citizen_a_id::text,  true);
+    perform set_config('auth07.citizen_b_id',  citizen_b_id::text,  true);
+    perform set_config('auth07.admin_id',      admin_id::text,      true);
+
+    raise notice 'auth07 seed: 6 identities created (FARMER-A verified, FARMER-B pending, RESTAURANT verified, CITIZEN-A, CITIZEN-B, ADMIN)';
+end$$;
+
+-- ---------------------------------------------------------------------------
+-- Domain rows — only seeded if the owner story's tables exist. Each block is
+-- self-contained; a missing schema does not abort the seed.
+-- ---------------------------------------------------------------------------
+
+-- katara.parcels (KAT-01)
+do $$
+declare
+    parcel_a_id uuid := gen_random_uuid();
+    parcel_b_id uuid := gen_random_uuid();
+begin
+    if to_regclass('katara.parcels') is null then
+        raise notice 'auth07 seed: skipped katara.parcels (KAT-01 not merged yet)';
+        return;
+    end if;
+
+    execute format(
+        $sql$
+            insert into katara.parcels (id, owner_id, crop, surface_m2, geom)
+            values
+                (%L::uuid, %L::uuid, 'tomato', 5000,
+                 st_geomfromgeojson('{"type":"Polygon","coordinates":[[[0,0],[0,1],[1,1],[1,0],[0,0]]]}')),
+                (%L::uuid, %L::uuid, 'pepper', 4000,
+                 st_geomfromgeojson('{"type":"Polygon","coordinates":[[[2,2],[2,3],[3,3],[3,2],[2,2]]]}'))
+        $sql$,
+        parcel_a_id, current_setting('auth07.farmer_a_id'),
+        parcel_b_id, current_setting('auth07.farmer_b_id')
+    );
+
+    perform set_config('auth07.parcel_a_id', parcel_a_id::text, true);
+    perform set_config('auth07.parcel_b_id', parcel_b_id::text, true);
+    raise notice 'auth07 seed: 2 katara.parcels rows';
+exception when others then
+    raise notice 'auth07 seed: katara.parcels insert failed (%) — column drift; cells skip', sqlerrm;
+end$$;
+
+-- farmarket.ads (FAR-01)
+do $$
+declare
+    ad_a_id uuid := gen_random_uuid();
+begin
+    if to_regclass('farmarket.ads') is null then
+        raise notice 'auth07 seed: skipped farmarket.ads (FAR-01 not merged yet)';
+        return;
+    end if;
+
+    execute format(
+        $sql$
+            insert into farmarket.ads
+                (id, owner_id, title, status, price_mad, quantity_kg, region, photos, created_at)
+            values
+                (%L::uuid, %L::uuid, 'Tomato 5kg', 'ACTIVE', 80.00, 5,
+                 'Souss-Massa', array['http://x.test/p1.jpg'], now())
+        $sql$,
+        ad_a_id, current_setting('auth07.farmer_a_id')
+    );
+
+    perform set_config('auth07.ad_a_id', ad_a_id::text, true);
+    raise notice 'auth07 seed: 1 farmarket.ads row';
+exception when others then
+    raise notice 'auth07 seed: farmarket.ads insert failed (%) — column drift; cells skip', sqlerrm;
+end$$;
+
+-- secondserve.meals (SEC-01)
+do $$
+declare
+    meal_id uuid := gen_random_uuid();
+begin
+    if to_regclass('secondserve.meals') is null then
+        raise notice 'auth07 seed: skipped secondserve.meals (SEC-01 not merged yet)';
+        return;
+    end if;
+
+    execute format(
+        $sql$
+            insert into secondserve.meals
+                (id, owner_id, title, status, price_mad, quantity_remaining, deadline)
+            values
+                (%L::uuid, %L::uuid, 'Couscous box', 'ACTIVE', 35.00, 2, now() + interval '2 hours')
+        $sql$,
+        meal_id, current_setting('auth07.restaurant_id')
+    );
+
+    perform set_config('auth07.meal_id', meal_id::text, true);
+    raise notice 'auth07 seed: 1 secondserve.meals row';
+exception when others then
+    raise notice 'auth07 seed: secondserve.meals insert failed (%) — column drift; cells skip', sqlerrm;
+end$$;

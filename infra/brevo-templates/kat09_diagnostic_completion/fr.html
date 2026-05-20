@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<!--
+  KAT-09 — Diagnostic completion email (FR — P0).
+
+  Source-of-truth lives in the Brevo dashboard. This file is a mirror so the
+  team can re-create the transactional template without dashboard
+  archaeology. The Brevo template id is captured in `.env` under
+  `BREVO_TEMPLATE_KAT_DIAGNOSTIC_FR`.
+
+  Subject (set in the Brevo dashboard, not here):
+    "Votre diagnostic agronomique est prêt — {{ params.parcel_name }}"
+
+  All params.* references must match the sender contract in
+  backend/app/workers/katara_diagnostic_email/sender.py — params are:
+    - farmer_name   : str   (may be empty)
+    - parcel_name   : str
+    - result_html   : str   (Gemini Markdown → HTML, system-trusted)
+    - diagnostic_id : str   (UUID — surfaced in the footer for support)
+-->
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <title>Diagnostic agronomique VitaChain</title>
+  </head>
+  <body style="font-family: 'Helvetica Neue', Arial, sans-serif; color: #1f2937; max-width: 640px; margin: 0 auto; padding: 24px;">
+    <h1 style="font-size: 22px; color: #047857;">
+      Votre diagnostic agronomique est prêt
+    </h1>
+
+    <p>Bonjour {{ params.farmer_name }},</p>
+
+    <p>
+      Le diagnostic IA pour votre parcelle
+      <strong>{{ params.parcel_name }}</strong> vient d'être finalisé.
+      Voici les résultats :
+    </p>
+
+    <div style="background: #f9fafb; padding: 16px 20px; border-left: 4px solid #047857; margin: 16px 0; line-height: 1.55;">
+      {{ params.result_html }}
+    </div>
+
+    <p style="font-size: 12px; color: #6b7280; margin-top: 32px;">
+      Diagnostic #{{ params.diagnostic_id }} — VitaChain Katara.
+      <br />
+      Vous recevez ce message car vous avez demandé un diagnostic IA depuis le
+      tableau de bord de votre parcelle.
+    </p>
+  </body>
+</html>

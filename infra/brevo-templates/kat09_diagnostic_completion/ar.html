@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<!--
+  KAT-09 — Diagnostic completion email (AR — stub).
+
+  Visual-only stub. I18N-06 ships the populated Arabic copy; until then this
+  template can either be left empty in the Brevo dashboard (worker falls back
+  to FR per PRD §7.2) or pointed at the FR template id as a temporary measure.
+
+  RTL direction is set on the <html> element so the result block flips its
+  accent border to the right edge.
+-->
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <title>تشخيصك الزراعي جاهز</title>
+  </head>
+  <body style="font-family: 'Helvetica Neue', Arial, sans-serif; color: #1f2937; max-width: 640px; margin: 0 auto; padding: 24px;">
+    <h1 style="font-size: 22px; color: #047857;">
+      التشخيص الزراعي — {{ params.parcel_name }}
+    </h1>
+
+    <p>{{ params.farmer_name }}،</p>
+
+    <!-- I18N-06: remplacer le placeholder par la copie complète AR. -->
+    <p>
+      تشخيصك الزراعي الذكي لقطعة الأرض
+      <strong>{{ params.parcel_name }}</strong>
+      أصبح جاهزًا. النتائج أدناه :
+    </p>
+
+    <div style="background: #f9fafb; padding: 16px 20px; border-right: 4px solid #047857; margin: 16px 0; line-height: 1.55;">
+      {{ params.result_html }}
+    </div>
+
+    <p style="font-size: 12px; color: #6b7280; margin-top: 32px;">
+      رقم التشخيص : {{ params.diagnostic_id }} — VitaChain Katara.
+    </p>
+  </body>
+</html>

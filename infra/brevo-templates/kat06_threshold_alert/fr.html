@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<!--
+  KAT-06 — Threshold alert email (FR — P0).
+
+  Source-of-truth lives in the Brevo dashboard. This file is a mirror so the
+  team can re-create the transactional template without dashboard
+  archaeology. The Brevo template id is captured in `.env` under
+  `BREVO_TEMPLATE_KAT_THRESHOLD_FR`.
+
+  Subject (set in the Brevo dashboard, not here):
+    "Alerte: {{ params.metric_label }} hors plage — {{ params.parcel_name }}"
+
+  All params.* references must match the contract documented in
+  KAT-06 §4.4. Brevo supports if/endif blocks — see body for crossed_bound
+  conditional usage.
+-->
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <title>Alerte VitaChain</title>
+  </head>
+  <body style="font-family: 'Helvetica Neue', Arial, sans-serif; color: #1f2937; max-width: 600px; margin: 0 auto; padding: 24px;">
+    <h1 style="font-size: 20px; color: #b91c1c;">
+      Alerte : {{ params.metric_label }} hors plage
+    </h1>
+
+    <p>Bonjour {{ params.farmer_name }},</p>
+
+    <p>
+      Votre capteur <strong>{{ params.device_id }}</strong> sur la parcelle
+      <strong>{{ params.parcel_name }}</strong> a relevé une valeur en dehors
+      des seuils que vous avez configurés.
+    </p>
+
+    <table style="border-collapse: collapse; margin: 16px 0;">
+      <tr>
+        <td style="padding: 8px 12px; background: #f3f4f6;"><strong>Mesure</strong></td>
+        <td style="padding: 8px 12px;">{{ params.metric_label }}</td>
+      </tr>
+      <tr>
+        <td style="padding: 8px 12px; background: #f3f4f6;"><strong>Valeur relevée</strong></td>
+        <td style="padding: 8px 12px;">{{ params.metric_value }} {{ params.metric_unit }}</td>
+      </tr>
+      <tr>
+        <td style="padding: 8px 12px; background: #f3f4f6;"><strong>Seuil minimum</strong></td>
+        <td style="padding: 8px 12px;">{{ params.threshold_min }} {{ params.metric_unit }}</td>
+      </tr>
+      <tr>
+        <td style="padding: 8px 12px; background: #f3f4f6;"><strong>Seuil maximum</strong></td>
+        <td style="padding: 8px 12px;">{{ params.threshold_max }} {{ params.metric_unit }}</td>
+      </tr>
+      <tr>
+        <td style="padding: 8px 12px; background: #f3f4f6;"><strong>Bord franchi</strong></td>
+        <td style="padding: 8px 12px;">{{ params.crossed_bound }}</td>
+      </tr>
+      <tr>
+        <td style="padding: 8px 12px; background: #f3f4f6;"><strong>Horodatage</strong></td>
+        <td style="padding: 8px 12px;">{{ params.reading_at }}</td>
+      </tr>
+    </table>
+
+    <p style="margin-top: 24px;">
+      <a href="{{ params.dashboard_url }}"
+         style="background: #047857; color: #fff; padding: 10px 18px; text-decoration: none; border-radius: 6px;">
+        Ouvrir le tableau de bord
+      </a>
+    </p>
+
+    <p style="font-size: 12px; color: #6b7280; margin-top: 32px;">
+      Vous recevez ce message car vous avez activé les alertes sur cette parcelle.
+      Vous pouvez ajuster les seuils directement depuis la page de la parcelle.
+    </p>
+  </body>
+</html>

@@ -1,0 +1,8 @@
+Bonjour {{ full_name }},
+
+Nous avons bien reçu votre document de vérification professionnelle.
+Notre équipe va l'examiner sous 48 heures ouvrées.
+
+Vous recevrez un email dès qu'une décision sera prise.
+
+— L'équipe VitaChain

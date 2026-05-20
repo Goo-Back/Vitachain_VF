@@ -1,0 +1,27 @@
+# VitaChain — yamllint config (INF-05).
+# Modest rules — we are not policing line length, only catching genuine breakage.
+
+extends: default
+
+rules:
+  line-length: disable
+  truthy:
+    allowed-values: ['true', 'false']
+    check-keys: false       # GitHub Actions uses `on:` as a key.
+  comments:
+    min-spaces-from-content: 1
+  comments-indentation: disable
+  document-start: disable
+  indentation:
+    spaces: 2
+    indent-sequences: consistent
+  braces:
+    forbid: false
+    min-spaces-inside: 0
+    max-spaces-inside: 1    # allow `{ run: { ... } }` shorthand in workflows.
+  brackets:
+    min-spaces-inside: 0
+    max-spaces-inside: 1
+  octal-values:
+    forbid-implicit-octal: true
+    forbid-explicit-octal: false

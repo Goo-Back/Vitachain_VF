@@ -1,0 +1,1293 @@
+# =============================================================================
+# VitaChain — Sprint Status Tracker
+# =============================================================================
+# Derived from: Documents/VitaChain_PRD.md (v1.0, May 2026)
+# Methodology: BMAD — 8-week MVD
+# Status values: TODO | IN_PROGRESS | BLOCKED | IN_REVIEW | DONE | DEFERRED
+# Priority values: Must | Should | Could | Won't  (MoSCoW, per PRD)
+# =============================================================================
+
+project:
+  name: VitaChain
+  version: 1.0-MVD
+  methodology: BMAD
+  timeline_weeks: 8
+  team_size: 3
+  budget_mad: 624
+  primary_market: Morocco
+  last_updated: 2026-05-16
+  # 2026-05-16 — KAT-03 LOCAL DONE: ESP32 telemetry ingestion endpoint shipped. Hot path /api/v1/katara/ingest
+  # composes the bcrypt-verify + insert + device-touch + NOTIFY into a single SECURITY DEFINER SQL function
+  # (public.m1_katara_ingest, granted EXECUTE to service_role only) so the FastAPI handler issues exactly
+  # one DB round-trip per request. The m1_katara_telemetry table is FORCE-RLS with no INSERT/UPDATE/DELETE
+  # policy (append-only by design — KAT-13 leans on the invariant) and ships three indexes: (device_id,
+  # recorded_at DESC) for charts, (parcel_id, recorded_at DESC) for KAT-08's 7-day average, and the
+  # (device_id, recorded_at) dedup unique that turns a replay into a silent 204 via ON CONFLICT DO UPDATE
+  # rather than a 409 retry-loop. Denormalisation trigger fills parcel_id + farmer_id from the device row
+  # so downstream queries skip a join; a sibling trigger emits NOTIFY katara_telemetry_inserted for KAT-06's
+  # threshold worker. The handler authenticates the device via X-Device-Id + X-Device-Api-Key headers (never
+  # a JWT) and replies 204 No Content carrying X-Telemetry-Id for log correlation; failures return 401 with
+  # the constant string `invalid_device_credentials` whether the device_id or the api_key (or both) was wrong
+  # so a probe cannot enumerate paired devices. AUTH-05 is satisfied with a new ALLOW_PREFIXES entry
+  # (`modules/katara/ingest.py`) plus an inline `# JUSTIFICATION:` at the service_client() callsite. The
+  # NGINX iot_ingest zone in infra/nginx/conf.d/default.conf is already keyed on the api-key header (not IP)
+  # with 500ms connect + 2s read/send timeouts, so a leaked key cannot be amplified from N attacker IPs.
+  # Pydantic TelemetryPayload mirrors every DB CHECK and enforces the 60 s GSM-skew future-ts guard at the
+  # 422 boundary; the guard intentionally lives in Pydantic so legitimate backfills can break it (BR-KAT03 D
+  # asserts no DB CHECK enforces it). The pgTAP block in auth07_business_rules.sql seeds its own parcel +
+  # PENDING device, then walks the full happy path (verify -> insert -> trigger fill -> device touch ->
+  # ACTIVE flip + last_seen), forged-key NULL, UNLINKED device blocked, future-ts at DB layer accepted, and
+  # FARMER-B vs FARMER-A RLS isolation under the authenticated role. Spec drift (legacy air_humidity /
+  # air_temperature -> soil_pH / soil_conductivity) is documented inline; the PRD + Technical_Specifications
+  # update is a separate doc PR. Unblocks: KAT-04 (charts can read m1_katara_telemetry + the latest view),
+  # KAT-05 / KAT-06 (threshold worker has a NOTIFY channel + payload format), KAT-08 (parcel_recorded_at
+  # index covers the 7-day per-parcel aggregate Gemini consumes), KAT-11 (offline-detection CRON reads
+  # last_seen written by every ingest). DoD flips to DONE on: (a) migration 0018 applied on the linked
+  # Supabase project and `select relforcerowsecurity from pg_class where relname='m1_katara_telemetry'`
+  # returns t; (b) staging Locust run (50 users / 60 s) p50 < 50 ms, p99 < 150 ms, 0 failures, URL of
+  # ingest_stats.csv recorded; (c) 5 BR-KAT03 pgTAP cells green inside `make -C db test-auth07`;
+  # (d) PRD + Tech Spec PR merged closing the spec drift.
+  # 2026-05-16 — AUTH-07 LOCAL DONE: RLS audit + business-rule regression framework landed. The
+  # 22-cell role × table × verb matrix is encoded in two places — db/tests/auth07_role_matrix.sql
+  # (structural, in-transaction, runs without network) and backend/tests/test_auth07_role_matrix_e2e.py
+  # (behavioural, against the staging Supabase project, parametrized by `AUTH07_MATRIX` so each
+  # cell appears as its own CI line). DB-layer BR assertions for BR-K1/K2/K4, BR-F1/F2/F3,
+  # BR-S1/S2/S3/S4, and BR-B1 land in db/tests/auth07_business_rules.sql; application-layer BRs
+  # (BR-K3 OWM cache TTL via freezegun, BR-F4 frontend-bundle Brevo absence, BR-B2 AST scan of
+  # backend/app/modules/botabaqa, BR-S1 Pydantic extra='forbid' + entropy, BR-S2 20-attempt race)
+  # in backend/tests/test_auth07_business_rules.py. Shared seed (six identities — FARMER-A verified,
+  # FARMER-B PENDING, RESTAURANT verified, CITIZEN-A/B, ADMIN — plus per-domain rows) extracted
+  # into db/tests/_auth07_seed.psql and \i-included from both pgTAP files; every domain block is
+  # `to_regclass()`-guarded so the suite stays green between AUTH-07 landing and the owner-story
+  # merge window (KAT-01..05/FAR-01..06/SEC-01..08/BOT-03..05). Each cell/BR that depends on a
+  # not-yet-merged owner artefact SKIPs with a NOTICE rather than silently passing — the SKIP
+  # count is the merge-progress metronome. db/Makefile gains `test-auth07`; folded into `verify`
+  # so the existing CI `db` job exercises it without a new step. scripts/verify-rls-matrix.sh
+  # wraps all three legs sequentially (pgTAP → BR pytest → optional staging e2e) and is wired
+  # to top-level `make auth07`. Backend conftest.py grows the `identities`, `staging_meal_factory`,
+  # `staging_citizen_jwt(s)`, and `api_base_url` fixtures; reuses the AUTH-03 `_make_token` helper
+  # from test_security.py. Runbook docs/runbook.md §AUTH-07 documents the 22-cell matrix, the
+  # 16-row BR coverage matrix, the triage flow (RLS cell red vs BR red vs e2e-only red vs entropy
+  # regression vs race regression vs F3 boundary flip), the demo-day pre-flight checklist, and a
+  # placeholder *AUTH-07 Demo runs* table populated on DoD flip. CI wiring is intentionally
+  # additive: `make -C db verify` (already in the `db` job) picks up `test-auth07`; the backend
+  # job already runs pytest which now includes `test_auth07_business_rules.py`; the e2e file
+  # skips cleanly without SUPABASE_URL so PR CI stays fast. Unblocks: Demo Day pre-flight; every
+  # future schema-touching PR is gated against the AUTH-07 matrix as the regression baseline.
+  # DoD flips to DONE on (a) the 22-cell e2e matrix green against staging with SUPABASE_URL set,
+  # (b) every BR coverage row activated (no SKIP notices in pgTAP output — gated on the KAT/FAR/
+  # SEC/BOT owner stories merging), (c) the main-branch CI run that includes the e2e leg green
+  # with its URL recorded under runbook §AUTH-07 Demo runs.
+  # 2026-05-15 — AUTH-05 LOCAL DONE: service-role isolation enforced at three layers — source
+  # (scripts/check-secrets-boundary.sh, INF-05 shipped, now paired with a regression self-test at
+  # scripts/tests/test_check_secrets_boundary.sh that runs BEFORE the production scan in CI so a
+  # scanner regression fails first), build (scripts/check-frontend-bundle.sh, new — runs after
+  # `npm run build` in the CI `frontend` job under `if: success()` and in deploy preflight; decodes
+  # every JWT-shaped token in .next/{static,standalone,server} and fails on role=service_role, also
+  # greps for forbidden env-var NAMES which is the typical Next.js inline-leak signature), runtime
+  # (scripts/verify-env-key-roles.sh, new — decodes the two Supabase JWTs in infra/.env and asserts
+  # role-claim shape + non-identical values; catches the most common copy-paste mistake of pasting
+  # service-role into the anon variable). Plus an AST-level call-site allow-list (backend/tests/
+  # test_service_client_callsite_allowlist.py) restricting service_client() callers to routers/admin/,
+  # workers/, auth_hooks/, and the definition file (db.py). Docker-compose build-args shape audit
+  # (scripts/check-compose-build-args.sh) asserts only NEXT_PUBLIC_* keys in frontend.build.args
+  # and warns on backend.build.args drift. Pre-commit: auth-05-compose-args hook added (file-gated
+  # on infra/docker-compose.yml); the existing auth-05-boundary hook stays untouched. CI: three
+  # narrow steps added — bundle scan in `frontend` job, scanner self-test in `secret-leak` job
+  # (BEFORE production scan), compose-args check in `infra` job (yq installed inline). Deploy:
+  # infra/scripts/verify.sh now runs check-compose-build-args.sh, verify-env-key-roles.sh, and
+  # check-frontend-bundle.sh before docker compose up (env + bundle checks gated on file/dir
+  # presence so CI mode skips silently). Backend: backend/app/db.py module docstring documents
+  # the allow-list and the `# JUSTIFICATION:` callsite convention; function bodies untouched.
+  # Runbook: docs/runbook.md §AUTH-05 documents the three layers, the allow-listed prefixes table,
+  # the leak-response procedure (rotate → redeploy backend → audit auth.audit_log_entries), the
+  # common-failure-modes table, and a placeholder drill table to be filled on DoD flip. Unblocks:
+  # AUTH-06 (KYC writes via service_client are now the only legitimate verification_status mutation
+  # path, mechanically enforced), AUTH-07 (the RLS audit assumption that service-role is backend-side
+  # only is now structurally verified), KAT-03 / FAR-04 / SEC-05 / BOT-04 / NOT-01 (every Brevo /
+  # mailer / system-write callsite has a documented place under workers/ or routers/admin/). DoD
+  # flips to DONE on: (a) injection drill PR `chore/auth-05-drill` runs CI red exactly where expected
+  # (process.env.SUPABASE_SERVICE_ROLE_KEY reference + swapped infra/.env.sample) and both run URLs
+  # are recorded in runbook §AUTH-05 drills table; (b) the drill branch is force-deleted from origin
+  # (no forged drill JWT or leak.tsx in git history); (c) staging deploy preflight runs both scripts/
+  # verify-env-key-roles.sh and scripts/check-frontend-bundle.sh green against /opt/vitachain/.env
+  # and the built vitachain/frontend:latest image.
+  # 2026-05-15 — AUTH-04 LOCAL DONE: RLS contract codified (policy pattern catalog in docs/runbook.md
+  # §AUTH-04 — owner-only / role-gated JWT fast-path / role-gated immediate-revoke via has_role() /
+  # admin-read / public-read / verification-gated insert templates). Enforcement landed at three layers:
+  # (1) db/migrations/0008_auth04_has_role_helper.sql — public.has_role(user_role) SECURITY DEFINER
+  # helper + is_admin() rebased onto it for a single source of truth; (2) db/migrations/0009_auth04_
+  # force_rls_contract.sql — event trigger trg_enforce_rls_on_public_tables refuses CREATE TABLE in
+  # public without RLS at ddl_command_end with 42501; (3) db/tests/auth04_rls_contract.sql + auth04_
+  # cross_role_isolation.sql wired into `make -C db test-auth04` and folded into `verify`. CI/pre-commit:
+  # scripts/verify-rls-enabled.sh wired into the .github/workflows/ci.yml db job (after AUTH-03) and
+  # .pre-commit-config.yaml as a local hook on db/migrations/**. Backend: backend/app/db.py exposes
+  # service_client() (RLS-bypass, justify each call site) and user_scoped_client(token) (RLS fires
+  # via postgrest.auth(token)); backend/app/core/security.py adds get_db_for_user dependency so every
+  # downstream domain handler just `Depends(get_db_for_user)`. backend/app/core/config.py adds
+  # supabase_anon_key (non-secret; PostgREST apikey requirement). backend/tests/test_db_user_scoping.py
+  # (6 unit assertions, no network) + backend/tests/test_rls_smoke.py (live, skipped without staging
+  # creds). Unblocks: AUTH-05 (user-JWT vs service-key boundary now syntactically distinct), AUTH-06
+  # (verification gate becomes an RLS policy on farmarket.ads/secondserve.meals INSERT using has_role()),
+  # AUTH-07 (exhaustive role × table × verb matrix; the cross_role_isolation.sql pattern is the
+  # prototype), every domain table story (KAT-01/02/03, FAR-01..05, SEC-01..08, BOT-03, ADM-*). DoD
+  # flips to DONE on: staging cross-role drill (FARMER+RESTAURANT each see 1 profile row, cross-row
+  # PATCH returns 204 empty body, target row unchanged); `make -C db test-auth04` green on
+  # qyyxgdfetzjqfpygikbz; `bash scripts/verify-rls-enabled.sh` exits 0 with DB_URL=staging.
+  # 2026-05-15 — AUTH-03 LOCAL DONE: explicit jwt_expiry=3600 / enable_refresh_token_rotation=true /
+  # refresh_token_reuse_interval=10 in supabase/config.toml; AuthUser + get_current_user + require_role
+  # in backend/app/core/security.py (PyJWT, HS256, audience="authenticated"); 18 pytest assertions
+  # (full backend 37/37 green); scripts/verify-jwt-config.sh wired into CI `db` job + pre-commit local
+  # hook; runbook AUTH-03 section. IN_REVIEW pending Dashboard alignment + staging JWT decode drill.
+  # 2026-05-14 — INF-01 artifacts produced under infra/; awaiting VPS provisioning to flip to DONE.
+  # 2026-05-14 — INF-02 artifacts produced under db/ + supabase/; awaiting Supabase project creation to flip to DONE.
+  # 2026-05-14 — INF-02 DONE: live project qyyxgdfetzjqfpygikbz (eu-central-1, PG17); `make -C db verify` 13/13, `make -C db smoke` 4/4.
+  # 2026-05-14 — INF-03 scaffold landed under frontend/ (Next.js 15 / React 19 / Tailwind v4, @supabase/ssr auth, server actions for register+login, middleware-gated /dashboard, Dockerfile, NGINX proxy_pass on `/`).
+  # 2026-05-14 — INF-03 LOCAL DONE: typecheck/lint/build clean; dev server smoke green; data-plane E2E against live Supabase (admin-create → password grant → owner-RLS profile read → cross-user read denied → role-immutability trigger blocks self-promote → full_name edit allowed → cleanup). VPS verification deferred to INF-01 sign-off (no extra changes expected: `make -C infra deploy && make -C infra verify` is the remaining gate).
+  # 2026-05-14 — INF-03 patched an upstream INF-02 RLS defect: `profiles_update_own.WITH CHECK` and `profiles_select_admin.USING` both self-referenced `public.profiles`, causing PG 42P17 infinite recursion on any user-token SELECT. Fix shipped as db/migrations/0005_profiles_rls_recursion_fix.sql — SECURITY DEFINER `public.is_admin()` helper + BEFORE UPDATE trigger `enforce_profile_immutability` that gates role/verification_status against the JWT role. Applied to qyyxgdfetzjqfpygikbz; verified via the post-fix smoke above.
+  # 2026-05-14 — INF-01 hardening pass (artifacts only; VPS still un-provisioned, status stays IN_PROGRESS):
+  #   * bootstrap-vps.sh: idempotent UFW (removed `--force reset` foot-gun that wiped AUTH-08 rules on re-run); tightened sshd (MaxAuthTries=3, LoginGraceTime=20, ClientAlive*, X11=no); journald capped 500M; explicit unattended-upgrades policy (security only, no auto-reboot — demo stability); visudo -c on sudoers fragment; die-on-non-Ubuntu; full output teed to /var/log/vitachain-bootstrap.log; swap presence asserted post-creation.
+  #   * deploy.sh: ERR trap with line numbers; pre-flight `nginx -t` in a throwaway container BEFORE swap so a bad conf.d/*.conf no longer takes the site down; removed nonexistent --ignore-pull-failures flag; health gate 60s→180s (accommodates INF-03 first-build); now also rsyncs backend/ (INF-04).
+  #   * verify.sh: DNS check skipped when VPS_HOST is still an IP literal (IP→DNS transition window).
+  #   * NEW infra/scripts/preflight.sh + `make -C infra preflight`: workstation sanity (ssh/rsync/curl/dig/ssh-key/.env/SSH connectivity).
+  #   * NEW `make -C infra nginx-test`: local nginx -t in nginx:1.27-alpine without any persistent container.
+  #   * smoke-local: now nginx-only (removed `--env-file /dev/null` which broke once Supabase build-args appeared in compose).
+  #   * Runbook: rollback procedure, snapshot policy table (weekly + pre-demo), NGINX vhost cheatsheet, expanded common-failure-modes table.
+  # 2026-05-14 — INF-04 LOCAL DONE: backend/ scaffold + tests + Docker image + compose+NGINX integration. Standalone gunicorn smoke green
+  # (7 health routes, X-Request-Id, /readyz=503 on unreachable Supabase, /api/v1/docs); ruff clean; pytest 8/8; AUTH-05 boundary clean.
+  # Bug caught: CORS_ALLOW_ORIGINS CSV→list parsing (pydantic-settings JSON-decode), fixed + regression test added.
+  # VPS half deferred to INF-01 sign-off (same convention as INF-03). Unblocks: AUTH-05, INF-05, INF-08, NOT-01, KAT-03+, FAR-03+, SEC-04+, BOT-04, ADM-02.
+  # 2026-05-14 — INF-05 LOCAL DONE: CI scaffolding under .github/workflows/ci.yml + .pre-commit-config.yaml + .yamllint.yml + .gitleaks.toml
+  # + scripts/check-secrets-boundary.sh + top-level Makefile + CONTRIBUTING.md. Five CI jobs (frontend / backend / db / infra / secret-leak)
+  # gated behind a single `ci-required` aggregator so branch protection only ever targets one check. Path-filtered: untouched trees go to
+  # `skipped`, counted as success by the aggregator. Pre-commit/pre-push split: ruff + eslint + shellcheck + hadolint + yamllint + hygiene
+  # on every commit; tsc + pytest on push only (heavier, would-be-disabled-otherwise). Shared AUTH-05 boundary script enforces PRD §7.1 from
+  # four call sites (pre-commit, pre-push, CI's `secret-leak` job, infra/scripts/verify.sh — slimmed down accordingly, INF-04 inline greps
+  # removed). Boundary script smoke green (3/3 ✓) on clean tree; negative tests (planted service-role ref + planted NEXT_PUBLIC_) both
+  # exit 1 with precise file:line. GitHub-side verification (first PR green; `ci-required` reports green; branch-protection rule enabled
+  # via the docs/runbook.md walkthrough) deferred to repo creation — env reports `Is a git repository: false`. Same convention as INF-01/03/04.
+  # Unblocks: AUTH-05 (boundary is now merge-blocking, not just a runtime probe), AUTH-07 (RLS suite plugs into the existing `backend`+`db`
+  # jobs without workflow surgery), every downstream Must story (lint + tests + secrets gate). Status flips to DONE when the first PR opens
+  # against `main` on GitHub and `ci-required` reports green — no further code change expected.
+  # 2026-05-14 — INF-06 LOCAL DONE (artifacts only; phase-P3 work pulled forward to land alongside INF-01/03/04/05):
+  #   * infra/nginx/conf.d/tls.conf — new Mozilla-intermediate TLS profile (TLSv1.2+1.3, OCSP stapling, 1-day session
+  #     cache, tickets off, 1.1.1.1/1.0.0.1 resolver). Included from the :443 server block.
+  #   * infra/nginx/conf.d/default.conf — :80 shrunk to ACME challenge + 301-to-https (plus a tiny /healthz for the
+  #     docker healthcheck); :443 ssl http2 is now the sole app listener with HSTS (1y + includeSubDomains + preload,
+  #     `always`), X-Content-Type-Options, X-Frame-Options DENY, Referrer-Policy, an explicit `# AUTH-08 — RATE LIMITS
+  #     HERE` insertion point, and the existing /api/v1/ + / proxy_pass blocks moved across verbatim.
+  #   * infra/docker-compose.yml — nginx grows `443:443` + two ro mounts (letsencrypt_etc, letsencrypt_www); new
+  #     `certbot` sidecar (certbot/certbot:v3.0.1 — TODO swap to a sha256 digest before first prod issue, story §5.2);
+  #     top-level `volumes:` block names both letsencrypt_* volumes.
+  #   * infra/scripts/issue-cert.sh — idempotent, STAGING-default; `LETSENCRYPT_PROD=1` opt-in + interactive YES
+  #     confirm; short-circuits when a live cert already exists; uses --webroot against /var/www/certbot.
+  #   * infra/scripts/renew-cert.sh — host-cron entrypoint with explicit PATH; --deploy-hook reloads nginx without
+  #     restarting the container; optional HEALTHCHECKS_RENEW_URL ping; logs to /var/log/vitachain-renew.log.
+  #   * infra/scripts/bootstrap-vps.sh — new step 12 installs /etc/cron.d/vitachain-cert-renew (23 0,12 * * *) and
+  #     pre-creates the log file with deploy-user ownership; numbering bumped (summary step is now 13).
+  #   * infra/.env.example — NEXT_PUBLIC_SITE_URL=https://…; CORS_ALLOW_ORIGINS adds both apex+www over https;
+  #     new ADMIN_EMAIL + DOMAINS + commented-out HEALTHCHECKS_RENEW_URL.
+  #   * infra/scripts/verify.sh — new "INF-06 verification (TLS)" block: 14 checks (TLS handshake, 301 redirect,
+  #     Location header, ACME path stays unencrypted, https /healthz, HSTS header shape, X-CTO + X-Frame-Options,
+  #     issuer=Let's Encrypt + ¬staging, notAfter ≥ 30d, TLSv1.1 refused, www-SAN, https frontend + backend,
+  #     cron entry exists, `certbot renew --dry-run`). Entire block is *skipped* when VPS_HOST is an IP literal,
+  #     same convention as the existing DNS check.
+  #   * infra/Makefile — new targets: issue-cert (staging), issue-cert-prod (interactive prod confirm), renew-cert,
+  #     renew-cert-dryrun, cert-info, cert-delete (requires PRIMARY=…).
+  #   * docs/runbook.md — new "HTTPS — first-time issuance (INF-06)" section with the chicken-and-egg dance,
+  #     renewal incident playbook, HSTS preload checklist, subdomain-addition recipe, ACME account-rotation note.
+  # VPS half deferred to INF-01 sign-off (same convention as INF-03/04/05). When DONE, unblocks: AUTH-08
+  # (rate-limit insertion point already labelled in the :443 block), INF-08 (Sentry/Uptime Kuma probes target
+  # https from day 1), SEC-03 (browser geolocation requires a secure origin), all NOT-* magic-link templates
+  # (no mixed-content), every QG-* load test (exercises the production TLS terminator). Status stays TODO —
+  # DoD gate is `make -C infra verify` green from a real VPS, which needs INF-01 to flip first; the manual
+  # Supabase Dashboard URL update (story §5.8) also gates DoD.
+  # 2026-05-14 — INF-07 LOCAL DONE (artifacts only; VPS deployment + first-cron-fired ping + restore drill gate DoD):
+  #   * infra/db-backup/Dockerfile — postgres:17-alpine + pinned rclone v1.68.2 (curl-installed from
+  #     downloads.rclone.org) + bash + coreutils. One image = one ENTRYPOINT = one `set -euo pipefail`
+  #     boundary so dump and upload share an atomic success condition.
+  #   * infra/scripts/backup-entrypoint.sh — runs INSIDE the sidecar. 5 steps:
+  #       (1) pg_dump --format=plain --no-owner --no-acl --quote-all-identifiers, excluding all Supabase
+  #           internal schemas (storage, graphql*, net, pgsodium*, vault, _realtime/realtime,
+  #           supabase_functions) → gzip -9 to a .partial → atomic mv; sanity floor at < 1 KB compressed.
+  #       (2) sha256sum sibling file (sha256sum -c compatible).
+  #       (3) rclone copy of both dump + sha256 to b2:$BUCKET/$REMOTE_PATH/ with retries.
+  #       (4) round-trip — rclone cat the remote sha256 and assert byte-equal to the local digest. Catches
+  #           silent in-flight corruption; one extra GET per night.
+  #       (5) retention prune AT THE END only (so a failed run never reduces the existing backup floor):
+  #           local find -mtime +$BACKUP_RETENTION_LOCAL_DAYS, then rclone delete --min-age 30d on B2.
+  #   * infra/scripts/backup-db.sh — HOST cron entrypoint. Exports a known-good PATH (cron's default is
+  #     minimal), sources infra/.env, runs the sidecar via `docker compose run --rm`, pings
+  #     $HEALTHCHECKS_BACKUP_URL ONLY on rc=0 (per spec §4.6.7 the ping FOLLOWS the success log line),
+  #     posts the last 20 log lines to $ALERT_WEBHOOK_URL (Discord-shaped JSON; works for Slack
+  #     incoming-webhook too) on rc≠0. All output teed to /var/log/vitachain-backup.log.
+  #   * infra/scripts/restore-db.sh — drill driver. Refuses production target unless RESTORE_TARGET_IS_PROD=1
+  #     AND an interactive "YES, OVERWRITE PRODUCTION" is typed. Supports BACKUP_FILE=latest (rclone lsf →
+  #     sort → tail -n1). Fetches via rclone copy if not already in /backups, sha256-verifies, then
+  #     gunzip | psql --single-transaction -v ON_ERROR_STOP=on so a partial restore is impossible.
+  #   * infra/docker-compose.yml — new `db-backup` service (build: ./db-backup, image: vitachain/db-backup:1.0
+  #     TODO swap to sha256 digest after first push; restart: "no"; not on vita_net — only outbound
+  #     to Supabase + B2; env injection; volumes: db_backups:/backups, rclone_config:/config/rclone, and
+  #     a ro bind-mount of scripts/backup-entrypoint.sh into /usr/local/bin/ so an operator can fix
+  #     a script bug without rebuilding the image). Top-level `volumes:` block names db_backups +
+  #     rclone_config.
+  #   * infra/scripts/bootstrap-vps.sh — new step 13 installs /etc/cron.d/vitachain-db-backup
+  #     (`0 2 * * * $DEPLOY_USER bash $PROJECT_DIR/infra/scripts/backup-db.sh`), pre-creates
+  #     /var/log/vitachain-backup.log (0640, deploy-user-owned) and /opt/vitachain/backups
+  #     (0750, deploy-user-owned). Summary step renumbered 13→14.
+  #   * infra/.env.example — new keys: SUPABASE_DB_URL (DIRECT URL on :5432, NOT the pooler :6543 —
+  #     pg_dump needs session-mode), BACKUP_BUCKET=vitachain-backups, BACKUP_REMOTE_PATH=postgres,
+  #     BACKUP_RETENTION_LOCAL_DAYS=7, BACKUP_RETENTION_REMOTE_DAYS=30, HEALTHCHECKS_BACKUP_URL,
+  #     ALERT_WEBHOOK_URL. All Bitwarden-sourced; never echoed.
+  #   * infra/scripts/verify.sh — new "INF-07 verification (DB backup)" block: 11 checks
+  #     (cron entry shape, log + dir ownership, rclone config in volume, ≥1 local backup, newest < 26h,
+  #     sha256 verifies, gunzip header is PostgreSQL database dump, newest mirrored on B2, no B2
+  #     backups > 31d (prune-working negative check), Healthchecks recent-ping status).
+  #   * infra/Makefile — new targets: backup-rclone-config (one-shot interactive ceremony),
+  #     backup-now, backup-list (10 local + 10 remote), backup-restore (drill — BACKUP_FILE + STAGING_DB_URL),
+  #     backup-logs, backup-prune-local.
+  #   * docs/runbook.md — new "Nightly DB backup — first-time setup (INF-07)" section: one-shots,
+  #     quarterly restore-drill ceremony + drill log table, selective-restore playbook, full-disaster
+  #     restore (cross-region), B2 application-key rotation, Healthchecks missed-ping playbook,
+  #     common-failure-modes table.
+  # DoD gate: (a) `make -C infra verify` INF-07 block green from a real VPS post-INF-01, (b) at least one
+  # cron-fired (not manually-forced) run lands a green Healthchecks ping, (c) a restore drill against a
+  # throwaway Supabase project completes and is recorded in the runbook drill log. Unblocks: FAR-01,
+  # SEC-01, SEC-04, BOT-03, KAT-03, ADM-02, AUTH-07, FAR-06, SEC-07 (every Phase-2 story that writes
+  # irrecoverable user content; ADM-02 because admin operators only feel safe flipping verification_status
+  # once a same-day rollback path exists).
+  # 2026-05-14 — INF-08 LOCAL DONE (artifacts only; VPS deployment + planted-event drills + forced-down drill gate DoD):
+  #   * Backend: backend/app/core/observability.py (sentry_sdk.init with FastApi+Starlette+Httpx+Logging
+  #     integrations, before_send PII scrubber for headers/body/email, prod-only drop of planted route,
+  #     dev/ci/missing-DSN no-op contract). main.py wires init_observability(app) BEFORE the first middleware
+  #     so FastApiIntegration wraps the outermost ASGI layer; mounts planted GET /api/v1/_sentry_test out-of-prod.
+  #     config.py adds sentry_dsn (SecretStr|None) + sentry_environment + sentry_traces_sample_rate
+  #     (env-tunable, defaults 'prod' + 0.1). requirements.in adds sentry-sdk[fastapi]>=2.18,<3.0.
+  #     tests/test_sentry.py — 11 tests covering header/body/email scrubbing, prod-drop / staging-keep of
+  #     planted route, init no-op (dev/ci/missing-DSN) and init kwargs.
+  #   * Frontend: sentry.{client,server,edge}.config.ts — three runtime configs; Replay OFF (PII +
+  #     bundle weight); BrowserTracing ON at 0.1; env-gated on NEXT_PUBLIC_VITACHAIN_ENV != 'dev'.
+  #     next.config.ts wrapped with withSentryConfig (source maps uploaded only when SENTRY_AUTH_TOKEN is
+  #     set — CI-only; deleteSourcemapsAfterUpload=true; telemetry=false).
+  #     src/app/__sentry-test/page.tsx — planted client button; renders Next 404 if NEXT_PUBLIC_VITACHAIN_ENV=prod.
+  #     package.json — @sentry/nextjs ^8.41.0.
+  #   * Infra: docker-compose.yml — new uptime_kuma service (louislam/uptime-kuma:1.23.16 — TODO swap to
+  #     sha256 after first prod, mirrors INF-06/07 pinning convention), :3001 exposed only on vita_net,
+  #     uptime_kuma_data named volume at /app/data, healthcheck on 127.0.0.1:3001. nginx grows the
+  #     nginx_htpasswd:/etc/nginx/htpasswd:ro mount. backend service gains SENTRY_DSN/SENTRY_ENVIRONMENT/
+  #     SENTRY_TRACES_SAMPLE_RATE runtime envs. frontend service+build gain NEXT_PUBLIC_SENTRY_DSN +
+  #     NEXT_PUBLIC_VITACHAIN_ENV + NEXT_PUBLIC_GIT_SHA (build-arg + runtime). New top-level volumes:
+  #     uptime_kuma_data + nginx_htpasswd.
+  #     nginx/conf.d/default.conf — new vita_uptime_kuma upstream; :443 gains `location /uptime/` with
+  #     basic-auth against /etc/nginx/htpasswd/uptime.htpasswd, proxy_pass with WebSocket upgrade headers
+  #     and 24h proxy_read_timeout for Kuma's live charts.
+  #   * .env.example — 5 new keys (SENTRY_DSN_BACKEND, NEXT_PUBLIC_SENTRY_DSN, SENTRY_ENVIRONMENT=prod,
+  #     SENTRY_TRACES_SAMPLE_RATE=0.1, UPTIME_KUMA_ADMIN_USER=admin, UPTIME_KUMA_ADMIN_PASSWORD_HASH,
+  #     UPTIME_KUMA_BREVO_API_KEY). SENTRY_AUTH_TOKEN deliberately omitted — CI-only, paste into the
+  #     GitHub Actions environment NOT the VPS .env.
+  #   * verify.sh — new INF-08 block: 6 checks (uptime_kuma healthy; /uptime/ proxied; planted route
+  #     500-in-staging / 404-in-prod; /uptime/ basic-auth 401-without-creds; AUTH-05 boundary re-run
+  #     post-INF-08 env additions; ALERT_WEBHOOK_URL smoke when set). TLS-anchored checks skipped when
+  #     VPS_HOST is an IP literal — same convention as the INF-06 block.
+  #   * Makefile — 8 new targets: observability-up, observability-htpasswd (USER+PASS via throwaway
+  #     httpd:alpine — no apache2-utils dep on dev laptop), observability-seed-htpasswd (one-shot —
+  #     seeds the named volume + nginx -s reload), sentry-test-backend (refuses on prod VPS_HOST),
+  #     sentry-test-frontend (prints staging URL), uptime-logs, uptime-export, uptime-import
+  #     (interactive YES confirm).
+  #   * docs/runbook.md — 5 new sections: first-time setup + 5-monitor table + notification setup;
+  #     "alert is firing" playbook; "alert is too noisy" tuning; Sentry quota-exceeded playbook;
+  #     Kuma config recovery (export/import + volume-loss recipe).
+  # DoD gate: (a) `make -C infra verify` INF-08 block green from real VPS post-INF-01/06; (b) planted
+  # backend + frontend events both land as separate Sentry Issues within 60s with correct environment +
+  # release + request_id tags; (c) forced `docker compose stop backend` produces a Discord/Telegram DOWN
+  # message within 2 cycles and a recovery message within 1 cycle on start. Unblocks: AUTH-07 (RLS audit
+  # failures visible), QG-04/QG-05/QG-06 (error-rate + upstream signal sources), QG-07 (zero-downtime
+  # demo evidence), post-MVD on-call rota.
+  # 2026-05-15 — AUTH-01 LOCAL DONE: production-shaped signup policy landed.
+  #   * supabase/config.toml — explicit [auth] + [auth.email] + [auth.email.password] + [auth.rate_limit]
+  #     blocks (min_length=10, lower+upper+digit required, HIBP on, 4 sign-ups/h/IP, mailer_otp_exp=3600).
+  #     enable_confirmations stays OFF for MVD; runbook documents the post-MVD switch-back path.
+  #   * frontend/src/lib/auth/errors.ts — mapAuthError() switch over Supabase Auth v2 `error.code` strings
+  #     → stable AuthErrorKey union (email_taken | weak_password | rate_limited | invalid_input | network |
+  #     unknown). The `unknown` branch is the canary for new Supabase release codes.
+  #   * frontend/src/lib/auth/email-hash.ts — Web Crypto SHA-256 wrapper (Sentry breadcrumb fingerprint,
+  #     never the raw email).
+  #   * frontend/src/app/register/{schema.ts,actions.ts,page.tsx,password-hint.tsx} — schema extracted to
+  #     its own module (Next 15's "use server" forbids non-async exports); actions routes every Supabase
+  #     error through mapAuthError + Sentry breadcrumb + captureException-on-unknown; page reads ?error=<key>
+  #     and renders a localized FR banner (TODO(i18n) markers for I18N-02); PasswordHint client component
+  #     shows live ≥10/upper/lower/digit checklist.
+  #   * frontend/__tests__/auth/register.test.ts — 20 Vitest assertions covering each AuthErrorKey branch
+  #     + the schema's positive/negative cases (ADMIN rejection, bcrypt 72 ceiling, missing class, email
+  #     normalization, locale default). package.json gains `npm run test`, vitest + vite-tsconfig-paths
+  #     devDeps, and vitest.config.ts.
+  #   * db/tests/auth01_trigger.sql — 4×3 positive matrix + 2 negatives (bad role, bad locale → 22023);
+  #     wrapped in a txn that ROLLBACKs so live data is untouched. Wired into `make -C db test-auth01`
+  #     and into the `verify` chain.
+  #   * docs/runbook.md — new "AUTH-01 — signup operational notes" section (canonical policy table,
+  #     triage flow, force-resend recipe, Sentry expectations, post-MVD switch-back walkthrough).
+  # DoD gate flips to DONE on: (a) `supabase db push --linked --dry-run` reports no diff after the
+  # Dashboard Auth → Policies + Rate Limits screens are flipped to match config.toml; (b) `npm run test`
+  # green; (c) `make -C db test-auth01` green against qyyxgdfetzjqfpygikbz; (d) manual signup against
+  # staging produces auth.users + public.profiles rows and the three abuse paths each render the right
+  # banner; (e) Sentry shows one auth breadcrumb per signup attempt + one Issue tagged story=AUTH-01 for
+  # the planted-unknown drill. Unblocks: AUTH-02 (role assignment), AUTH-03 (JWT tuning meaningful only
+  # once at least one user can authenticate), AUTH-06 (KYC — flips verification_status on AUTH-01 rows),
+  # every domain story that gates by auth.uid() (KAT-*, FAR-*, SEC-*, ADM-*).
+  # 2026-05-15 — AUTH-02 LOCAL DONE: role contract hardened — TS↔SQL parity, no-ADMIN-self-signup, JWT claim hook.
+  #   * frontend/src/lib/auth/roles.ts — new single TS mirror of public.user_role: SELF_SIGNUP_ROLES
+  #     (FARMER|RESTAURANT|CITIZEN), ALL_ROLES (adds ADMIN for admin-side code: ADM-01, AUTH-06),
+  #     SelfSignupRole / UserRole types, ROLE_DESCRIPTIONS_FR (label + blurb per self-signup role,
+  #     TODO(i18n) → I18N-02). Collapses the three previous copies of the role set (zod, trigger,
+  #     enum) into one source of truth.
+  #   * frontend/src/app/register/schema.ts — `z.enum(SELF_SIGNUP_ROLES)` replaces the inlined literal.
+  #     The negative contract (`role:"ADMIN"` ⇒ safeParse.success=false) is preserved verbatim and
+  #     newly pinned by a Vitest case.
+  #   * frontend/src/app/register/role-picker.tsx — new client component. <fieldset> with three radio
+  #     cards (FARMER / RESTAURANT / CITIZEN), each showing the FR label + one-sentence blurb. Default
+  #     CITIZEN. Server FormData key unchanged (`role=…`); actions.ts contract intact.
+  #   * frontend/src/app/register/page.tsx — <select id="role"> replaced with <RolePicker/>; the rest
+  #     of the form is untouched.
+  #   * frontend/src/app/register/actions.ts — post-zod defensive recheck: if `role === "ADMIN"`
+  #     (unreachable via the schema but possible via a hand-crafted POST), fires Sentry.captureMessage
+  #     tagged story=AUTH-02, attack=admin_escalation, and redirects to /register?error=invalid_input.
+  #   * db/migrations/0006_auth02_jwt_role_hook.sql — `public.custom_access_token_hook(event jsonb)`,
+  #     SECURITY DEFINER stable, search_path locked to public,pg_temp. Reads profiles.role and writes
+  #     it onto claims.user_role; missing-profile path returns the event unchanged (Auth service
+  #     never 500s on a token issuance). GRANT EXECUTE to supabase_auth_admin (created idempotently
+  #     for the CI vanilla-Postgres path); REVOKE from public/anon/authenticated.
+  #   * db/migrations/0007_auth02_block_admin_self_signup.sql — patches handle_new_user() so ADMIN is
+  #     rejected (errcode 42501) unless the JWT role is `service_role`. Mirrors the immutability
+  #     guard's pattern from migration 0005. Lives in its own migration (0003 is DONE — append-only).
+  #   * supabase/config.toml — new [auth.hook.custom_access_token] block (enabled=true,
+  #     uri=pg-functions://postgres/public/custom_access_token_hook). The Dashboard slot is the
+  #     runtime activator; config.toml mirrors it for `supabase db push --linked` replay.
+  #   * db/tests/auth02_enum_parity.sql — pg_enum sorted-array equality check vs.
+  #     {ADMIN,CITIZEN,FARMER,RESTAURANT}; catches a silent enum widen.
+  #   * db/tests/auth02_jwt_role.sql — 4-role loop (FARMER/RESTAURANT/CITIZEN/ADMIN): admin-create a
+  #     user, call the hook with a synthetic event, assert claims.user_role matches. Plus the
+  #     missing-profile path (claim absent, event unchanged). Wrapped in begin…rollback. The ADMIN
+  #     leg sets `request.jwt.claims` to service_role so it passes through the 0007 guard.
+  #   * db/tests/auth02_no_admin_signup.sql — negative (anon-context ADMIN signup → 42501) + positive
+  #     (service-role ADMIN seed → profile row materializes) cases. Pins 0007's contract.
+  #   * db/Makefile — new `test-auth02` target (enum-parity + jwt-role + no-admin-signup); folded
+  #     into the existing `verify` chain alongside `test-auth01`.
+  #   * frontend/__tests__/auth/roles.test.ts — 9 Vitest assertions: SELF_SIGNUP_ROLES excludes ADMIN,
+  #     ALL_ROLES = SELF_SIGNUP_ROLES + ADMIN, ROLE_DESCRIPTIONS_FR covers every role, RegisterSchema
+  #     accepts each self-signup role, rejects ADMIN, rejects PRESIDENT (unknown enum).
+  #   * scripts/check-role-enum-parity.sh — greps frontend/src/lib/auth/roles.ts vs.
+  #     db/migrations/0001_extensions_and_enums.sql for the four role tokens, sorts each, fails CI on
+  #     diff. Wired into .github/workflows/ci.yml (`db` job, post-verify step) AND .pre-commit-config.yaml
+  #     (local hook, files-filtered to the two source files).
+  #   * docs/runbook.md — new "AUTH-02 — role assignment operational notes" section: canonical
+  #     contract table, ADMIN seed recipe (with the `set local request.jwt.claims` step), JWT-hook
+  #     verification, force-refresh playbook (single user + global), triage flow for "I cannot
+  #     publish/reserve/reach admin", role revoke playbook, Sentry expectations, common failure
+  #     modes table.
+  # DoD gate flips to DONE on: (a) `supabase db push --linked --dry-run` reports no diff after the
+  # Dashboard Authentication → Hooks → Custom Access Token slot is flipped ON with the matching URI;
+  # (b) `make -C db test-auth02` green against qyyxgdfetzjqfpygikbz (3 SQL files, all OK + ROLLBACK);
+  # (c) `npm run test` green (the 9 roles.test.ts assertions + the 20 pre-existing register.test.ts
+  # assertions); (d) `bash scripts/check-role-enum-parity.sh` exits 0 locally and the CI `db` job's
+  # parity step is green on the first AUTH-02 PR; (e) manual staging verification: radio picker
+  # renders, a freshly-issued JWT decoded at jwt.io contains `user_role`, the hand-crafted
+  # `curl -F role=ADMIN /register` attack returns 302 to /register?error=invalid_input AND produces
+  # a Sentry Issue tagged story=AUTH-02 attack=admin_escalation, and the service-role ADMIN seed
+  # (runbook §AUTH-02 "Seed an ADMIN user") produces a profiles row with role=ADMIN.
+  # Unblocks: AUTH-04 (RLS policies can now key on `(auth.jwt()->>'user_role') = '<ROLE>'` instead of
+  # joining to profiles — the recursion-safe pattern migration 0005 baked in for is_admin() now
+  # generalizes to every role), AUTH-06 (KYC — extends the hook with a second claim, verification_status),
+  # AUTH-07 (per-role RLS test matrix — auth02_jwt_role.sql's DO-LOOP is the prototype), ADM-01
+  # (admin shell — middleware check is one JWT-claim string comparison, no DB round-trip), every
+  # downstream module story that reads `auth.jwt()->>'user_role'` (KAT-*, FAR-*, SEC-*, BOT-05, ADM-*).
+  # 2026-05-15 — AUTH-03 LOCAL DONE: JWT contract hardened — explicit 1h access / 7d refresh / rotation,
+  # source-controlled intent + CI guard, and the canonical FastAPI auth surface (`AuthUser` + `get_current_user`
+  # + `require_role`) every downstream module endpoint will import.
+  #   * supabase/config.toml — `[auth]` block now carries the three PRD §7.1 keys explicitly:
+  #     `jwt_expiry = 3600`, `enable_refresh_token_rotation = true`, `refresh_token_reuse_interval = 10`.
+  #     (Renamed `refresh_token_rotation_enabled` → `enable_refresh_token_rotation` to match the
+  #     Supabase CLI spec; the previous key name was a no-op typo on hosted projects.) Dashboard
+  #     remains the runtime authority for refresh_token_expiry (604800 s — no config.toml key on the
+  #     hosted plan); flip happens during the IN_REVIEW → DONE drill.
+  #   * backend/app/core/security.py — replaced the AUTH-01 stub with the production surface:
+  #     `@dataclass(frozen=True, slots=True) AuthUser(id: UUID, role: Role|None, email: str|None)`;
+  #     `get_current_user()` extracts the bearer credential (HTTPBearer with `auto_error=False` so we
+  #     own the 401 vs 403 split — missing header is 401_missing_bearer_token, not the default 403);
+  #     PyJWT `jwt.decode()` with `algorithms=["HS256"]` and `audience="authenticated"` from settings;
+  #     explicit error detail strings (`token_expired`, `invalid_token`, `missing_sub`, `invalid_sub`)
+  #     that downstream Sentry rules + frontend retry logic key on. `require_role(*allowed)` is a
+  #     factory: 403_role_not_allowed for the wrong role, but expiry is checked first (the inner
+  #     `get_current_user` runs before the role gate) so an expired token surfaces as 401 even on a
+  #     role-gated route — the frontend redirect path needs the status code, not the body. Legacy
+  #     `app_metadata.role` / `user_metadata.role` shapes are still accepted alongside top-level
+  #     `user_role` for the AUTH-02 migration window.
+  #   * Sticking with `PyJWT[crypto]>=2.9,<3.0` (already pinned by AUTH-01) rather than the story's
+  #     `python-jose[cryptography]`. Both decode HS256 identically; adding a second JWT library
+  #     would just double the supply-chain surface for zero security gain.
+  #   * backend/tests/test_security.py — 18 assertions across three classes: TestGetCurrentUser
+  #     (valid → AuthUser; expired → 401 token_expired; wrong secret → 401 invalid_token; wrong
+  #     algorithm HS512 → 401 invalid_token; wrong audience → 401 invalid_token; missing sub → 401
+  #     missing_sub; non-UUID sub → 401 invalid_sub; no Authorization header → 401 missing_bearer_token;
+  #     malformed bearer → 401 invalid_token; legacy app_metadata.role shape still resolves);
+  #     TestRequireRole (correct role passes; wrong role → 403 role_not_allowed; ADMIN blocked by
+  #     FARMER gate; multi-role allow-list works for ADMIN|RESTAURANT; expired token on role-gated
+  #     route surfaces 401 not 403 — pins the inner-check ordering); TestJwtConfigConstants (the three
+  #     supabase/config.toml keys — pytest fails alongside scripts/verify-jwt-config.sh on drift).
+  #     pytest 18/18 green, full backend suite 37/37 green (no regressions in INF-04 / INF-08 tests).
+  #   * scripts/verify-jwt-config.sh — new POSIX guard. Greps the three PRD §7.1 keys out of
+  #     supabase/config.toml; when SUPABASE_JWT_SECRET is exported also asserts length ≥ 32 chars
+  #     (256-bit HS256 floor). Smoke green on clean tree (3× OK + 1× SKIP when secret unset); fails
+  #     deterministically with a 9-char planted secret (exit 1, precise error string).
+  #   * .github/workflows/ci.yml — new step `AUTH-03 — JWT config guard` in the `db` job (after the
+  #     AUTH-02 role-parity step), file-filtered by the existing `db` paths-filter (supabase/**).
+  #     The placeholder `SUPABASE_JWT_SECRET=ci-placeholder-jwt-secret-min-32-bytes-XXX` already in
+  #     the backend job env is sized to clear the length floor — no CI env change needed.
+  #   * .pre-commit-config.yaml — new local hook `auth-03-jwt-config`, files-filtered to
+  #     `^(supabase/config\.toml|backend/app/core/security\.py|scripts/verify-jwt-config\.sh)$` so it
+  #     only fires when the JWT contract touches.
+  #   * infra/.env.example — expanded the bare `SUPABASE_JWT_SECRET=` line with a multi-line comment
+  #     block distinguishing it from `SUPABASE_SERVICE_ROLE_KEY` (validation vs. bypass; ≥ 64 hex
+  #     chars; Bitwarden source path).
+  #   * docs/runbook.md — new "AUTH-03 — JWT configuration operational notes" section: authoritative
+  #     state table, secret-rotation procedure (generate → Bitwarden → Dashboard → force-logout via
+  #     `delete from auth.refresh_tokens` → VPS .env → verify → archive), single-user vs global
+  #     forced session invalidation, `refresh_token_reuse_interval` tuning rationale + the two
+  #     files that must move in lockstep, 401-spike triage flow (expired vs invalid vs startup
+  #     ValidationError), manual staging JWT decode drill (exp − iat == 3600, user_role present,
+  #     refresh rotation event), PyJWT upgrade checklist, common-failure-modes table.
+  # DoD gate flips to DONE on: (a) Dashboard alignment — Authentication → Configuration confirms
+  # JWT Expiry=3600, Refresh Token Expiry=604800, Refresh Token Rotation=Enabled; Settings → API
+  # confirms the JWT Secret is ≥ 64 hex chars (Bitwarden entry `VitaChain — Supabase JWT secret`
+  # updated/created); (b) `bash scripts/verify-jwt-config.sh` reports 3× OK + length OK on a
+  # workstation with the real secret in env; (c) `make -C backend test` green against
+  # qyyxgdfetzjqfpygikbz (the 18 AUTH-03 assertions + the 19 pre-existing health/sentry tests);
+  # (d) staging JWT decode drill (runbook §AUTH-03 "Manual staging JWT decode drill") shows
+  # `exp − iat == 3600`, `user_role` present, `aud == "authenticated"`, and a `token_refreshed`
+  # event lands in Auth Logs after a forced silent refresh.
+  # Unblocks: AUTH-04 (RLS — every backend route imports `get_current_user`; pass `user.id` to
+  # `auth.uid()` and the raw token to `postgrest-py.set_auth()` for the DB-side gate; `require_role`
+  # is the FastAPI-layer gate, RLS is the DB-layer gate, both must hold for defence in depth);
+  # AUTH-05 (service-key isolation — the user-JWT path through `get_current_user()` and the
+  # service-role path through `settings.supabase_service_role_key` are now syntactically distinct
+  # call sites; the AUTH-05 boundary script keys on the same split); AUTH-06 (KYC — extend
+  # `AuthUser` with `verification_status: str` and mirror `require_role()` as `require_verified()`);
+  # AUTH-07 (RLS audit — `tests/test_security.py::_make_token` is the canonical fixture for
+  # synthetic role tokens; the per-role decorator pattern is the prototype); AUTH-08 (NGINX rate
+  # limits on /auth/v1/token — the 1h access-token lifetime sets the calibration baseline);
+  # every domain story that protects a backend route (KAT-03 ingest, FAR-01–05 ads, SEC-01–08
+  # meals, BOT-04+ admin gates, ADM-01–02 admin shell, NOT-01 notifications): `user: AuthUser =
+  # Depends(get_current_user)` for any auth route, `Depends(require_role("FARMER"))` for role gates.
+
+# -----------------------------------------------------------------------------
+# Legend / Roll-up summary (update manually as work progresses)
+# -----------------------------------------------------------------------------
+summary:
+  total_epics: 8
+  total_stories: 60
+  done: 3
+  in_progress: 3     # INF-01 (VPS provisioning), INF-05 (CI — awaiting GitHub repo), INF-08 (artifacts ready; VPS drill gates DoD)
+  in_review: 9       # AUTH-01 / AUTH-02 / AUTH-03 / AUTH-04 / AUTH-05 (see prior notes); AUTH-06 (local DONE 2026-05-16; staging KYC drill gates DoD); AUTH-07 (local DONE 2026-05-16; full e2e matrix + every BR row activated gates DoD); AUTH-08 (local DONE 2026-05-16; §5.10 staging drill gates DoD); KAT-01 (local DONE 2026-05-16; staging round-trip gates DoD)
+  blocked: 0
+  todo: 45
+  current_phase: "Phase 1 — Build (Weeks 1–2)"
+  current_week: 1
+
+# -----------------------------------------------------------------------------
+# Phases (from PRD §12 Delivery Roadmap)
+# -----------------------------------------------------------------------------
+phases:
+  - id: P1
+    name: Build — Infrastructure & Auth
+    weeks: "1-2"
+    gate: "Any user can register with a role, log in, and reach a dashboard."
+    status: TODO
+  - id: P2
+    name: More — Core Features
+    weeks: "3-5"
+    gate: "ESP32 → dashboard; publish→reserve→validate; diagnostic email."
+    status: TODO
+  - id: P3
+    name: Architect — Security, Tests & Optimization
+    weeks: "6-7"
+    gate: "50 concurrent users < 200 ms median; RLS verified."
+    status: TODO
+  - id: P4
+    name: Dreams — Polish & Demo
+    weeks: "8"
+    gate: "3 demo scenarios rehearsed; backup video recorded."
+    status: TODO
+
+# -----------------------------------------------------------------------------
+# Epics & Stories
+# -----------------------------------------------------------------------------
+epics:
+
+  # ===========================================================================
+  - id: E0
+    name: Infrastructure & DevOps Foundation
+    phase: P1
+    description: VPS, Docker, NGINX, CI/CD, monitoring, backups.
+    owner: TBD
+    status: TODO
+    progress_pct: 0
+    stories:
+      - id: INF-01
+        title: Provision VPS + Docker + NGINX
+        priority: Must
+        status: IN_PROGRESS
+        acceptance: "curl http://vitachain.ma returns 200"
+        depends_on: []
+        # Artifacts ready under infra/. Flip to DONE once `make -C infra verify` is green.
+      - id: INF-02
+        title: Set up Supabase project + base schema + profiles table
+        priority: Must
+        status: DONE
+        acceptance: "Auth working; profiles row created on signup"
+        depends_on: [INF-01]
+        # Completed 2026-05-14. Live project ref qyyxgdfetzjqfpygikbz, region eu-central-1, PG17.
+        # `make -C db verify` 13/13; `make -C db smoke` 4/4 via admin-API path.
+        # 2026-05-14 — Defect surfaced by INF-03 owner-RLS read of public.profiles:
+        # `profiles_update_own.WITH CHECK` and `profiles_select_admin.USING` self-referenced
+        # the table, raising PG 42P17 (infinite recursion). Hotfix shipped under INF-03 as
+        # db/migrations/0005_profiles_rls_recursion_fix.sql. Future "RLS audit" story
+        # (AUTH-07) should add a regression test for this class of bug.
+      - id: INF-03
+        title: Next.js scaffold (frontend) with login/dashboard routes
+        priority: Must
+        status: DONE
+        acceptance: "Register → Login → empty dashboard journey works"
+        depends_on: [INF-02]
+        # 2026-05-14 — Scaffold under frontend/ (Next 15.1.6, React 19, Tailwind v4, @supabase/ssr 0.5.2).
+        # Auth journey via server actions; middleware-gated /dashboard; Dockerfile multi-stage standalone.
+        # NGINX vhost in infra/nginx/conf.d/default.conf proxies / → frontend:3000.
+        # 2026-05-14 — DONE on local DoD: typecheck/lint/build green; routes smoke green;
+        # data-plane E2E green (signup → profile row → owner-RLS read → escalation blocked → cleanup).
+        # In-flight INF-02 fix: db/migrations/0005 applied.
+        # VPS half of §6 (`make -C infra deploy && make -C infra verify`) deferred to when INF-01 reaches DONE — no further code change expected.
+      - id: INF-04
+        title: FastAPI backend scaffold + healthcheck endpoint
+        priority: Must
+        status: DONE
+        acceptance: "GET /healthz returns 200 behind NGINX"
+        depends_on: [INF-01]
+        # 2026-05-14 — Scaffold under backend/ (Python 3.12 / FastAPI 0.115 / Pydantic v2 / structlog).
+        # Routes: /api/v1/healthz, /readyz (Supabase REST+Auth probe, 503 if degraded), /version + per-module healthz
+        # for katara, farmarket, secondserve, botabaqa, notifications.
+        # Multi-stage Dockerfile (python:3.12-slim, non-root, tini, gunicorn -k uvicorn.workers.UvicornWorker, 2 workers).
+        # Compose `backend` service appended to infra/docker-compose.yml; NGINX vhost extended with /api/v1/ → vita_backend.
+        # verify.sh adds 8 INF-04 checks (backend healthy, /healthz, /readyz, 3 module healthz, NEXT_PUBLIC_ leak grep, JWT prefix grep).
+        # 2026-05-14 — LOCAL DONE: docker build (prod + test targets) ✓; ruff `All checks passed`; pytest 8/8 incl. CORS-CSV regression
+        # (caught a pydantic-settings JSON-decode bug on CORS_ALLOW_ORIGINS — fixed with NoDecode + field_validator);
+        # standalone gunicorn smoke: all 7 health routes return correct JSON; container HEALTHCHECK reports `healthy`;
+        # X-Request-Id round-trips; /readyz returns 503 + degraded checks on unreachable Supabase; /api/v1/docs exposed in dev.
+        # AUTH-05 boundary grep clean (no NEXT_PUBLIC_ in backend/*.py; no JWT prefix committed).
+        # VPS verification (compose + NGINX → backend through host port 80) deferred to INF-01 sign-off, same convention as INF-03 —
+        # `make -C infra deploy && make -C infra verify` runs the 8 INF-04 checks (verify.sh:55+). No further code change expected.
+      - id: INF-05
+        title: CI pipeline (GitHub Actions + pre-commit hooks)
+        priority: Must
+        status: IN_PROGRESS
+        acceptance: "First PR triggers lint + unit tests"
+        depends_on: [INF-03, INF-04]
+        # 2026-05-14 — Artifacts ready under .github/workflows/ci.yml, .pre-commit-config.yaml,
+        # .yamllint.yml, .gitleaks.toml, scripts/check-secrets-boundary.sh, Makefile, CONTRIBUTING.md.
+        # AUTH-05 boundary unified — verify.sh inlined greps replaced by a single delegated call.
+        # Local smoke: boundary script returns 3/3 ✓; planted-violation negative tests both exit 1.
+        # Flip to DONE once the GitHub repo exists and the first PR shows `ci-required` green
+        # (same convention as INF-01/03/04 awaiting their respective deployment gates).
+      - id: INF-06
+        title: HTTPS via Let's Encrypt (Certbot) on all domains
+        priority: Must
+        status: TODO
+        acceptance: "All routes serve over HTTPS; HSTS header set"
+        depends_on: [INF-01]
+        phase: P3
+      - id: INF-07
+        title: Nightly pg_dump backup → Backblaze B2 (30-day retention)
+        priority: Must
+        status: TODO
+        acceptance: "Healthchecks.io reports daily heartbeat"
+        depends_on: [INF-02]
+        # 2026-05-14 — LOCAL DONE (artifacts only; VPS DoD gates listed under project.last_updated):
+        # infra/db-backup/Dockerfile (postgres:17-alpine + pinned rclone v1.68.2);
+        # infra/scripts/backup-entrypoint.sh (pg_dump → gzip → sha256 → rclone copy →
+        #   round-trip sha256 check → end-of-run retention prune);
+        # infra/scripts/backup-db.sh (host wrapper — Healthchecks ping on success,
+        #   ALERT_WEBHOOK_URL on failure with last 20 log lines);
+        # infra/scripts/restore-db.sh (drill driver — refuses production unless
+        #   RESTORE_TARGET_IS_PROD=1 + interactive "YES, OVERWRITE PRODUCTION";
+        #   gunzip | psql --single-transaction -v ON_ERROR_STOP=on);
+        # docker-compose `db-backup` service (one-shot, restart: "no", isolated network,
+        #   db_backups + rclone_config volumes named);
+        # bootstrap-vps.sh new step 13 (cron /etc/cron.d/vitachain-db-backup at 02:00
+        #   Africa/Casablanca, /var/log/vitachain-backup.log 0640 deploy-user, /opt/vitachain/backups
+        #   0750 deploy-user); summary renumbered 13→14;
+        # .env.example new keys (SUPABASE_DB_URL DIRECT :5432 NOT pooler :6543, BACKUP_BUCKET,
+        #   BACKUP_REMOTE_PATH, BACKUP_RETENTION_{LOCAL,REMOTE}_DAYS=7/30, HEALTHCHECKS_BACKUP_URL,
+        #   ALERT_WEBHOOK_URL);
+        # verify.sh new INF-07 block (11 checks incl. cron schedule, log + dir ownership,
+        #   rclone config persisted, ≥1 local backup, newest < 26h, sha256 verifies, gunzip
+        #   header valid, newest mirrored on B2, B2 prune working, Healthchecks ping);
+        # Makefile targets: backup-rclone-config, backup-now, backup-list, backup-restore,
+        #   backup-logs, backup-prune-local;
+        # docs/runbook.md new section: first-time setup, quarterly drill + log table,
+        #   selective-restore, full-disaster (cross-region), B2 key rotation, missed-ping playbook.
+        # Status flips to DONE once: (a) make -C infra verify INF-07 block green from real VPS,
+        # (b) one cron-fired (not manually forced) run lands a green Healthchecks ping,
+        # (c) a restore drill against a throwaway Supabase project is recorded in the runbook log.
+      - id: INF-08
+        title: Sentry + Uptime Kuma observability
+        priority: Should
+        status: IN_PROGRESS
+        acceptance: "Errors visible in Sentry; uptime alerts in Telegram/Discord"
+        depends_on: [INF-03, INF-04]
+        phase: P3
+        # 2026-05-14 — LOCAL DONE (artifacts only; VPS deployment + planted-event
+        # drills + forced-down drill gate DoD per story §10):
+        #   * backend/app/core/observability.py — sentry_sdk.init wired with
+        #     FastApi+Starlette+Httpx+Logging integrations; before_send scrubs
+        #     Authorization/Cookie/apikey/X-Supabase-Auth headers + password/
+        #     service_role_key/device_api_key body keys + masks user.email +
+        #     extra.* string emails; drops planted /api/v1/_sentry_test events
+        #     in prod only. No-op guarded on environment in ("dev","ci") +
+        #     missing DSN. release=git_sha; traces_sample_rate env-tunable
+        #     (default 0.1); profiles off.
+        #   * backend/app/main.py — init_observability(app) called BEFORE the
+        #     first middleware so FastApiIntegration wraps the outermost ASGI
+        #     layer; planted GET /api/v1/_sentry_test mounted out-of-prod.
+        #   * backend/app/core/config.py — sentry_dsn (SecretStr|None),
+        #     sentry_environment (default "prod"), sentry_traces_sample_rate
+        #     (default 0.1) — all optional so dev still boots without keys.
+        #   * backend/requirements.in — sentry-sdk[fastapi]>=2.18,<3.0.
+        #   * backend/tests/test_sentry.py — 11 tests covering scrub of
+        #     Authorization/Cookie/apikey/X-Supabase-Auth headers, password +
+        #     device_api_key body, user.email + extra.* email masking, prod
+        #     drop / staging keep of the planted route, and init_observability
+        #     no-op contracts (dev/ci/missing-DSN) + init kwargs assertion.
+        #   * frontend/sentry.{client,server,edge}.config.ts — three runtime
+        #     configs; Replay OFF (PII + bundle weight); BrowserTracing ON at
+        #     0.1; env-gated on NEXT_PUBLIC_VITACHAIN_ENV != "dev".
+        #   * frontend/next.config.ts — withSentryConfig wrapper; source-map
+        #     upload conditional on SENTRY_AUTH_TOKEN (CI-only);
+        #     deleteSourcemapsAfterUpload=true; telemetry=false.
+        #   * frontend/src/app/__sentry-test/page.tsx — planted client button;
+        #     renders Next 404 if NEXT_PUBLIC_VITACHAIN_ENV=prod.
+        #   * frontend/package.json — @sentry/nextjs ^8.41.0 dep.
+        #   * infra/docker-compose.yml — new uptime_kuma service
+        #     (louislam/uptime-kuma:1.23.16 — TODO swap to sha256 after first
+        #     prod, mirrors INF-06/07 pinning convention); exposes :3001 only
+        #     on vita_net (no host port); uptime_kuma_data named volume at
+        #     /app/data; healthcheck against 127.0.0.1:3001. nginx grows the
+        #     nginx_htpasswd:/etc/nginx/htpasswd:ro mount. backend service
+        #     gains SENTRY_DSN/SENTRY_ENVIRONMENT/SENTRY_TRACES_SAMPLE_RATE
+        #     runtime envs. frontend service+build gain NEXT_PUBLIC_SENTRY_DSN
+        #     + NEXT_PUBLIC_VITACHAIN_ENV + NEXT_PUBLIC_GIT_SHA (build-arg +
+        #     runtime). Top-level volumes adds uptime_kuma_data +
+        #     nginx_htpasswd.
+        #   * infra/nginx/conf.d/default.conf — new vita_uptime_kuma upstream;
+        #     :443 server gains a `location /uptime/` block with basic-auth
+        #     against /etc/nginx/htpasswd/uptime.htpasswd, proxy_pass to the
+        #     Kuma upstream, WebSocket Upgrade/Connection headers + 24h
+        #     proxy_read_timeout for live charts.
+        #   * infra/.env.example — 5 new keys (SENTRY_DSN_BACKEND,
+        #     NEXT_PUBLIC_SENTRY_DSN, SENTRY_ENVIRONMENT=prod,
+        #     SENTRY_TRACES_SAMPLE_RATE=0.1, UPTIME_KUMA_ADMIN_USER=admin,
+        #     UPTIME_KUMA_ADMIN_PASSWORD_HASH, UPTIME_KUMA_BREVO_API_KEY).
+        #     SENTRY_AUTH_TOKEN deliberately omitted — CI-only.
+        #   * infra/scripts/verify.sh — new INF-08 block: 6 checks
+        #     (uptime_kuma healthy; /uptime/ proxied; planted backend route
+        #     500-in-staging / 404-in-prod; /uptime/ basic-auth 401-without-
+        #     creds; AUTH-05 boundary re-run post-INF-08 env additions;
+        #     ALERT_WEBHOOK_URL smoke when set).
+        #   * infra/Makefile — 8 new targets: observability-up,
+        #     observability-htpasswd (USER+PASS via throwaway httpd:alpine —
+        #     no apache2-utils dep on dev laptop), observability-seed-htpasswd
+        #     (one-shot — seeds the named volume + nginx -s reload),
+        #     sentry-test-backend (refuses on prod VPS_HOST), sentry-test-
+        #     frontend (prints staging URL), uptime-logs, uptime-export,
+        #     uptime-import (interactive YES confirm).
+        #   * docs/runbook.md — 5 new sections: first-time setup walkthrough +
+        #     5-monitor table + notification setup; "alert is firing" playbook;
+        #     "alert is too noisy" tuning; Sentry quota-exceeded playbook;
+        #     Kuma config recovery (export/import + volume-loss recipe).
+        # DoD gate: (a) `make -C infra verify` INF-08 block green from a real
+        # VPS post-INF-01/06; (b) planted backend + frontend events both land
+        # as separate Sentry Issues within 60s with correct environment +
+        # release + request_id tags; (c) forced `docker compose stop backend`
+        # produces a Discord/Telegram DOWN message within 2 cycles and a
+        # recovery message within 1 cycle on start. Unblocks: AUTH-07 (RLS
+        # audit failures now visible), QG-04/QG-05/QG-06 (load + email tests
+        # have error-rate + upstream signal sources), QG-07 (zero-downtime
+        # demo evidence), post-MVD on-call rota.
+
+  # ===========================================================================
+  - id: E1
+    name: Authentication, Authorization & Roles (Cross-cutting)
+    phase: P1
+    description: PRD §7.1 — Supabase Auth, JWT, RLS, role gating, KYC-lite.
+    owner: TBD
+    status: TODO
+    progress_pct: 0
+    stories:
+      - id: AUTH-01
+        title: Email/password registration via Supabase Auth
+        priority: Must
+        status: IN_REVIEW    # local DONE 2026-05-15; flips DONE after staging verification + Sentry drill
+        acceptance: "User can register with email + password"
+        depends_on: [INF-02]
+      - id: AUTH-02
+        title: Role assignment at registration (FARMER/RESTAURANT/CITIZEN/ADMIN)
+        priority: Must
+        status: IN_REVIEW    # local DONE 2026-05-15; flips DONE after Dashboard hook activation + staging JWT decode drill
+        acceptance: "Role persisted on profile; visible in JWT claims"
+        depends_on: [AUTH-01]
+      - id: AUTH-03
+        title: JWT config — 256-bit secret, 1h access / 7d refresh
+        priority: Must
+        status: IN_REVIEW    # local DONE 2026-05-15; flips DONE after Dashboard alignment (jwt_expiry=3600, refresh_token_expiry=604800, rotation=ON, secret ≥64 hex) + staging JWT decode drill
+        acceptance: "Token expirations enforced; rotation works"
+        depends_on: [AUTH-01]
+      - id: AUTH-04
+        title: Enable RLS on all sensitive tables
+        priority: Must
+        status: IN_REVIEW    # local DONE 2026-05-15; flips DONE after staging cross-role drill (FARMER+RESTAURANT each see 1 profile row, cross-row PATCH returns 204 with empty body) + `make -C db test-auth04` green on linked project + `bash scripts/verify-rls-enabled.sh` exits 0 against staging DB.
+        acceptance: "Cross-role access denied; service key isolated to backend"
+        depends_on: [INF-02]
+      - id: AUTH-05
+        title: Service Key isolated to FastAPI containers only
+        priority: Must
+        status: IN_REVIEW    # local DONE 2026-05-15; flips DONE after the injection-drill PR `chore/auth-05-drill` runs CI red on both legs (process.env.SUPABASE_SERVICE_ROLE_KEY reference + swapped infra/.env.sample) and both run URLs are recorded in docs/runbook.md §AUTH-05 drill table; drill branch then force-deleted from origin.
+        acceptance: "Service key not in frontend bundle; .env check in CI"
+        depends_on: [INF-04]
+      - id: AUTH-06
+        title: Professional KYC-lite — doc upload + admin verification flow
+        priority: Must
+        status: IN_REVIEW    # local DONE 2026-05-16; flips DONE after staging end-to-end drill (PENDING farmer 403s on FAR-01 drill INSERT → admin approve → re-issued JWT carries verification_status=VERIFIED → same INSERT returns 201) + `make -C db test-auth06` green on linked project + Brevo dispatch confirmed in NOT-01 staging.
+        acceptance: "verification_status gate blocks unverified create-ad/publish-meal"
+        depends_on: [AUTH-02]
+      - id: AUTH-07
+        title: RLS audit + business rule test suite
+        priority: Must
+        status: IN_REVIEW    # local DONE 2026-05-16; flips DONE after (a) the 22-cell e2e matrix is green against staging via `scripts/verify-rls-matrix.sh` with SUPABASE_URL set, (b) every BR coverage row in docs/runbook.md §AUTH-07 has activated (no SKIP notices) — gated on KAT-01..05/FAR-01..06/SEC-01..08/BOT-03..05 merges, (c) the main-branch CI run that includes the e2e leg is green and its URL is recorded in runbook §AUTH-07 Demo runs.
+        acceptance: "All BR-K1..BR-S4 pass; no cross-role leaks"
+        depends_on: [AUTH-04]
+        phase: P3
+      - id: AUTH-08
+        title: NGINX rate limiting on public endpoints
+        priority: Must
+        status: IN_REVIEW    # local DONE 2026-05-16; flips DONE after the §5.10 staging drill is recorded in runbook.md drill log with a green `make -C infra bench-rate-limits` output captured from a non-whitelisted IP against the live VPS, AND `make -C infra verify` shows the 14-check AUTH-08 block green. Artefacts shipped: infra/nginx/templates/00-rate-limits.conf.template (7 limit_req_zone + 2 limit_conn_zone + geo whitelist + 3 maps), default.conf patch (block-level limit_conn + 14 location blocks with per-bucket limit_req + branded 429 page), infra/nginx/snippets/{proxy-backend,limit-headers}.conf, infra/nginx/html/429.html (FR/AR/EN), infra/scripts/bench-rate-limits.sh (8 hey scenarios), verify.sh AUTH-08 block (14 checks), Makefile targets (bench-rate-limits / bench-rate-limits-dryrun / rate-limit-tail / rate-limit-reload), docker-compose.yml nginx env (VPS_PUBLIC_IP, RATELIMIT_WHITELIST_IPS_NGINX_LINES, NGINX_ENVSUBST_* + templates/snippets mounts), deploy.sh remote CSV→multi-line expansion of RATELIMIT_WHITELIST_IPS, .env.example keys (VPS_PUBLIC_IP, RATELIMIT_WHITELIST_IPS), nginx/conf.d/.gitignore for rendered file, runbook §"AUTH-08 — Rate limits & abuse playbook".
+        acceptance: "limit_req_zone enforced; brute-force blocked"
+        depends_on: [INF-01]
+        phase: P3
+
+  # ===========================================================================
+  - id: E2
+    name: M1 Katara — Smart Irrigation & IoT
+    phase: P2
+    description: PRD §6.1 — Parcels, ESP32 telemetry, dashboard, alerts, AI diagnostic.
+    owner: TBD
+    status: IN_PROGRESS
+    progress_pct: 100   # KAT-01..14 IN_REVIEW (14/14) — E2 is feature-complete for MVD. KAT-14 (multi-parcel UI) added the read-only m1_katara_farmer_parcels_overview view (migration 0028), the /api/v1/katara/farmers/me/overview aggregator endpoint, the /dashboard/farmer KPI strip + parcel grid + empty-state, the <ParcelSwitcher> on the parcel detail page header with the PARCEL_SCOPED_PARAMS / PRESERVABLE_PARAMS allow-list contract, and the K-14a/b AUTH-07 cells (cross-farmer RLS isolation + column allow-list) — all without touching any existing table, RLS policy, or per-parcel endpoint (pure read-only composition over KAT-01/04/05/11/13 surfaces, with KAT-13 §10 hand-off #1 pre-blessing the per-parcel-calls-compose-without-backend-change pattern).
+    stories:
+      - id: KAT-01
+        title: Farmer registers a parcel (GeoJSON polygon, crop, surface)
+        priority: Must
+        status: IN_REVIEW    # local DONE 2026-05-16; flips DONE after migration 0016 applied on linked Supabase project, staging round-trip (VERIFIED FARMER POST → 201 → GET list returns it; PENDING FARMER 403 verification_required; RESTAURANT 403 role_not_allowed; cross-farmer RLS isolation green) and AUTH-07 m1_katara_parcels SKIP notices replaced in `make -C db test-auth07` output. Artefacts: db/migrations/0016_kat01_katara_parcels.sql (5 RLS policies); backend/app/modules/katara/{schemas,router}.py (5 endpoints + GeoJSON Polygon/MultiPolygon/Feature validator); backend/tests/test_kat01_parcels.py (25 unit + auth-contract tests, all green); frontend/src/app/dashboard/farmer/parcels/{page.tsx,actions.ts,new/page.tsx,new/new-parcel-form.tsx} (list, server-action proxy to FastAPI, registration form with bilingual error copy); dashboard entry-point added on /dashboard for FARMER role.
+        actor: FARMER
+        acceptance: "Parcel persisted with valid GeoJSON; listed on dashboard"
+        depends_on: [AUTH-06]
+      - id: KAT-02
+        title: Farmer pairs an ESP32 to a parcel via device API key
+        priority: Must
+        status: IN_REVIEW    # local DONE 2026-05-16; flips DONE after migration 0017 applied on linked Supabase project, staging round-trip (VERIFIED FARMER POST → 201 returns plaintext vk_… once; second pair on same parcel → 409 device_already_paired; PENDING FARMER 403 verification_required; RESTAURANT 403 role_not_allowed; cross-farmer 404; rotate-key invalidates the old key via public.verify_device_api_key; DELETE with no telemetry 204; KAT-01 parcel DELETE with a linked device 409 parcel_has_device_unpair_first) and AUTH-07 m1_katara_devices SKIP notices replaced in `make -C db test-auth07`. Artefacts: db/migrations/0017_kat02_katara_devices.sql (enum device_status + table + BR-K1 partial unique indexes + 5 RLS policies + public.verify_device_api_key SECURITY DEFINER helper grant→service_role); backend/app/core/api_keys.py (vk_<32 hex> generator + bcrypt cost-10 hash + last4 helper); backend/app/modules/katara/schemas.py (DevicePair / DevicePairResponse / DeviceOut); backend/app/modules/katara/devices.py (4 endpoints: pair / list / rotate-key / unpair with telemetry-presence guard); backend/app/modules/katara/router.py (delete_parcel FK-violation → 409); backend/requirements.in (bcrypt ^4.2 pinned); backend/tests/test_kat02_devices.py (25 unit + auth-contract tests, all green); frontend/src/app/dashboard/farmer/parcels/[id]/{page.tsx,actions.ts,DevicesSection.tsx} (parcel detail page + server-action proxy + client pairing/rotate modals with single-use plaintext reveal + confirm-checkbox gate).
+        actor: FARMER
+        acceptance: "Device linked; BR-K1 enforced (1 device ↔ 1 parcel)"
+        depends_on: [KAT-01]
+      - id: KAT-03
+        title: ESP32 telemetry ingestion endpoint (15-min cadence)
+        priority: Must
+        status: IN_REVIEW    # local DONE 2026-05-16; flips DONE after migration 0018 applied on linked Supabase project, staging Locust run (50 users / 60 s; p50 < 50 ms, p99 < 150 ms, 0 failures with ingest_stats.csv URL captured), and AUTH-07 m1_katara_telemetry SKIP notices replaced (BR-KAT03 A..E green: service-role ingest fills owners + flips device PENDING -> ACTIVE + stamps last_seen; forged api_key -> NULL; UNLINKED device blocked at verify_device_api_key; no future-ts DB CHECK so Pydantic is the sole enforcing seam; FARMER-B sees 0 rows of FARMER-A telemetry under authenticated role). Artefacts: db/migrations/0018_kat03_katara_telemetry.sql (table + composite (device_id, recorded_at DESC) + parcel covering index + (device_id, recorded_at) dedup unique + FORCE-RLS owner-only select policies + denorm trigger filling parcel_id/farmer_id from m1_katara_devices + NOTIFY 'katara_telemetry_inserted' for KAT-06 worker + m1_katara_devices_touch_after_ingest helper flipping status + stamping last_seen + m1_katara_telemetry_latest lateral-join view + SECURITY DEFINER m1_katara_ingest wrapper grant->service_role only); backend/app/modules/katara/schemas.py (TelemetryPayload with soil_pH alias + 60s future-ts guard + per-field range mirroring DB CHECKs); backend/app/modules/katara/ingest.py (one-RPC handler returning 204 No Content with X-Telemetry-Id header + constant invalid_device_credentials error string for both unknown-device and bad-key cases); backend/app/main.py (router wired at /api/v1/katara/ingest); backend/tests/test_service_client_callsite_allowlist.py (modules/katara/ingest.py added to ALLOW_PREFIXES with inline JUSTIFICATION at the callsite); backend/tests/test_kat03_ingest.py (16 unit assertions on the Pydantic alias / range / future-ts guard + 5 router-mounted auth-contract tests + 5 @pytest.mark.integration staging drill scenarios incl. p50 < 50 ms gate); db/tests/auth07_business_rules.sql (5 new BR-KAT03 cells appended); load/kat03_ingest.py (Locust scenario 50 users / 60 s with --csv=ingest export); scripts/fake_ingest.py (demo-day fallback firing every 15 s). NGINX zone already present at infra/nginx/conf.d/default.conf §/api/v1/katara/ingest (iot_ingest 4r/m keyed on X-Device-Api-Key, 500ms upstream connect + 2s read/send to preserve the 50 ms p50). Spec drift (legacy air_humidity / air_temperature -> soil_pH / soil_conductivity) reconciled per memory/project_katara_iot_payload.md; PRD §6.1.1 + Technical_Specifications.md PR pending.
+        actor: ESP32
+        acceptance: "POST /api/v1/katara/ingest < 50 ms; constant-time key check"
+        depends_on: [KAT-02]
+        sla_ms: 50
+      - id: KAT-04
+        title: Dashboard real-time + historical charts (hourly/daily)
+        priority: Must
+        status: IN_REVIEW    # local DONE 2026-05-16; flips DONE after migration 0020 verified on linked Supabase project (already pushed via `make -C db push`), staging round-trip (FARMER opens /dashboard/farmer/parcels/<id>; 4-card latest tile refreshes within 30 s of next ingest; 24h / 7d / 30d swap renders ≤ 96 / 168 / 30 buckets; FARMER-B + CITIZEN on same parcel-id get buckets=[] from /telemetry/history; /telemetry/latest returns 204 on a parcel with no telemetry, 404 on a non-owned parcel; Cache-Control: private, max-age=15 on both endpoints; Page-Visibility-gated polling pauses when the tab hides), and AUTH-07 m1_katara_telemetry SELECT cells (FARMER-A own / FARMER-B blocked / RESTAURANT blocked / CITIZEN blocked / ADMIN read) + three new BR-K4 cells (cap, isolation, security-invoker proof = `pg_proc.prosecdef = false` on m1_katara_telemetry_history) green in `make -C db test-auth07`. Artefacts: db/migrations/0020_kat04_telemetry_history.sql (slot moved from 0019—taken by KAT-03 lockdown—to 0020; SECURITY INVOKER + STABLE m1_katara_telemetry_history(uuid, interval, text) returning bucket / four soil metrics avg / battery_level avg / sample_count / device_count; grant EXECUTE to authenticated + service_role only, revoked from anon + public); backend/app/modules/katara/schemas.py (LatestTelemetry + HistoryBucket + HistoryResponse + Window/Granularity literals appended under KAT-04 block); backend/app/modules/katara/telemetry.py (GET /api/v1/katara/parcels/{id}/telemetry/latest returning 200/204/404 + GET /history?window=24h|7d|30d with server-side _PICK_GRANULARITY map enforcing BR-K4 by arithmetic + assert len(buckets) ≤ 500 regression tripwire); backend/app/main.py (katara_telemetry_router wired at /api/v1); backend/tests/test_kat04_telemetry.py (TestGranularityTable pure-unit covering BR-K4 cap, documented window keys, date_trunc-compatible units + TestRouterMounted auth-contract scenarios + opt-in TestTelemetryFlowE2E gated by KAT04_E2E=1 / KAT04_DEMO_PARCEL_ID / KAT04_FARMER_JWT for the seeded staging drill); frontend/src/app/dashboard/farmer/parcels/[id]/telemetry-actions.ts (fetchInitialTelemetry server action forwarding the Supabase session JWT to FastAPI, same pattern as actions.ts); frontend/src/app/dashboard/farmer/parcels/[id]/TelemetrySection.tsx (4-card latest tile + 24h/7d/30d tablist + Page Visibility-gated 30 s polling on the 24h tab only + 1 s relative-timestamp tick + battery dot + disabled <RequestDiagnosticSlot> placeholder for KAT-07); frontend/src/app/dashboard/farmer/parcels/[id]/Sparkline.tsx (~80 lines of dependency-free SVG with area fill + accessible <title> / aria-label — Recharts deliberately avoided per §8 risk table; uplot is the future swap target if needed); frontend/src/app/dashboard/farmer/parcels/[id]/page.tsx (mounts TelemetrySection under DevicesSection + threads access_token to client); scripts/seed_kat04_demo.py (configurable DAYS env var, default 7, set DAYS=30 for the BR-K4 ceiling exercise; idempotent against KAT-03's (device_id, recorded_at) unique index). NGINX: no new zone — endpoints fall under the generic `api` zone defined in AUTH-08 (30 s polling × handful of farmers is nowhere near the ceiling); deliberately NOT adding a zone so AUTH-07's "only four declared zones exist" cell stays green.
+        actor: FARMER
+        acceptance: "Charts render; BR-K4 — history API ≤ 500 points"
+        depends_on: [KAT-03]
+      - id: KAT-05
+        title: Configurable alert thresholds per metric (min/max)
+        priority: Must
+        status: IN_REVIEW    # local DONE 2026-05-17; flips DONE after staging round-trip + AUTH-07 KAT-05 cells (BR-KAT05 A..L: per-metric range CHECK, min<max, at-least-one-bound, audit-clamp INSERT, audit-clamp UPDATE, service-role audit write, no-delete-policy, FARMER-B sibling-parcel isolation, PENDING-farmer verification gate, CITIZEN blocked read+write, ADMIN read+no-write, defaults helper drift) green. Artefacts: db/migrations/0021_kat05_alert_thresholds.sql (table m1_katara_thresholds keyed (parcel_id, metric) + 5 CHECKs incl. per-metric range mirroring KAT-03 CHECKs verbatim + IMMUTABLE m1_katara_threshold_defaults(text) + 4 RLS policies — owner SELECT/UPDATE/INSERT-verified + admin SELECT; no DELETE policy by design — toggle enabled=false instead; two BEFORE triggers — fill_farmer_id + audit_guard silently clamps last_alert_at/last_alert_value for every non-service writer; numbered 0021 because slot 0020 was taken by KAT-04 telemetry history); backend/app/modules/katara/schemas.py (ThresholdRow + ThresholdsResponse + ThresholdsUpdateRequest appended under KAT-05 block; _METRIC_RANGE mirrors the DB CHECK so 422 fires before round-trip; bulk request asserts exactly-one-row-per-metric); backend/app/modules/katara/thresholds.py (GET /api/v1/katara/parcels/{id}/thresholds always returns 5 hydrated rows via m1_katara_threshold_defaults RPC + PUT bulk-upsert keyed on parcel_id,metric — no per-metric PATCH, atomic save is the only verb to satisfy BR-K2; verification gate via require_verified('FARMER') for PUT, GET is read-only for any authenticated FARMER/ADMIN); backend/app/main.py (katara_thresholds_router wired at /api/v1); frontend/src/app/dashboard/farmer/parcels/[id]/thresholds-actions.ts (fetchThresholds server action mirroring fetchInitialTelemetry); frontend/src/app/dashboard/farmer/parcels/[id]/ThresholdsSection.tsx (5-row table editor — min/max number inputs + enabled checkbox — optimistic useTransition save + PENDING-farmer banner + verification-required error toast); frontend/src/app/dashboard/farmer/parcels/[id]/ParcelTelemetryAndThresholds.tsx (lifted-state wrapper so TelemetrySection's Sparklines react the same render the editor patches a row — no refetch); frontend/src/app/dashboard/farmer/parcels/[id]/Sparkline.tsx (two new optional props thresholdMin/thresholdMax — dashed horizontal lines + tinted band; Y-axis stretches to include thresholds so the band is always visible; zero behavioural change when both undefined — KAT-04 regression-safe); frontend/src/app/dashboard/farmer/parcels/[id]/TelemetrySection.tsx (one new optional prop thresholdsByMetric + bandFor() helper threading the four soil metrics into the four Sparklines; battery-band reserved for KAT-06 worker only, no chart for it yet); frontend/src/app/dashboard/farmer/parcels/[id]/page.tsx (fetchThresholds + ParcelTelemetryAndThresholds wrapper replacing the bare TelemetrySection); backend/tests/test_kat05_thresholds.py (TestThresholdValidator pure-unit — 11 parametrised cells covering bounds rules + per-metric range + bulk-request invariants + TestRouterMounted auth contract on GET/PUT + opt-in TestThresholdsFlow e2e behind --run-e2e for the audit-clamp + cross-farmer 404 + PENDING-farmer 403 drill); db/tests/auth07_business_rules.sql (12 BR-KAT05 cells A..L appended at end). NGINX: no new zone — endpoints fall under the generic `api` zone (AUTH-08); a farmer saves once per editing session, orders of magnitude under ceiling.
+        actor: FARMER
+        acceptance: "Thresholds CRUD per parcel/metric (per-device is post-MVD — see story §2 scope)."
+        depends_on: [KAT-04]
+      - id: KAT-06
+        title: Email alert on threshold crossing (Brevo)
+        priority: Must
+        status: IN_REVIEW    # local DONE 2026-05-17; flips DONE after staging soak — katara_threshold_worker up ≥ 30 min with zero unresolved Sentry issues, Healthchecks heartbeat green, kill/restart + `pg_terminate_backend()` backstop drills both close the gap, Brevo dashboard shows FR/AR/EN sends to FARMER-A's inbox, BR-K2 24h suppression verified live (second forged crossing within 5 min produces zero email), threshold-edit-clears-suppression verified live (PUT thresholds → next crossing re-alerts inside the 24h window), KAT-03 Locust 50u/60s re-run shows p50 < 50 ms (ingest path unaffected by construction). NO MIGRATION by design — worker reads m1_katara_telemetry (KAT-03) + m1_katara_thresholds (KAT-05) + profiles/m1_katara_parcels, and writes only the audit columns last_alert_at/last_alert_value that KAT-05 already created at db/migrations/0021_kat05_alert_thresholds.sql under the service-role-only audit-guard trigger. Artefacts: backend/app/workers/katara_threshold/__init__.py (package marker); backend/app/workers/katara_threshold/__main__.py (entrypoint — Sentry init, JSON log format, SIGINT/SIGTERM handlers, Windows event-loop fallback for signal.signal); backend/app/workers/katara_threshold/listener.py (LISTEN/NOTIFY lifecycle on channel `katara_telemetry_inserted` — one dedicated asyncpg connection from a 2..4-size pool, exponential-backoff reconnect 1→2→4→8→30→60s, bounded `asyncio.Queue(maxsize=1024)` decouples notification callback from slow evaluator, 5-min `_backstop` cron + immediate `_backstop_once` after every reconnect — BR-K2 makes the backstop idempotent, 60s Healthchecks heartbeat suppressed-on-exception so a transient outage never crashes the worker, `_parse_payload` rejects any payload that doesn't split cleanly into two UUIDs and Sentry-captures malformed cases as warning); backend/app/workers/katara_threshold/evaluator.py (pure-function `evaluate_decisions(telemetry, thresholds, now) -> list[AlertDecision]` encoding BR-K2 — 24h window + threshold-edit-clears-suppression via `updated_at > last_alert_at` + enabled flag + min/max/both bound detection, async `evaluate_and_send` orchestrator with the deliberately-conservative order "send_template → wait 2xx → UPDATE last_alert_at" so a Brevo 5xx between send and audit-update produces one duplicate email rather than a silently-missed agronomic alert, `_record_alert` carries the inline `# JUSTIFICATION: KAT-06 worker writes m1_katara_thresholds.last_alert_at via service-role per the KAT-05 RLS contract` comment for the AUTH-05 callsite audit); backend/app/workers/katara_threshold/templates.py (TEMPLATE_IDS env map for `BREVO_TEMPLATE_KAT_THRESHOLD_{FR,AR,EN}`, LOCALISED_LABELS for the 5 metrics × 3 locales, LOCALISED_UNITS, FALLBACK_LOCALE='fr' per PRD §7.2 — `dar`/`zgh` fall back to fr at runtime); backend/app/workers/mailer.py (NOT-01 — docstring "known templates" list extended with the three KAT-06 keys + the explicit warning that anti-spam state MUST only advance after `send_template` returns without raising); infra/brevo-templates/kat06_threshold_alert/{fr,ar,en}.html (mirror of the Brevo dashboard content so the team can re-create the templates without dashboard archaeology — ar.html sets `dir="rtl"`, each file references ≥ 11 `{{ params.* }}` placeholders covering the §4.4 envelope); infra/docker-compose.yml (new `katara_threshold_worker` service — same `vitachain/backend:latest` image as the FastAPI backend, `command: ["python", "-m", "app.workers.katara_threshold"]`, `restart: unless-stopped`, `depends_on: [backend]`, env-var bindings for DATABASE_URL/SUPABASE_*/BREVO_*/SENTRY_DSN/HEALTHCHECKS_KAT_THRESHOLD_PING_URL, healthcheck via `pgrep -f 'app.workers.katara_threshold'`); infra/.env.example (4 new keys + Healthchecks URL + FRONTEND_BASE_URL); backend/tests/test_service_client_callsite_allowlist.py (AUTH-05 allow-list extended with `workers/katara_threshold/` prefix); backend/tests/test_kat06_evaluator.py (11 pure-function BR-K2 cells covering the full §5.9.1 truth table — no-thresholds, disabled, in-range, first-min, first-max, both-bounds-crossing, second-within-24h-suppressed, second-after-24h-alerts, threshold-edit-clears-suppression, multi-metric-independent-dedup, missing-reading-skipped — 11/11 green in < 1s); backend/tests/test_kat06_listener.py (9 listener cells — payload parser positive/malformed, queue consumer dispatch path + queue-overflow drop + Sentry-capture-on-evaluator-exception, post-reconnect `_backstop_once` window, heartbeat env-unset no-op, all-green pure-asyncio under `--noconftest` so pytest-asyncio + monkeypatched asyncpg/httpx cover the LISTEN lifecycle without a live database); backend/tests/test_kat06_listener_e2e.py (--run-e2e gated mirror of the KAT-03/05 pattern — three scenarios: first-crossing-emails, second-within-24h-suppressed, threshold-edit-then-crossing-re-emails); db/tests/auth07_business_rules.sql (BR-KAT05 (F) cell appended — service_role positive write to last_alert_at/last_alert_value lands; closes the loop on the KAT-05 negative cell which only proved authenticated writes are silently clamped). NGINX: no change — worker is system-initiated and exposes no HTTP surface. The §10 KAT-11 hand-off is encoded into KAT-11's `depends_on` (no edit needed); the offline-worker package will be a near-mechanical copy of this layout swapping LISTEN for a CRON read of `m1_katara_devices.last_seen`.
+        actor: System
+        acceptance: "Email sent; BR-K2 anti-spam — max 1 email / metric / 24h"
+        depends_on: [KAT-05, NOT-01]
+      - id: KAT-07
+        title: Farmer requests AI agronomic diagnostic
+        priority: Must
+        status: IN_REVIEW    # local DONE 2026-05-17; flips DONE after migration 0022 verified on the linked Supabase project (`make -C db push`), staging round-trip (verified FARMER opens /dashboard/farmer/parcels/<id>; Diagnostic IA section renders below ThresholdsSection; "Demander un diagnostic IA" POST returns 201 + PENDING chip; second click within the window returns 409 diagnostic_already_in_progress; 4th request inside 24h returns 429 diagnostic_rate_limit_exceeded; GET /diagnostics/latest returns the same row; FARMER-B GET /latest on FARMER-A parcel returns 404; PENDING FARMER POST returns 403 verification_required; service-role Supabase dashboard UPDATE of status to COMPLETED reflects on the next GET /latest), and AUTH-07 m1_katara_diagnostics cells (D-1 owner SELECT, D-2 FARMER-B blocked, D-3 RESTAURANT blocked, D-4 CITIZEN blocked, D-5 VERIFIED FARMER INSERT → PENDING, D-6 audit-guard clamps FARMER status=COMPLETED INSERT back to PENDING, D-7 service_role UPDATE status → PROCESSING lands, D-8 authenticated UPDATE status no-ops) green in `make -C db test-auth07`. NO Gemini call, NO Brevo email, NO polling loop in this story by design — those land in KAT-08, KAT-09, KAT-10 respectively against the stable table + endpoint contract this story ships. Artefacts: db/migrations/0022_kat07_ai_diagnostics.sql (one table m1_katara_diagnostics — id/parcel_id/farmer_id/status/result_text/error_detail/requested_at/started_at/completed_at + kat_diagnostic_status_known CHECK on the four-value enum + kat_diagnostics_parcel_latest_idx covering both GET /latest and BR-K6 count; fill-farmer-id trigger mirrors the KAT-05 pattern; audit-guard trigger clamps non-service writers — INSERT forces status=PENDING and nulls audit columns, UPDATE preserves status/result/error/timestamps/identity; four RLS policies — owner SELECT, admin SELECT, verified-owner INSERT, no authenticated UPDATE/DELETE so all status transitions go through KAT-08/09 service_role); backend/app/modules/katara/schemas.py (DiagnosticStatus Literal + DiagnosticOut appended under KAT-07 block, error_detail kept on the wire so the admin view can render it — the farmer frontend hides it); backend/app/modules/katara/diagnostics.py (POST /api/v1/katara/parcels/{id}/diagnostics under require_verified("FARMER") enforcing BR-K5 via _fetch_latest_row + BR-K6 via _count_recent before insert; GET /diagnostics/latest under get_current_user returning 404 no_diagnostic_found on empty; both endpoints run a parcel-existence probe first so RLS-empty surfaces as a clean 404); backend/app/main.py (katara_diagnostics_router wired at /api/v1); backend/tests/test_kat07_diagnostics.py (TestSchemas pinning the DiagnosticOut round-trip + the _IN_FLIGHT_STATUSES pair + the BR-K6 _RATE_LIMIT_MAX/_HOURS constants as tripwires; TestRouterMounted auth-contract — missing bearer 401, garbage parcel_id 422, PENDING FARMER 403 verification_required, RESTAURANT 403 role_not_allowed; opt-in TestDiagnosticsFlowE2E gated by KAT07_E2E=1 / KAT07_DEMO_PARCEL_ID / KAT07_FARMER_JWT for happy-path POST + GET /latest, BR-K5 409, optional PENDING-farmer 403 and FARMER-B 404 RLS-isolation drill); frontend/src/app/dashboard/farmer/parcels/[id]/diagnostic-actions.ts (server actions fetchLatestDiagnostic + requestDiagnostic forwarding the Supabase session JWT to FastAPI, degrade-gracefully on non-200 so the parcel page keeps rendering, error code → French copy mapping handled by the client component); frontend/src/app/dashboard/farmer/parcels/[id]/DiagnosticSection.tsx (client component — useTransition pending button + status chip (yellow PENDING / blue PROCESSING / emerald COMPLETED / red FAILED) + collapsible <details> result card rendering result_text as pre-wrap; disabled with explanatory tooltip when isVerified=false or hasTelemetry=false or in-flight; error_detail intentionally hidden from farmer — only the API detail string is mapped to friendly French copy; KAT-10 will lift state up and wire polling); frontend/src/app/dashboard/farmer/parcels/[id]/page.tsx (await fetchLatestDiagnostic(id).catch(() => null) alongside the existing telemetry/thresholds fetches; mounts DiagnosticSection below ParcelTelemetryAndThresholds with hasTelemetry derived from initialTelemetry.latest); db/tests/auth07_business_rules.sql (KAT-07 block appended — D-1..D-8 cells covering owner-read, three sibling-role denials, verified-INSERT-defaults-to-PENDING, audit-guard clamps farmer status=COMPLETED INSERT back to PENDING, service_role UPDATE lands, authenticated UPDATE no-ops). NGINX: no new zone — POST /diagnostics is human-initiated (one click per request, BR-K6 caps at 3/parcel/24h) so the generic `api` zone is amply sized; deliberately no new zone so AUTH-08's "only four declared zones exist" cell stays green. The §10 KAT-08 hand-off notes (FIFO PENDING pickup, service-role transition contract, BR-K6 boundary, GET /latest polling endpoint, no_sensor_data prompt clause, BR-K3 OWM cache ownership) are baked into KAT-08's depends_on (no edit needed).
+        actor: FARMER
+        acceptance: "Button enqueues async job; status visible"
+        depends_on: [KAT-04]
+      - id: KAT-08
+        title: Diagnostic integrates weather (OWM) + NDVI (Sentinel) + 7d avg
+        priority: Must
+        status: IN_REVIEW    # local DONE 2026-05-17; flips DONE after migration 0023 verified on the linked Supabase project (`make -C db push`), staging round-trip (verified FARMER POSTs /api/v1/katara/parcels/<id>/diagnostics → row PENDING → PROCESSING within 5s of LISTEN/NOTIFY → COMPLETED within 30s p95 / 60s p99; GET /diagnostics/latest reflects each transition; Sentry breadcrumb timeline shows owm_cache_miss → ndvi_cache_miss → gemini call on the cold first run; a second diagnostic on a parcel in the same 0.01° lat/lng cell shows owm_cache_hit confirming BR-K3; forged parcel with null centroid via empty-polygon geojson lands FAILED with error_detail=parcel_missing_centroid and NO Sentry HTTP child span recorded; OWM key temporarily unset → row lands FAILED with error_detail starting owm_unavailable, restore key → next POST lands COMPLETED; admin manual set status=COMPLETED on a fresh PENDING via Supabase dashboard → worker's claim_pending no-ops, row stays at the manual values), and AUTH-07 m1_katara_diagnostics + caches cells (D-9 service_role UPDATE status=COMPLETED on PROCESSING lands result_text+completed_at; D-10 service_role UPDATE status=FAILED on PROCESSING lands error_detail+completed_at; D-11 PROCESSING-gated UPDATE on a COMPLETED row no-ops — admin override stays sticky; D-12 authenticated SELECT on m1_katara_owm_cache returns 0 rows — system-internal; D-13 FARMER-A reads own NDVI cache row via parcel join, FARMER-B sees 0 rows — RLS holds; D-14 m1_katara_telemetry_7d_avg surfaces avg_ph + avg_ec OUT params with NO avg_air_humidity / avg_air_temperature drift — memory-drift guard) green in `make -C db test-auth07`. NO Brevo email (KAT-09 owns the COMPLETED→email trigger + worker), NO frontend change (KAT-10 wires the useInterval against the unchanged GET /latest), NO AR/EN Gemini templates (I18N-06 ships those — the locale dispatch in prompts.py is in place and falls back to FR per PRD §7.2). Artefacts: db/migrations/0023_kat08_diagnostic_notify_and_caches.sql (AFTER INSERT trigger on m1_katara_diagnostics emitting NOTIFY 'katara_diagnostic_requested' with new.id::text payload — mirrors KAT-03's katara_telemetry_inserted shape so the worker layout mechanically follows the katara_threshold one; m1_katara_owm_cache keyed (lat_q numeric(5,2), lng_q numeric(6,2)) PK with data jsonb + fetched_at — ENABLE+FORCE RLS, intentionally no policies so authenticated SELECT returns 0 rows by RLS default per D-12; m1_katara_ndvi_cache keyed parcel_id uuid PRIMARY KEY REFERENCES m1_katara_parcels(id) ON DELETE CASCADE with mean_ndvi numeric(4,3) + acquisition_date + fetched_at — ENABLE+FORCE RLS + kat_ndvi_select_owner policy joining parcel.farmer_id=auth.uid() per D-13; SECURITY DEFINER STABLE m1_katara_telemetry_7d_avg(p_parcel_id uuid, p_since timestamptz) RETURNS TABLE(sample_count bigint, avg_moisture numeric, avg_temperature numeric, avg_ph numeric, avg_ec numeric, avg_battery numeric) granted EXECUTE to service_role only — RETURNS TABLE columns surface the corrected soil_pH + soil_conductivity payload not the stale air_humidity/air_temperature spec text per the standing project memory; D-14 cell guards against drift); backend/app/workers/katara_diagnostic/__init__.py (package marker); backend/app/workers/katara_diagnostic/__main__.py (entrypoint — Sentry init, JSON log format, SIGINT/SIGTERM handlers, Windows event-loop fallback for signal.signal); backend/app/workers/katara_diagnostic/listener.py (LISTEN/NOTIFY on katara_diagnostic_requested via one dedicated asyncpg connection from a 2..4-size pool, exponential-backoff reconnect 1→2→4→8→30→60s, bounded asyncio.Queue(maxsize=256) decouples notification callback from slow Gemini call, 60s _backstop_loop scans oldest PENDING + immediate _backstop_once after every reconnect — BR-K6 caps inbound at 3/parcel/24h so backstop volume is bounded, 60s Healthchecks heartbeat suppressed-on-exception); backend/app/workers/katara_diagnostic/claimer.py (atomic claim_pending(diagnostic_id) -> dict|None via UPDATE...WHERE id=? AND status='PENDING' RETURNING * — only the worker that wins the row continues; lost race returns None silently — idempotent under N replicas even though MVD ships a single replica; inline `# JUSTIFICATION` for AUTH-05); backend/app/workers/katara_diagnostic/updater.py (mark_completed + mark_failed — both filter on status='PROCESSING' so a manual admin override e.g. status='COMPLETED' result_text='Démonstration pré-enregistrée' from the Supabase dashboard survives — Risk Register R5 Smoke & Mirrors fallback per D-11; error_detail capped at 1000 chars for DB sanity); backend/app/workers/katara_diagnostic/telemetry_aggregator.py (fetch_7d_average via the SECURITY DEFINER RPC; returns {"no_sensor_data": True} when sample_count=0 so the orchestrator threads the "Aucune donnée capteur" branch into the Gemini prompt per KAT-07 §10 hand-off note; PostgREST string-numeric columns coerced to float for f-string/Jinja); backend/app/workers/katara_diagnostic/owm_client.py (fetch_weather with lat/lng quantised to 0.01° per BR-K3 — cache hit < 3h returns DB row without HTTP fetch, Sentry breadcrumb owm_cache_hit/owm_cache_miss); backend/app/workers/katara_diagnostic/sentinel_client.py (OAuth client-credentials with in-process token cache for its ~1h TTL, Process API call with standard NDVI evalscript (B08-B04)/(B08+B04)*dataMask over the parcel polygon, mean computed Python-side from float32 TIFF via tifffile+numpy, 14-day granule lookback with mosaickingOrder=leastCC to defeat cloud cover, BR-K7 12h cache; _polygon_for_sentinel unwraps the three KAT-01 geojson shapes — raw Polygon / raw MultiPolygon / Feature); backend/app/workers/katara_diagnostic/prompts.py + templates/diagnostic_fr.j2 (Jinja2 with autoescape pinned defensively against prompt-injection, FALLBACK_LOCALE='fr' per PRD §7.2 — dar/zgh/unsupported/missing-file all fall back to FR at runtime; the FR template renders all five corrected-payload metrics + OWM current+5-day + NDVI mean with acquisition_date and the "Aucune donnée capteur disponible" branch when no_sensor_data=True); backend/app/workers/katara_diagnostic/gemini_client.py (google-generativeai SDK against gemini-1.5-flash with 30s wall-clock timeout + 429-aware retry max 2 attempts at 1s/2s exponential backoff; lazy SDK import + one-shot configure so unit tests on sibling modules don't need google-generativeai installed; surfaces GeminiUnavailable + GeminiRateLimited as taxonomied errors the orchestrator maps to error_detail prefixes); backend/app/workers/katara_diagnostic/orchestrator.py (sequential OWM → Sentinel → 7d → prompt → Gemini → COMPLETED/FAILED with every external call wrapped in its own try/except so the error_detail taxonomy is unambiguous — owm_unavailable / ndvi_unavailable / aggregator_failed / prompt_build_failed / gemini_rate_limited / gemini_unavailable / gemini_failed / gemini_empty_response / parcel_not_found / parcel_missing_centroid / orchestrator_unexpected; centroid resolved from parcel.geojson via vertex-average since KAT-01 does not yet ship centroid_lat/centroid_lng columns — the _pick_centroid seam accepts those columns transparently once a future KAT-01 follow-up migration adds them; OWM/Sentinel/aggregator wrapped in asyncio.to_thread because supabase-py and httpx.get/post are sync); infra/docker-compose.yml (new katara_diagnostic_worker service — same vitachain/backend:latest image, command python -m app.workers.katara_diagnostic, restart unless-stopped, depends_on backend, env-var bindings for DATABASE_URL/SUPABASE_*/OPENWEATHERMAP_API_KEY/SENTINEL_HUB_CLIENT_ID/SENTINEL_HUB_CLIENT_SECRET/GEMINI_API_KEY/GEMINI_MODEL/SENTRY/HEALTHCHECKS, pgrep healthcheck); infra/.env.example (KAT-08 block — OPENWEATHERMAP_API_KEY, SENTINEL_HUB_CLIENT_ID+SECRET, GEMINI_API_KEY, GEMINI_MODEL=gemini-1.5-flash default, HEALTHCHECKS_KAT_DIAGNOSTIC_PING_URL with Bitwarden source notes + free-tier quota call-out per PRD §11.1); backend/requirements.in (4 new deps — google-generativeai>=0.8,<0.9, Jinja2>=3.1,<4.0, numpy>=2.0,<3.0, tifffile>=2024.8,<2025.0); backend/tests/test_service_client_callsite_allowlist.py (AUTH-05 allow-list documents workers/katara_diagnostic/ — redundant with the parent workers/ prefix but documented so git blame carries the story id); backend/tests/test_kat08_claimer.py (5 cells — atomic claim positive, lost-race no-op, already-PROCESSING no-op, already-COMPLETED no-op, started_at non-empty); backend/tests/test_kat08_owm_cache.py (4 cells — cache hit < 3h skips httpx, cache stale > 3h fetches + upserts, quantisation collapses adjacent 0.001° points to one (lat_q, lng_q) row, OWM 5xx propagates); backend/tests/test_kat08_ndvi_cache.py (5 cells — cache hit < 12h skips httpx, cache miss fetches + upserts, OAuth token cached within TTL skips the token endpoint, _polygon_for_sentinel unwraps Feature, all-NaN TIFF returns 0.0); backend/tests/test_kat08_aggregator.py (4 cells — happy-path five-metric round-trip, sample_count=0 → no_sensor_data, empty row list → no_sensor_data, memory-drift guard greps migration 0023 for avg_ph/avg_ec + asserts air_humidity/air_temperature absent); backend/tests/test_kat08_prompt.py (5 cells — FR template renders all 5 sensor metrics + OWM + NDVI, no_sensor_data branches to the French fallback copy, unsupported locale (zgh) falls back to FR, missing AR template falls back to FR — defensive until I18N-06 lands, None locale falls back to FR); backend/tests/test_kat08_orchestrator.py (7 cells against the §6.5 taxonomy — happy path COMPLETED, OWM 503 → owm_unavailable, Sentinel raise → ndvi_unavailable, Gemini ResourceExhausted after retries → gemini_rate_limited, empty Gemini response → gemini_empty_response, parcel with no usable polygon → parcel_missing_centroid AND no external HTTP call, parcel not found → parcel_not_found); backend/tests/test_kat08_listener_e2e.py (--run-e2e gated, 3 scenarios — happy-path COMPLETED within 30s, BR-K6 429 after 3/parcel/24h, OWM-key-unset drill behind KAT08_DRILL_OWM=1); db/tests/auth07_business_rules.sql (KAT-08 block appended — D-9..D-14 cells with explicit SKIP notices guarded by to_regclass / pg_proc probes so the suite stays green before migration 0023 is applied). NGINX: no new zone — worker is system-initiated and exposes no HTTP surface; AUTH-08's "only four declared zones exist" cell stays green. The §10 KAT-09 hand-off notes (COMPLETED transition is the email trigger, row already carries farmer_id + parcel_id + result_text + locale needed by KAT-09, worker package layout is a copy-and-slim of katara_diagnostic/, KAT-09's own AFTER UPDATE trigger fires NOTIFY 'katara_diagnostic_completed' keeping the AUTH-07 matrix clean) are baked into KAT-09's depends_on (no edit needed). Spec text update for Documents/VitaChain_Technical_Specifications.md L922–926 (Gemini prompt feeding air_humidity / air_temperature) queued as a separate doc PR — the FR template ships with the corrected payload columns (soil_pH + soil_conductivity) per the standing project memory; the new D-14 + test_kat08_aggregator drift guard fails loudly on any regression.
+        actor: System
+        acceptance: "Gemini receives composite payload; BR-K3 OWM cache ≥ 3h"
+        depends_on: [KAT-07]
+      - id: KAT-09
+        title: Async processing + Brevo email on completion
+        priority: Must
+        status: IN_REVIEW    # local DONE 2026-05-17; flips DONE after migration 0024 applied on the linked Supabase project (`make -C db push` — adds notified_at TIMESTAMPTZ column + AFTER UPDATE trigger m1_katara_diagnostics_notify_completed gated on (old.status IS DISTINCT FROM 'COMPLETED' AND new.status = 'COMPLETED')), staging round-trip (verified FARMER POSTs /api/v1/katara/parcels/<id>/diagnostics → KAT-08 worker lands COMPLETED within 30s → KAT-09 worker LISTENs on katara_diagnostic_completed → fetches row + profile + parcel name → mistune renders result_text Markdown to HTML → Brevo template fired against farmer email in their saved locale → notified_at stamped AFTER Brevo 2xx → test inbox receives email with parcel name + rendered HTML body + diagnostic UUID footer within < 30s of COMPLETED; psql -c "LISTEN katara_diagnostic_completed" + a manual service-role UPDATE status='COMPLETED' on a PROCESSING row → notification lands within ms; same UPDATE with status='FAILED' → no notification; manual UPDATE result_text='x' on an already-COMPLETED row → no notification; manually clearing notified_at on a COMPLETED row → backstop poll within 60s re-stamps it → exactly one email per row visible in Brevo activity log), AUTH-07 D-15 cells (D-15a notify_completed trigger + function present, D-15b WHEN clause guards against firing on FAILED transitions and on COMPLETED → COMPLETED no-ops, D-15c notified_at timestamptz column present) green in `make -C db test-auth07`, and `pytest backend/tests/test_kat09_sender.py -v` green (all 6 scenarios — happy-path Brevo dispatch + notified_at stamp, already-notified pre-send guard skips, AR locale resolves to AR template, unsupported locale falls back to FR, Brevo failure leaves notified_at NULL for backstop retry, missing email silently skips). NO frontend change (KAT-10 wires the useInterval polling against KAT-07's stable GET /diagnostics/latest endpoint — KAT-09 ships zero .tsx files), NO email on FAILED by design (PRD §7.3 + the farmer retries from the UI), NO Markdown rendering beyond mistune defaults (post-MVD syntax highlighting / chart embeds would extend the renderer config), NO populated AR/EN template HTML (I18N-06 fills those — KAT-09 registers the template-id env keys + dispatch locale→template_id map + ships the AR/EN visual stubs). Artefacts: db/migrations/0024_kat09_diagnostic_completed_notify.sql (ALTER TABLE m1_katara_diagnostics ADD COLUMN IF NOT EXISTS notified_at timestamptz with COMMENT documenting the NULL-as-unsent / non-null-as-dispatched contract; SECURITY DEFINER function m1_katara_diagnostics_notify_completed() emitting NOTIFY 'katara_diagnostic_completed' with new.id::text payload; AFTER UPDATE trigger of the same name on m1_katara_diagnostics gated `WHEN (old.status IS DISTINCT FROM 'COMPLETED' AND new.status = 'COMPLETED')` so it fires exactly once on the first PROCESSING → COMPLETED transition and never on FAILED / never on no-op UPDATEs of an already-COMPLETED row); backend/app/workers/katara_diagnostic_email/__init__.py (package marker); backend/app/workers/katara_diagnostic_email/__main__.py (entrypoint — Sentry init with server_name katara-diagnostic-email-worker, JSON log format, SIGINT/SIGTERM handlers with Windows event-loop fallback, mirrors the KAT-06/KAT-08 entrypoint shape); backend/app/workers/katara_diagnostic_email/listener.py (LISTEN/NOTIFY on katara_diagnostic_completed via one dedicated asyncpg connection from a 2..4-size pool, exponential-backoff reconnect 1→2→4→8→30→60s, bounded asyncio.Queue(maxsize=256) decouples notification callback from the Brevo HTTP call, 60s _backstop_loop scans m1_katara_diagnostics WHERE status='COMPLETED' AND notified_at IS NULL AND completed_at > now() - interval '30 minutes' LIMIT 16 + immediate _backstop_once after every reconnect, 60s Healthchecks heartbeat via HEALTHCHECKS_KAT_DIAGNOSTIC_EMAIL_PING_URL); backend/app/workers/katara_diagnostic_email/sender.py (send_diagnostic_email(diag_id) — pre-send guard via SELECT on COMPLETED + notified_at IS NULL, fetches profile email+locale+full_name + parcel name via three separate service_client() reads, _render_markdown converts result_text via mistune.create_markdown(escape=False, plugins=['strikethrough']) — XSS surface zero because result_text is Gemini-generated never user-input, _resolve_template falls back to FR per PRD §7.2 when locale unsupported or template-id env unset, dispatches via mailer.send_template, _mark_notified writes notified_at=now() AFTER Brevo 2xx filtered on notified_at IS NULL so a concurrent worker is a no-op — same audit-write-after-2xx discipline as KAT-06's last_alert_at; inline `# JUSTIFICATION` for AUTH-05); infra/docker-compose.yml (new katara_diagnostic_email_worker service — same vitachain/backend:latest image, command python -m app.workers.katara_diagnostic_email, restart unless-stopped, depends_on backend, env-var bindings for DATABASE_URL/SUPABASE_*/BREVO_API_KEY+SENDER/BREVO_TEMPLATE_KAT_DIAGNOSTIC_{FR,AR,EN}/SENTRY/HEALTHCHECKS_KAT_DIAGNOSTIC_EMAIL_PING_URL, pgrep healthcheck); infra/.env.example (KAT-09 block — BREVO_TEMPLATE_KAT_DIAGNOSTIC_FR/AR/EN with Bitwarden source notes and the "AR/EN may temporarily point to FR id until I18N-06" hint, HEALTHCHECKS_KAT_DIAGNOSTIC_EMAIL_PING_URL); infra/brevo-templates/kat09_diagnostic_completion/{fr,ar,en}.html (three recreatable mirrors — FR is the P0 populated copy referencing params.farmer_name/parcel_name/result_html/diagnostic_id; AR and EN are visual stubs with an I18N-06 TODO comment, RTL direction set on the AR <html>); backend/requirements.in (one new dep — mistune>=3.0,<4.0, pure-Python Markdown renderer with no C extensions); backend/tests/test_service_client_callsite_allowlist.py (AUTH-05 allow-list documents workers/katara_diagnostic_email/ — redundant with the parent workers/ prefix but documented inline so git blame carries the story id, with a justification comment naming notified_at as the audit-column the worker legitimately writes); backend/tests/test_kat09_sender.py (6 cells — S1 happy-path Brevo dispatch with FR template + notified_at UPDATE filtered on IS NULL, S2 already-notified pre-send guard returns 0 rows and skips dispatch + UPDATE, S3 AR locale resolves to the AR template id, S4 unsupported locale 'zgh' falls back to FR template id, S5 Brevo MailerError propagates without writing notified_at — backstop will retry, S6 missing email silently skips both Brevo and the audit write); backend/tests/test_kat09_listener_e2e.py (--run-e2e gated, 2 scenarios — E1 verified-FARMER POST → COMPLETED → notified_at stamped within 30s, E2 manual notified_at clear → backstop re-stamp within 90s gated by KAT09_DRILL_IDEMPOTENCY=1 + KAT09_SUPABASE_URL + KAT09_SUPABASE_SERVICE_KEY so a laptop run never touches a shared key); db/tests/auth07_business_rules.sql (KAT-09 block appended — D-15a notify trigger + function present, D-15b WHEN clause embeds both `IS DISTINCT FROM` and `COMPLETED` predicates so the FAILED-skip + COMPLETED-no-op-skip contract cannot drift, D-15c notified_at timestamptz column present; each cell guarded by to_regclass / information_schema probe + SKIP notice so the suite stays green before migration 0024 is applied). NGINX: no new zone — worker is system-initiated and exposes no HTTP surface; AUTH-08's "only four declared zones exist" cell stays green. The §10 KAT-10 hand-off notes (GET /diagnostics/latest stable since KAT-07, status chip rendering unchanged, notified_at not surfaced to the frontend, polling should stop on COMPLETED/FAILED to avoid wasted API calls, demo-day scenario A path is FARMER click → live PROCESSING chip → COMPLETED chip → email arrives on demo phone) are baked into KAT-10's depends_on (no edit needed).
+        actor: System
+        acceptance: "Diagnostic email delivered < 30s end-to-end"
+        depends_on: [KAT-08, NOT-01]
+      - id: KAT-10
+        title: Diagnostic status polling (PENDING/PROCESSING/COMPLETED)
+        priority: Must
+        status: IN_REVIEW    # local DONE 2026-05-17; flips DONE after staging round-trip (verified FARMER on /dashboard/farmer/parcels/<id> clicks "Demander un diagnostic IA" → yellow PENDING chip appears < 1s from KAT-07 POST response → blue PROCESSING chip appears within 5s of KAT-08 worker pickup via the polling tick → green COMPLETED chip appears within 5s of KAT-08 finishing, total click-to-green < 35s end-to-end; DevTools Network panel shows exactly 5-6 /diagnostics/latest GETs spaced 5s apart during the in-flight window and ZERO further GETs after terminal status; tab-hidden interval shows zero GETs and tab-refocus fires exactly one catch-up GET within 1s of visibilitychange; React DevTools Profiler shows ≤3 DiagnosticSection renders across the full lifecycle thanks to the no-op state guard) and `pnpm --filter frontend test DiagnosticSection.polling` green. NO backend code (GET /diagnostics/latest stable since KAT-07), NO migration, NO worker, NO Brevo template, NO env-var change — KAT-10 is 100% frontend, the inverse of KAT-09. Artefacts: frontend/src/hooks/usePolling.ts (~40-line visibility-aware fixed-interval polling hook — useEffect schedules setInterval keyed on (enabled, intervalMs, label); callbackRef decouples the latest callback identity from the interval so each render does not re-schedule per Dan Abramov's "Making setInterval Declarative" pattern; busyRef guarantees at-most-one in-flight callback even if a slow /latest response exceeds intervalMs; document.visibilitychange listener skips ticks while document.visibilityState === "hidden" and fires an immediate catch-up tick on transition to "visible" so a refocused tab does not wait up to 5s; errors swallowed with dev-only console.warn; cleanup clears interval + removes the visibilitychange listener so navigation away from the parcel page stops polling; deliberately minimal — no exponential back-off, no retry, no SWR-style cache, no auto-fire-on-mount because the page already passes a fresh initialDiagnostic via SSR); frontend/src/app/dashboard/farmer/parcels/[id]/DiagnosticSection.tsx (in-place edit — added imports for usePolling + fetchLatestDiagnostic; added POLLING_INTERVAL_MS=5000 + TERMINAL_STATUSES Set<"COMPLETED"|"FAILED">; replaced the KAT-07 placeholder comment on useState(initialDiagnostic); added the usePolling block with `enabled: diagnostic !== null && !TERMINAL_STATUSES.has(diagnostic.status)` + a callback that calls fetchLatestDiagnostic(parcelId), guards row.parcel_id !== parcelId against rapid route changes, and uses the functional setDiagnostic(prev => prev.id===row.id && prev.status===row.status ? prev : row) form to avoid stale-closure reads and skip re-renders when the server returns identical state; all existing JSX — STATUS_CHIP chip, COMPLETED <details> card, FAILED inline message — untouched and now re-renders automatically via the polled state); frontend/__tests__/DiagnosticSection.polling.test.tsx (5 Vitest scenarios under `@vitest-environment jsdom` — S1 PENDING→PROCESSING→COMPLETED transitions stop polling after terminal, fetch called exactly twice; S2 initial COMPLETED → fetch never called even after 20s of fake time; S3 initial null diagnostic → fetch never called; S4 tab-hidden interval skips ticks, visibilitychange to visible fires exactly one catch-up; S5 cross-parcel response is ignored — chip stays on "En cours…", does not advance to "Complété"; vi.mock hoists the diagnostic-actions module so the "use server" file's createSupabaseServerClient is never reached at test import time; vi.useFakeTimers() + vi.advanceTimersByTimeAsync simulates ticks in ms; Object.defineProperty(document, "visibilityState") workaround for jsdom's missing Page Visibility API); frontend/__tests__/setup.ts (loads @testing-library/jest-dom/vitest for the toBeInTheDocument matcher); frontend/vitest.config.mts (added esbuild.jsx: "automatic" so .tsx component tests don't need an explicit `import React`; added setupFiles=["./__tests__/setup.ts"]); frontend/package.json (added devDependencies — @testing-library/react ^16.1, @testing-library/jest-dom ^6.6, @testing-library/dom ^10.4, jsdom ^25 — INF-03 had only the node-env Vitest scaffold; these unblock all future React component tests). Design decisions: pull-polling at 5s vs Supabase Realtime push — the 30s p95 end-to-end window means 5-6 HTTP requests per diagnostic, well under any Supabase free-tier read budget per PRD §11.1; Realtime would need a publication policy + RLS-aware channel filter + AUTH-07 matrix update for marginal sub-second-latency benefit and is a one-file post-MVD swap (delete usePolling, replace with channel subscription); 5s interval vs 2s/10s — 2s overshoots with 60% wasted PROCESSING→PROCESSING ticks, 10s undershoots the demo's "visible chip animation" expectation, 5s is the sweet spot that yields 5-6 polls per diagnostic with PENDING→PROCESSING captured on tick 1-2 and PROCESSING→COMPLETED captured within 5s of actual completion; custom usePolling vs useSWR({refreshInterval}) — useSWR adds a global cache + revalidate-on-focus default + a dep the rest of the codebase does not use (KAT-04/KAT-05 do their own polling for telemetry), the ~40-line custom hook is reusable for KAT-11 device-offline detection with zero modification and is the smallest-blast-radius migration target if the codebase ever consolidates around SWR/TanStack Query; visibility-aware pause is mandatory not nice-to-have — without it, 50+ farmers each leaving a tab open overnight would generate background polling load multiplicatively; no-op setState guard prevents re-render thrash during the PROCESSING→PROCESSING window — every 5s the server returns the same row, and without the prev.id===row.id && prev.status===row.status early-return inside the functional setter, React would re-render the parent + all descendants every tick (currently none, but future expansion could include an expensive markdown preview); functional setDiagnostic(prev => ...) form rather than closure read because the polling callback is created once per (enabled,intervalMs,label) change and would otherwise close over a stale `diagnostic` value defeating the guard. The §10 hand-off notes (KAT-11 can reuse usePolling verbatim, KAT-04/KAT-05 telemetry refresh could harmonise onto it post-MVD, Supabase Realtime migration is a single-file swap, chip i18n / a11y / diagnostic-history are out-of-scope follow-ups) carry forward to whichever story picks them up. Scenario A demo-day chain now reads end-to-end without a page reload: FARMER click → yellow PENDING → blue PROCESSING within 5s → green COMPLETED within 30s → email arrives on demo phone (KAT-09) — the four-story spine (KAT-07→08→09→10) of PRD §12 Demo Scenario A is complete.
+        actor: FARMER
+        acceptance: "UI shows live status during processing"
+        depends_on: [KAT-07]
+      - id: KAT-11
+        title: Offline device detection (> 1h no ping) + alert
+        priority: Should
+        status: IN_REVIEW   # local DONE 2026-05-17; flips DONE after staging soak — katara_offline_worker up ≥ 30 min with zero unresolved Sentry issues, Healthchecks heartbeat green, manual silence drill (UPDATE m1_katara_devices SET last_seen = now()-interval '2 hours' WHERE device_id = 'ESP-KAT-TEST') produces exactly one FR Brevo dispatch within ≤ 6 min and the row flips status='OFFLINE' + stamps last_offline_alert_at, immediate second `_scan_once` produces 0 new emails (BR-K11-1 24h anti-spam holds), KAT-03 ingest on the same device flips status='ACTIVE' + stamps last_seen (recovery path delegated to KAT-03 §1 by design — KAT-11 never writes OFFLINE → ACTIVE). MIGRATION 0025_kat11_offline_alert_column.sql adds last_offline_alert_at timestamptz NULL to m1_katara_devices (no NOT NULL — NULL means "never alerted"; column is the BR-K11-1 dedup anchor, service-role write only with the audit-column write cell verified in db/tests/auth07_business_rules.sql K-11a/K-11b/K-11c). Artefacts: backend/app/workers/katara_offline/__init__.py (package marker); backend/app/workers/katara_offline/__main__.py (entrypoint — Sentry init, JSON log format, SIGINT/SIGTERM handlers, Windows event-loop fallback for signal.signal — structurally identical to KAT-06's __main__.py with `katara_threshold` → `katara_offline` + `run_listener` → `run_scanner`); backend/app/workers/katara_offline/scanner.py (CRON-style asyncio loop, SCAN_PERIOD_S=300, atomic `UPDATE ... WHERE status='ACTIVE' AND last_seen<now()-interval '1 hour' AND (last_offline_alert_at IS NULL OR now()-last_offline_alert_at > interval '24 hours') RETURNING id, device_id, parcel_id, farmer_id, last_seen` is the BR-K11-1 truth table — N-replica-safe by construction; opposite-of-KAT-06 ordering "UPDATE-first → Brevo dispatch" so a Brevo 5xx costs one email this hour, not 12/hour of flooding [§6.5]; per-row profile + parcel-name SELECT under service-role asyncpg pool (DATABASE_URL); locale fallback `resolve_locale` falls back to fr per PRD §7.2; boot-time immediate `_scan_once` recovers silent-device backlog within seconds of restart; 60s Healthchecks heartbeat suppressed-on-exception; per-row Brevo failure logged + Sentry-captured but never aborts the pass; bounded `asyncio.gather` fan-out safe at <=50 demo devices); backend/app/workers/katara_offline/templates.py (TEMPLATE_IDS env map for `BREVO_TEMPLATE_KAT_OFFLINE_{FR,AR,EN}`, FALLBACK_LOCALE='fr', resolve_locale identical to KAT-06's shape); backend/app/workers/mailer.py (NOT-01 — docstring "known callers" list updated: KAT-09 + KAT-11 promoted from "post-MVD" to live entries with their BREVO_TEMPLATE_* env keys named inline); infra/brevo-templates/kat11_offline_alert/{fr,ar,en}.html (mirror of the Brevo dashboard content so the team can re-create the templates without dashboard archaeology — ar.html sets `dir="rtl"`, each file references the 6 `{{ params.* }}` placeholders covering the §4.4 envelope: farmer_name, parcel_name, device_id, last_seen_at, minutes_silent, dashboard_url); infra/docker-compose.yml (new `katara_offline_worker` service — same `vitachain/backend:latest` image, `command: ["python", "-m", "app.workers.katara_offline"]`, `restart: unless-stopped`, `depends_on: [backend]`, env-var bindings for DATABASE_URL/SUPABASE_*/BREVO_*/SENTRY_DSN/HEALTHCHECKS_KAT_OFFLINE_PING_URL, healthcheck via `pgrep -f 'app.workers.katara_offline'`); infra/.env.example (4 new keys appended — BREVO_TEMPLATE_KAT_OFFLINE_FR/AR/EN + HEALTHCHECKS_KAT_OFFLINE_PING_URL); backend/tests/test_service_client_callsite_allowlist.py (AUTH-05 allow-list extended with `workers/katara_offline/` prefix — docstring-style marker since the default scanner connects via asyncpg DSN, not Supabase service_client(); future refactor that routes the UPDATE through service_client() must add an inline JUSTIFICATION comment); backend/tests/test_kat11_scanner.py (5 scenarios — S1 no-silent-devices, S2 single-FR-dispatch with full param-envelope assertions, S3 unknown-locale-falls-back-to-FR, S4 profile-missing skips Brevo and logs `offline_alert_profile_missing`, S5 two-rows-with-Brevo-failure-on-second confirms gather isolation + Sentry capture + scan still returns 2; all under pytest-asyncio with AsyncMock-wrapped asyncpg pool); backend/tests/test_kat11_scanner_e2e.py (--run-e2e gated — seeds an ACTIVE device with last_seen=now()-2h, runs `_scan_once`, asserts one Brevo dispatch + row flipped to OFFLINE + last_offline_alert_at stamped, then re-runs the scan and asserts 0 new emails for BR-K11-1); db/migrations/0025_kat11_offline_alert_column.sql (one ALTER TABLE adding last_offline_alert_at timestamptz NULL + COMMENT documenting NULL semantics + service-role-only write contract); db/tests/auth07_business_rules.sql (KAT-11 K-11a/K-11b/K-11c cells appended — column-exists/timestamptz probe, service-role positive write to status='OFFLINE'+last_offline_alert_at lands, authenticated FARMER NULL-out attempt surveys the audit-column gap with a WARN note for future audit-guard trigger). NGINX: no change — worker is system-initiated and exposes no HTTP surface. KAT-12 (unlink/relink): no contract change — KAT-11's WHERE filters status='ACTIVE' so UNLINKED devices are naturally skipped. KAT-03 (recovery): unchanged — ingest's existing status='ACTIVE' + last_seen=now() write is the natural OFFLINE → ACTIVE recovery path KAT-11 deliberately delegates to. Post-MVD follow-ups: recovery email (~2h effort, 2-line addition to KAT-03 ingest path), per-farmer threshold tuning (~1d), severity tiering (warning at 1h / critical at 24h), worker consolidation with KAT-06 into a unified katara_alerts_worker (~half day).
+        actor: System
+        acceptance: "CRON detects silence; email sent to owner"
+        depends_on: [KAT-02, KAT-03, KAT-06, NOT-01]
+      - id: KAT-12
+        title: Unlink/relink device between parcels
+        priority: Should
+        status: IN_REVIEW    # local DONE 2026-05-17; flips DONE after staging soak — apply migration 0026_kat12_unlink_relink.sql, confirm `\df public.verify_device_api_key` still has the `status <> 'UNLINKED'` filter (re-asserted by 0026 as a regression tripwire), confirm `\d+ public.m1_katara_devices` lists `trg_m1_katara_devices_unlink_freeze`, then walk §7.3 of the story: FARMER-A unlinks an ACTIVE device on parcel A from the dashboard, confirm device card flips to "détaché" with history preserved + "Associer un capteur" CTA on the same parcel disabled in copy, post a forged ingest with the OLD plaintext to `/api/v1/katara/ingest` and assert 401 invalid_device_credentials (the KAT-02 verifier filter is the only enforcing seam — no KAT-03 code change by design), navigate to parcel B and pair the same physical `ESP-KAT-001` device_id, confirm the pairing modal issues a *fresh* api-key (different last4 from the unlink'd one), post telemetry with the new key and assert 204, confirm SQL `SELECT id, parcel_id, status FROM m1_katara_devices WHERE device_id='ESP-KAT-001' ORDER BY created_at` returns exactly two rows — first UNLINKED on parcel A, second ACTIVE on parcel B — with the old row's telemetry history still queryable under parcel A's id (the substrate KAT-13 will read), FARMER-B issues `POST /katara/devices/<FARMER-A's-device-uuid>/unlink` and asserts 404 device_not_found (no existence leak — RLS hides the row from the cross-farmer caller), FARMER-A re-issues unlink against the already-UNLINKED original row and asserts 409 device_already_unlinked (the `.neq("status","UNLINKED")` idempotency clause closes the double-click gap), KAT-03 Locust 50u/60s re-run shows p50 < 50 ms unchanged (the verifier WHERE adds one indexed predicate on an existing scan), no Sentry errors during the rehearsal. MIGRATION 0026_kat12_unlink_relink.sql re-asserts the KAT-02 verifier body (idempotent CREATE OR REPLACE — drift tripwire) and adds `m1_katara_devices_unlink_freeze()` plpgsql trigger on BEFORE UPDATE that raises `check_violation` if an UNLINKED row's `parcel_id`/`farmer_id`/`device_id`/`api_key_hash`/`api_key_last4`/`status` is mutated, while letting `last_seen` + `updated_at` flow through (operational state, not identity — KAT-13 needs those columns to keep moving even on UNLINKED rows). Artefacts: db/migrations/0026_kat12_unlink_relink.sql (verifier re-assert + freeze trigger); backend/app/modules/katara/devices.py (new `unlink_router` at `/katara/devices` prefix + `unlink_device` handler — role-only gate `user.role != 'FARMER' → 403 role_not_allowed` deliberately drops `_require_verified_farmer` per §5.2 design point #2 so a farmer whose verification was later revoked can still walk back a prior valid pair, RLS-scoped UPDATE under user JWT via `katara_devices_update_own` from KAT-02, `.neq("status","UNLINKED")` clause makes the UPDATE idempotent so a second click returns 0 rows which the 404/409 disambiguation follow-up SELECT maps to 409 device_already_unlinked, follow-up probe under the same RLS context distinguishes RLS-hidden 404 from already-UNLINKED 409 without leaking existence; existing pair_device handler gained a §5.2 docstring note pointing the reader at the KAT-12 re-pair contract — no code change to the pairing path, the KAT-02 partial unique indexes already do the heavy lifting); backend/app/modules/katara/schemas.py (added `UnlinkDeviceResponse` pydantic model — id/device_id/parcel_id/status with `Literal["UNLINKED"]` so any drift from the literal "UNLINKED" dies at the 422 boundary before the frontend's local-state flip surfaces the wrong status); backend/app/main.py (wires `katara_unlink_router` import + `app.include_router(katara_unlink_router, prefix="/api/v1")`); frontend/src/app/dashboard/farmer/parcels/[id]/actions.ts (new `unlinkDevice(parcelId, deviceUuid)` server action + `UnlinkedDevice` + `UnlinkDeviceResult` types — same pattern as the KAT-02 server actions, browser never sees the bearer); frontend/src/app/dashboard/farmer/parcels/[id]/page.tsx (passes the new `parcelName={parcel.name}` prop to DevicesSection for the modal copy); frontend/src/app/dashboard/farmer/parcels/[id]/DevicesSection.tsx (added Props.parcelName + unlinkTarget state + `UnlinkDeviceDialog` modal — PENDING devices keep the KAT-02 hard-delete fast path via `unpairDevice`, anything past PENDING uses the KAT-12 soft-detach with destructive-red styling, explicit copy naming the device_id and parcel name, "I understand" checkbox gate, and a §10-aligned three-bullet body explaining the api-key invalidation + history preservation + re-pair instructions; UNLINKED card hides the action row and renders an inline neutral notice pointing the farmer at the re-pair flow); db/tests/auth07_business_rules.sql (KAT-12 cells K-12a/K-12b/K-12c appended — K-12a verifies `verify_device_api_key` returns no row for an UNLINKED device even with a byte-correct api-key, K-12b verifies the freeze trigger raises `check_violation` on parcel_id/status/device_id mutation while `last_seen` flows through, K-12c verifies the re-pair INSERT lands on a different parcel and a third concurrent non-UNLINKED row for the same device_id is refused by the partial unique index — BR-K1 end-to-end); backend/tests/test_kat12_unlink.py (3 unit + 6 router-mount scenarios — Pydantic literal "UNLINKED" enforcement + no-api-key-leak guard mirroring KAT-02's DeviceOut test, plus auth-contract gates: unauthenticated 401, expired 401, RESTAURANT/CITIZEN/ADMIN 403 role_not_allowed, PENDING-verification FARMER passes the role gate per §5.2 design point #2, malformed device_uuid 422). NGINX: no change — endpoint is synchronous farmer action with no service-role surface. NOT-01: no Brevo template — PRD §7.3 does not list "device unlinked" as an email type, action is user-initiated. Post-MVD follow-ups encoded into the story §10 hand-off: atomic relink endpoint reconsideration if drop-off shows up in UX research, UNLINKED-row archival cron after the device population exceeds ~100 rows, audit-log table populated by AFTER UPDATE trigger on status→UNLINKED if compliance ever requires it, concurrent unlink+ingest race hardening via `SELECT ... FOR UPDATE` on the unlink path (current sub-ppm race documented as acceptable for MVD).
+        actor: FARMER
+        acceptance: "Re-pair flow works; old data preserved"
+        depends_on: [KAT-02]
+      - id: KAT-13
+        title: Historical telemetry remains queryable after unlink
+        priority: Should
+        status: IN_REVIEW   # local DONE 2026-05-18; flips DONE after staging soak — apply migration 0027_kat13_history_with_provenance.sql, confirm `\d+ public.m1_katara_parcel_device_history` shows the 10-column view (parcel_id, device_uuid, device_id, device_status, api_key_last4, first_recorded_at, last_recorded_at, sample_count, is_currently_paired, device_updated_at) and `\df public.m1_katara_telemetry_history` lists both the 3-arg KAT-04 signature and the 4-arg KAT-13 overload (default p_device_id NULL), then walk §7.3 of the story: FARMER-A on parcel A with ≥24h of telemetry unlinks the device via the KAT-12 flow, refreshes the parcel page, confirms <LatestTile> shows the most-recent reading with the amber "Capteur détaché" banner, the chart still renders with the same point_count as before the unlink, <DeviceHistoryCard> lists the unlinked device with the "Détaché" pill + sample_count + first/last_recorded_at range + "Filtrer le graphe" action, clicking the filter re-queries `/history?window=7d&device_id=<uuid>` with device_count=1 in the response, FARMER-A re-pairs the same physical ESP-KAT-NNN on parcel B per KAT-02, posts a fresh telemetry batch, navigates back to parcel A and verifies no parcel B data leaks into the chart or device card, FARMER-B opens parcel A's URL in a private window and gets 404 (RLS isolation holds), no Sentry errors during the rehearsal. MIGRATION 0027_kat13_history_with_provenance.sql is pure read-path — adds the m1_katara_parcel_device_history view (per-(parcel, device) aggregate over m1_katara_telemetry ⨝ m1_katara_devices, surfaces UNLINKED rows whose parcel_id is frozen by KAT-12, is_currently_paired computed as (d.parcel_id = t.parcel_id AND d.status <> 'UNLINKED')), adds the 4-arg overload of public.m1_katara_telemetry_history with optional p_device_id default NULL (KAT-04 3-arg callsites continue to resolve to the original 3-arg variant for back-compat; the KAT-13 RPC callsite passes 4 args), replaces the m1_katara_telemetry_latest view definition to drop the `d.status <> 'UNLINKED'` filter and surface 3 new columns (device_label = d.device_id text id, device_status = d.status::text, device_updated_at = d.updated_at as the KAT-12 §6.3 unlink-time proxy). No table changes, no RLS policy changes — RLS is inherited from the underlying m1_katara_telemetry + m1_katara_devices base tables via view-pass-through semantics + the function's security invoker marker. Artefacts: db/migrations/0027_kat13_history_with_provenance.sql (view + function overload + extended latest view); backend/app/modules/katara/schemas.py (LatestTelemetry extended with optional device_label/device_status/device_unlinked_at fields — additive so KAT-04 callsites still validate; DeviceStatusLiteral type; DeviceHistoryEntry + DeviceHistoryResponse pydantic models surfacing the view columns including device_updated_at as the post-unlink proxy); backend/app/modules/katara/telemetry.py (new devices_history_router on /katara/parcels/{parcel_id} prefix with GET /devices-history reading from m1_katara_parcel_device_history view ordered by last_recorded_at desc, get_history handler gained optional device_id: UUID | None = None query param plumbed through to the RPC's p_device_id arg, get_latest handler refactored via _build_latest helper to materialise the new fields from the extended view's single-row response so no second m1_katara_devices round-trip is needed, device_unlinked_at only populated when device_status == 'UNLINKED' so the frontend never mis-renders the pill on a recent ingest whose updated_at happens to be fresh from last_seen); backend/app/main.py (wires the new devices_history_router import + app.include_router); frontend/src/app/dashboard/farmer/parcels/[id]/telemetry-actions.ts (LatestTelemetry interface gained device_label/device_status/device_unlinked_at optional fields, new DeviceStatus type + DeviceHistoryEntry/DeviceHistoryResponse interfaces, InitialTelemetry gained devicesHistory: DeviceHistoryEntry[], fetchInitialTelemetry now issues the third parallel GET /devices-history and degrades gracefully to [] on a transient backend miss); frontend/src/app/dashboard/farmer/parcels/[id]/DeviceHistoryCard.tsx (NEW client component — renders one row per device with status pill (PENDING/ACTIVE/OFFLINE/UNLINKED), api_key_last4 disambiguation, sample_count + first/last_recorded_at range, "Détaché il y a X" relative timestamp on UNLINKED rows, "Filtrer le graphe" / "Filtre actif" toggle button piping the device_uuid up to the parent state, "Voir tous les capteurs" link to clear an active filter, suppresses entire card when devices array is empty); frontend/src/app/dashboard/farmer/parcels/[id]/TelemetrySection.tsx (added selectedDeviceUuid state, devicesHistory client-state seeded from server initialDevicesHistory + refreshed when latest device_status flips UNLINKED, history fetch now appends &device_id=<uuid> when a filter is active and re-runs on filter changes via the existing useEffect, LatestTile extended with an amber "Capteur détaché" banner above the metric tiles when device_status === 'UNLINKED' showing device_label + relative unlink time, EmptyState now distinguishes "no device ever paired" from "device paired then unlinked — history still available below" via the new hasHistory prop derived from devicesHistory.length, history h3 surfaces a "· filtré sur 1 capteur" tag when a filter is active, automatic filter-clear when the chosen device disappears from the list); frontend/src/app/dashboard/farmer/parcels/[id]/ParcelTelemetryAndThresholds.tsx (gained initialDevicesHistory: DeviceHistoryEntry[] prop, plumbed to TelemetrySection); frontend/src/app/dashboard/farmer/parcels/[id]/page.tsx (passes initialTelemetry.devicesHistory through to ParcelTelemetryAndThresholds — no other change); db/tests/auth07_business_rules.sql (KAT-13 cells K-13a/K-13b/K-13c appended — K-13a verifies a telemetry row survives the unlink with the same parcel_id count + the per-device view surfaces the UNLINKED row, K-13b swaps JWT context to FARMER-B via set_config('request.jwt.claims', ...) and asserts the view returns 0 rows on FARMER-A's parcel proving cross-farmer RLS isolation, K-13c performs the full relocation round-trip — unlinks the device, re-pairs the same device_id on parcel B (allowed by KAT-12's partial unique index because the prior row is UNLINKED), ingests under the new device, asserts both parcels independently report exactly 1 telemetry row and the 4-arg history function with p_device_id filter correctly returns 0 rows for parcel A + 1 row for parcel B); backend/tests/test_kat13_history_after_unlink.py (3 pure-unit schema scenario blocks — TestLatestTelemetrySchema verifies the KAT-04 back-compat shape still validates + new ACTIVE/UNLINKED payloads + literal-status drift dies at the Pydantic boundary, TestDeviceHistorySchema covers ACTIVE/UNLINKED/null-api_key cases + invalid-status rejection + empty + JSON round-trip; TestRouterMounted boots the real app and asserts auth-contract on /devices-history + /history?device_id=... including 401 unauthenticated + 422 malformed UUID + 422 garbage parcel_id; --run-e2e TestHistoryAfterUnlinkE2E suite verifies the four S1-S4 scenarios from §5.7 against a staged parcel). NGINX: no change — three farmer-scoped GET endpoints with no new service-role surface. NOT-01: no Brevo template — KAT-13 is a read-only UI surface; no email. Post-MVD follow-ups encoded into story §10: KAT-14 multi-parcel switcher reuses the parcel-scoped /devices-history and /history endpoints unchanged + a future flat /farmers/me/devices-history aggregator if cross-parcel inventory becomes a UX need; archival CRON that moves >12-month UNLINKED rows to m1_katara_devices_archive table — view definition should UNION over both tables so frontend stays unaware; m1_katara_device_audit_log replaces the device_updated_at unlink-time proxy when compliance requires it (one-line refactor in _build_latest); materialised aggregate behind m1_katara_parcel_device_history when p99 crosses 200 ms; per-segment colour-coded chart line once we swap hand-rolled SVG for a chart library.
+        actor: FARMER
+        acceptance: "Past data still visible after device moves"
+        depends_on: [KAT-12]
+      - id: KAT-14
+        title: Multi-parcel support per farmer
+        priority: Should
+        status: IN_REVIEW   # local DONE 2026-05-18; flips DONE after staging soak — apply migration 0028_kat14_farmer_overview.sql, confirm `\d+ public.m1_katara_farmer_parcels_overview` shows the 16-column view (parcel_id, farmer_id, name, crop_type, surface_area_ha, parcel_created_at, device_active_count, device_offline_count, device_pending_count, device_unlinked_count, last_reading_at, last_soil_moisture, last_soil_temperature, last_soil_ph, last_soil_conductivity, has_open_threshold_breach), then walk §7.4 of the story: FARMER-A seeded with 3 parcels (Tomates Nord / Poivrons Sud / Aubergines Est) of varied state lands on /dashboard/farmer and immediately sees the KPI strip (parcels=3, total ha, active sensors, alertes ouvertes) + alphabetical parcel grid with status dot (green=ok, neutral=offline-only, amber=breach) + relative timestamp ("il y a 12 min") + device-mix line ("2 actifs · 1 hors-ligne") + threshold-breach banner where applicable, clicks Tomates Nord → lands on /dashboard/farmer/parcels/<id> → sees <ParcelSwitcher> with 3 pills at the top of the page header with the active one highlighted in emerald and any breach-bearing parcel showing a small amber dot, pivots via the switcher → the new parcel's detail page renders without bouncing through the overview, opens the chart with ?window=7d on parcel A and pivots to parcel B → URL keeps ?window=7d (PRESERVABLE_PARAMS allow-list), then sets ?window=7d&device_id=<A's-device-uuid> and pivots to B → only ?window=7d survives because device_id is in PARCEL_SCOPED_PARAMS, switches to a 0-parcel FARMER → empty-state renders with "Créer ma première parcelle" CTA wiring to /dashboard/farmer/parcels/new, opens the network panel and confirms exactly one /farmers/me/overview call per dashboard load + one per detail-page load (the switcher payload), confirms Cache-Control: private, max-age=60 on the response, no Sentry errors during the rehearsal. MIGRATION 0028_kat14_farmer_overview.sql is pure read-path — adds m1_katara_farmer_parcels_overview view aggregating per-parcel summary (3 CTEs: latest_per_parcel via distinct-on over the (parcel_id, recorded_at desc) index from KAT-03, device_mix as count(*) filter (where status=...) by parcel_id, breach_check as bool_or over enabled thresholds against the latest reading), final left-join chain from m1_katara_parcels so brand-new parcels appear with zero counts + null timestamp (empty-card state), comment with the four-policy RLS-inheritance contract. No table changes, no RLS policy changes — RLS composes via the four base tables' auth.uid() = farmer_id predicates. Artefacts: db/migrations/0028_kat14_farmer_overview.sql (view); backend/app/modules/katara/schemas.py (ParcelOverviewEntry + FarmKpiRollup + FarmerOverviewResponse pydantic models — entry omits soil_temperature/soil_ph/soil_conductivity to keep the dashboard payload tight; Decimal preserved for surface area); backend/app/modules/katara/overview.py (NEW module with /katara/farmers/me/overview router; reads the view under user-JWT via get_db_for_user, sums KPI in Python over N ≤ 10 parcels rather than a second SQL pass, sets Cache-Control: private, max-age=60); backend/app/main.py (wires katara_overview_router); frontend/src/app/dashboard/farmer/page.tsx (NEW — server component, role-gates non-FARMER to /dashboard, renders <EmptyState> when zero parcels else <KpiStrip> + <ParcelGrid>); frontend/src/app/dashboard/farmer/{overview-actions,overview-types,format}.ts (server action wrapping the FastAPI endpoint via the existing session-cookie → Bearer pattern; wire types mirroring the Pydantic shape with Decimal-as-string; tiny formatRelativeFr helper avoiding a date-fns dependency); frontend/src/app/dashboard/farmer/{KpiStrip,ParcelGrid,ParcelCard,EmptyState}.tsx (NEW — server components: KpiStrip with 4 tiles (parcels / hectares / active sensors / alertes ouvertes — breach tile flips amber when non-zero); ParcelCard with tone-derivation per §6.4 (warn for breach, neutral-warn for offline-only — deliberately distinct so an offline sensor does not get muscle-dismissed under the same red badge as a real moisture breach), aria-label per card, last-reading relative timestamp + last_soil_moisture inline; ParcelGrid as a thin responsive 1/2/3-column wrapper; EmptyState with bilingual-aware copy + CTA to /parcels/new); frontend/src/app/dashboard/farmer/parcels/[id]/ParcelSwitcher.tsx (NEW client component; horizontal pill list overflow-scrolls on narrow viewports; keyboard-navigable with aria-current; renders nothing on a single-parcel farm to avoid noise; PARCEL_SCOPED_PARAMS allow-list of {device_id} dropped on pivot + PRESERVABLE_PARAMS allow-list of {window} carried — both are explicit allow-lists not deny-lists so future query params default to dropped, the safer failure mode); frontend/src/app/dashboard/farmer/parcels/[id]/page.tsx (mounts <ParcelSwitcher> above the existing header with overview fetched in a fourth parallel server-action call, breadcrumb link "← Mes parcelles" rewritten to "← Mon exploitation" pointing at /dashboard/farmer); frontend/src/app/dashboard/page.tsx (role-agnostic root now links the FARMER chip to /dashboard/farmer "Mon exploitation" — vue d'ensemble — instead of the legacy /parcels list); db/tests/auth07_business_rules.sql (KAT-14 cells K-14a/K-14b appended — K-14a seeds 2 parcels owned by FARMER-A vs FARMER-B respectively then swaps JWT context to FARMER-A and asserts the view returns exactly the kat14-br-A1 row (cross-farmer RLS isolation holds on the view via its inherited katara_parcels_select_own predicate), K-14b queries information_schema.columns for the view and asserts the column set exactly matches the 16-element allow-list with symmetric-difference diagnostics on both directions so a future widening of the view dies at CI with the offending column name); backend/tests/test_kat14_overview.py (3 unit + 3 router-mount + 3 e2e-gated scenarios — Pydantic schema validation including no-telemetry-yet (null timestamps), Decimal preservation, malformed device count rejection, KPI + response round-trip, empty parcels validates; router-mount auth-contract: 401 on missing bearer, 401 on expired token, 401 on bad-signature; e2e behind KAT14_E2E=1: payload shape matches per-parcel sums (handler-enforced invariant), cross-farmer isolation (FARMER-A and FARMER-B see disjoint parcel-id sets), Cache-Control header set). NGINX: no change — single farmer-scoped GET endpoint with no new service-role surface. NOT-01: no Brevo template — KAT-14 is a read-only UI surface; PRD §7.3 deliberately excludes "your dashboard summary needs attention" from the MVD email types. Post-MVD follow-ups encoded into the story §10 hand-off: post-MVD farm-level analytics surface reusing the view's CTEs for cross-parcel comparisons (yield, alert frequency, diagnostic recurrence) under a "Tendances" tab; parcel grouping / regional tags via a nullable group_name column on m1_katara_parcels + a <GroupFilter> chip row once a farmer crosses ~10 parcels; parcel typeahead in the switcher replacing the horizontal pill list at parcel count > 10; saved per-user parcel_display_order for pin / reorder UX; map-based overview with Leaflet polygons pairing with KAT-01's deferred map-based polygon drawing; SSE-based live overview from a katara_overview_watcher worker when the 60 s cache becomes too stale; promoting the view to a materialised aggregate refreshed every minute by CRON when p99 crosses 200 ms or farmer parcel count exceeds 50. E2 epic flips to feature-complete: KAT-01..14 all IN_REVIEW after this story; next module-level milestone is E3 (FAR-01 onward).
+        actor: FARMER
+        acceptance: "Dashboard overview KPI strip + parcel grid + per-detail-page switcher; one round-trip /farmers/me/overview; AUTH-07 K-14a/b green"
+        depends_on: [KAT-01, KAT-04, KAT-13]
+
+  # ===========================================================================
+  - id: E3
+    name: M2 FarMarket — B2B Agri-Marketplace
+    phase: P2
+    description: PRD §6.2 — Verified farmer ads, restaurateur browse + contact.
+    owner: TBD
+    status: TODO
+    progress_pct: 0
+    stories:
+      - id: FAR-01
+        title: Verified farmer creates ad (title, desc, price, qty, region, ≤5 photos)
+        priority: Must
+        status: TODO
+        actor: FARMER
+        acceptance: "Ad created; BR-F1 (role) + BR-F2 (≤5 photos, ≤2MB) enforced"
+        depends_on: [AUTH-06, INF-02]
+      - id: FAR-02
+        title: Restaurateur browses ads with region/type/price filters
+        priority: Must
+        status: TODO
+        actor: RESTAURANT
+        acceptance: "Listing with working filters + pagination"
+        depends_on: [FAR-01]
+      - id: FAR-03
+        title: Restaurateur contacts seller (message + phone)
+        priority: Must
+        status: TODO
+        actor: RESTAURANT
+        acceptance: "Lead persisted; Moroccan phone format validated"
+        depends_on: [FAR-02]
+      - id: FAR-04
+        title: Brevo email to seller with buyer contact details
+        priority: Must
+        status: TODO
+        actor: System
+        acceptance: "BR-F4 — Brevo key only on backend; email delivered < 2 min"
+        depends_on: [FAR-03, NOT-01]
+      - id: FAR-05
+        title: Farmer edits or removes own ads
+        priority: Must
+        status: TODO
+        actor: FARMER
+        acceptance: "Edit/delete restricted to owner via RLS"
+        depends_on: [FAR-01]
+      - id: FAR-06
+        title: Nightly CRON expires ads older than 7 days
+        priority: Must
+        status: TODO
+        actor: System
+        acceptance: "BR-F3 — status set to EXPIRED; heartbeat to Healthchecks"
+        depends_on: [FAR-01, INF-07]
+      - id: FAR-07
+        title: Photos stored in Supabase Storage (not DB)
+        priority: Must
+        status: TODO
+        actor: System
+        acceptance: "DB holds storage paths; signed URLs served"
+        depends_on: [INF-02]
+      - id: FAR-08
+        title: Admin views all ads and leads
+        priority: Should
+        status: TODO
+        actor: ADMIN
+        acceptance: "Admin dashboard lists+filters all ads/leads"
+        depends_on: [FAR-01, ADM-01]
+      - id: FAR-09
+        title: Featured ads at top of catalog
+        priority: Could
+        status: TODO
+        actor: System
+        acceptance: "Featured flag promotes ad; sorted first"
+        depends_on: [FAR-02]
+
+  # ===========================================================================
+  - id: E4
+    name: M3 BotaBa9a — Restaurant IoT Showcase
+    phase: P2
+    description: PRD §6.3 — Public catalog + lead capture + admin lead workflow.
+    owner: TBD
+    status: TODO
+    progress_pct: 0
+    stories:
+      - id: BOT-01
+        title: Public catalog of BotaBa9a IoT solutions
+        priority: Must
+        status: TODO
+        actor: VISITOR
+        acceptance: "Catalog page renders without auth"
+        depends_on: [INF-03]
+      - id: BOT-02
+        title: Product technical sheets (specs, price, availability)
+        priority: Must
+        status: TODO
+        actor: VISITOR
+        acceptance: "Detail page per product"
+        depends_on: [BOT-01]
+      - id: BOT-03
+        title: Lead form (name, restaurant, phone, email, city, message)
+        priority: Must
+        status: TODO
+        actor: VISITOR
+        acceptance: "Form validates BR-B1 Moroccan phone regex"
+        depends_on: [BOT-02]
+      - id: BOT-04
+        title: Brevo email to admin on lead submission (DB webhook)
+        priority: Must
+        status: TODO
+        actor: System
+        acceptance: "BR-B2 — Supabase Database Webhook → Brevo, no backend code"
+        depends_on: [BOT-03]
+      - id: BOT-05
+        title: Admin lead dashboard with filter + assign
+        priority: Must
+        status: TODO
+        actor: ADMIN
+        acceptance: "Admin lists, filters, assigns leads"
+        depends_on: [BOT-03, ADM-01]
+      - id: BOT-06
+        title: CSV export of leads
+        priority: Should
+        status: TODO
+        actor: ADMIN
+        acceptance: "Download leads.csv from admin"
+        depends_on: [BOT-05]
+      - id: BOT-07
+        title: Admin notes / actions log per lead
+        priority: Should
+        status: TODO
+        actor: ADMIN
+        acceptance: "Per-lead notes timeline visible"
+        depends_on: [BOT-05]
+
+  # ===========================================================================
+  - id: E5
+    name: M4 SecondServe — Anti-Waste B2C Marketplace
+    phase: P2
+    description: PRD §6.4 — Surprise boxes, geo-search, reservation+code, validation, commission.
+    owner: TBD
+    status: TODO
+    progress_pct: 0
+    stories:
+      - id: SEC-01
+        title: Restaurateur publishes a surprise box
+        priority: Must
+        status: TODO
+        actor: RESTAURANT
+        acceptance: "Meal created with prices, qty, pickup window, deadline"
+        depends_on: [AUTH-06]
+      - id: SEC-02
+        title: Citizen browses meals (map + list views)
+        priority: Must
+        status: TODO
+        actor: CITIZEN
+        acceptance: "Map and list views render available meals"
+        depends_on: [SEC-01]
+      - id: SEC-03
+        title: Geolocated search (lat/lng + radius)
+        priority: Must
+        status: TODO
+        actor: CITIZEN
+        acceptance: "Radius filter returns ordered-by-distance results"
+        depends_on: [SEC-02]
+      - id: SEC-04
+        title: Reservation + server-side secret code (VITA-XXX)
+        priority: Must
+        status: TODO
+        actor: CITIZEN
+        acceptance: "BR-S1 server-only code; BR-S2 atomic stock decrement → 409 if 0"
+        depends_on: [SEC-02]
+      - id: SEC-05
+        title: Brevo email with pickup code on reservation
+        priority: Must
+        status: TODO
+        actor: System
+        acceptance: "Email delivered < 2 min after reservation"
+        depends_on: [SEC-04, NOT-01]
+      - id: SEC-06
+        title: Restaurateur validates pickup code → mark COLLECTED
+        priority: Must
+        status: TODO
+        actor: RESTAURANT
+        acceptance: "Validate endpoint flips status; idempotent"
+        depends_on: [SEC-04]
+      - id: SEC-07
+        title: 15-min CRON expires meals past deadline
+        priority: Must
+        status: TODO
+        actor: System
+        acceptance: "BR-S3 — expired meals not bookable; heartbeat reported"
+        depends_on: [SEC-01]
+      - id: SEC-08
+        title: Monthly commission report (15% of COLLECTED)
+        priority: Must
+        status: TODO
+        actor: RESTAURANT
+        acceptance: "BR-S4 — SUM(price × qty_sold) × 0.15 visible"
+        depends_on: [SEC-06]
+      - id: SEC-09
+        title: Citizen reservation history + pickup status
+        priority: Should
+        status: TODO
+        actor: CITIZEN
+        acceptance: "Per-citizen history view"
+        depends_on: [SEC-04]
+      - id: SEC-10
+        title: Restaurateur edits qty/deadline before first reservation
+        priority: Should
+        status: TODO
+        actor: RESTAURANT
+        acceptance: "Edit blocked once first reservation exists"
+        depends_on: [SEC-01]
+
+  # ===========================================================================
+  - id: E6
+    name: Notifications & Brevo Integration (Cross-cutting)
+    phase: P2
+    description: PRD §7.3 — All transactional email flows.
+    owner: TBD
+    status: TODO
+    progress_pct: 0
+    stories:
+      - id: NOT-01
+        title: Brevo client wrapper in FastAPI (templated, locale-aware)
+        priority: Must
+        status: TODO
+        acceptance: "Single util sends email; key only in backend"
+        depends_on: [INF-04]
+      - id: NOT-02
+        title: Pickup code email template (FR/AR/EN)
+        priority: Must
+        status: TODO
+        acceptance: "3 locale variants render correctly"
+        depends_on: [NOT-01, I18N-03]
+      - id: NOT-03
+        title: AI diagnostic-ready email template (FR/AR/EN)
+        priority: Must
+        status: TODO
+        acceptance: "3 locale variants render correctly"
+        depends_on: [NOT-01]
+      - id: NOT-04
+        title: Sensor threshold alert email template
+        priority: Must
+        status: TODO
+        acceptance: "Anti-spam 24h window enforced (BR-K2)"
+        depends_on: [NOT-01]
+      - id: NOT-05
+        title: Device-offline alert email template
+        priority: Should
+        status: TODO
+        acceptance: "Triggered by offline-detection CRON"
+        depends_on: [NOT-01]
+      - id: NOT-06
+        title: Contact-lead email template (FarMarket seller)
+        priority: Must
+        status: TODO
+        acceptance: "Seller receives buyer details email"
+        depends_on: [NOT-01]
+      - id: NOT-07
+        title: BotaBa9a lead notification (via Supabase DB webhook)
+        priority: Must
+        status: TODO
+        acceptance: "BR-B2 — no Python backend code involved"
+        depends_on: [INF-02]
+
+  # ===========================================================================
+  - id: E7
+    name: Internationalization (i18n)
+    phase: P2
+    description: PRD §7.2 — FR/AR/EN P0–P1; RTL; locale fallback.
+    owner: TBD
+    status: TODO
+    progress_pct: 0
+    stories:
+      - id: I18N-01
+        title: i18n framework setup (next-intl or equivalent)
+        priority: Must
+        status: TODO
+        acceptance: "No hardcoded strings in tsx/ts/py — lint rule active"
+        depends_on: [INF-03]
+      - id: I18N-02
+        title: French (fr) message catalog — P0
+        priority: Must
+        status: TODO
+        acceptance: "All UI strings present in fr.json"
+        depends_on: [I18N-01]
+      - id: I18N-03
+        title: Arabic (ar) catalog + RTL layout
+        priority: Must
+        status: TODO
+        acceptance: 'dir="rtl" on <html>; UI mirrored correctly'
+        depends_on: [I18N-02]
+        phase: P3
+      - id: I18N-04
+        title: English (en) catalog — P1
+        priority: Should
+        status: TODO
+        acceptance: "Locale switcher shows en option"
+        depends_on: [I18N-02]
+      - id: I18N-05
+        title: Locale fallback chain (requested → fr)
+        priority: Must
+        status: TODO
+        acceptance: "Unsupported locales fall back silently to fr"
+        depends_on: [I18N-01]
+      - id: I18N-06
+        title: Gemini prompts localized per user preference
+        priority: Must
+        status: TODO
+        acceptance: "AI diagnostic content matches user locale"
+        depends_on: [KAT-08, I18N-02]
+
+  # ===========================================================================
+  - id: E8
+    name: Admin Dashboard
+    phase: P2
+    description: Operator views — verification, leads, commission overview.
+    owner: TBD
+    status: TODO
+    progress_pct: 0
+    stories:
+      - id: ADM-01
+        title: Admin shell + role-protected routes
+        priority: Must
+        status: TODO
+        acceptance: "Only ADMIN role reaches /admin/*"
+        depends_on: [AUTH-02]
+      - id: ADM-02
+        title: Professional verification queue (approve/reject)
+        priority: Must
+        status: TODO
+        acceptance: "Admin flips verification_status to VERIFIED"
+        depends_on: [ADM-01, AUTH-06]
+      - id: ADM-03
+        title: Cross-module lead overview (FarMarket + BotaBa9a)
+        priority: Should
+        status: TODO
+        acceptance: "Aggregated leads list with filters"
+        depends_on: [FAR-08, BOT-05]
+      - id: ADM-04
+        title: Commission overview across restaurateurs
+        priority: Should
+        status: TODO
+        acceptance: "Monthly totals visible per restaurateur"
+        depends_on: [SEC-08]
+
+# -----------------------------------------------------------------------------
+# Non-Functional / Quality Gates (PRD §8) — tracked separately
+# -----------------------------------------------------------------------------
+quality_gates:
+  - id: QG-01
+    name: IoT ingestion p50 < 50 ms
+    phase: P3
+    status: TODO
+  - id: QG-02
+    name: API p50 < 200 ms (excluding AI)
+    phase: P3
+    status: TODO
+  - id: QG-03
+    name: AI diagnostic e2e < 30 s
+    phase: P3
+    status: TODO
+  - id: QG-04
+    name: 50 concurrent users without errors
+    phase: P3
+    status: TODO
+  - id: QG-05
+    name: 100 req/s on /ingest without errors (load test)
+    phase: P3
+    status: TODO
+  - id: QG-06
+    name: Brevo email delivered < 2 min after trigger
+    phase: P3
+    status: TODO
+  - id: QG-07
+    name: Zero downtime during 30-min demo
+    phase: P4
+    status: TODO
+  - id: QG-08
+    name: All 3 demo scenarios rehearsed
+    phase: P4
+    status: TODO
+
+# -----------------------------------------------------------------------------
+# Risk Register pointer (PRD §13)
+# -----------------------------------------------------------------------------
+risks_tracked_separately: true
+risks_ref: Documents/VitaChain_PRD.md#13-risk-register
+
+# -----------------------------------------------------------------------------
+# Out of Scope — DO NOT IMPLEMENT in MVD (PRD §14)
+# -----------------------------------------------------------------------------
+out_of_scope:
+  - Online payment (Stripe / CMI)
+  - Native iOS / Android apps
+  - Darija and Tamazight languages
+  - Real gas sensor IoT for BotaBa9a
+  - Full cold-chain monitoring
+  - Multi-tenant architecture
+  - Ratings and reviews system
+  - Advanced analytics / BI dashboards
+  - Social DMs between farmers and restaurateurs
+  - Kubernetes orchestration

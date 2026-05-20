@@ -1,0 +1,494 @@
+# VitaChain — root production stack (INF-01, extended by INF-03)
+# This file is rsynced to /opt/vitachain/docker-compose.yml on the VPS.
+# Application services (FastAPI, workers) appended by INF-04 onward.
+
+name: vitachain
+
+networks:
+  vita_net:
+    driver: bridge
+
+services:
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: vita_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"                                # INF-06 — TLS listener
+    # AUTH-08 — envsubst pass renders nginx/templates/*.template → /etc/nginx/conf.d/.
+    # The official nginx:alpine entrypoint scans NGINX_ENVSUBST_TEMPLATE_DIR
+    # at boot and writes the rendered file to NGINX_ENVSUBST_OUTPUT_DIR. Only
+    # the two listed variables are substituted; every other $name in the
+    # template is preserved (NGINX runtime variables stay intact).
+    environment:
+      NGINX_ENVSUBST_TEMPLATE_DIR: /etc/nginx/templates
+      NGINX_ENVSUBST_TEMPLATE_SUFFIX: .template
+      NGINX_ENVSUBST_OUTPUT_DIR: /etc/nginx/conf.d
+      VPS_PUBLIC_IP: ${VPS_PUBLIC_IP:-127.0.0.1}
+      RATELIMIT_WHITELIST_IPS_NGINX_LINES: ${RATELIMIT_WHITELIST_IPS_NGINX_LINES:-}
+    volumes:
+      # AUTH-08 — conf.d is read/write because the entrypoint's envsubst pass
+      # writes the rendered 00-rate-limits.conf next to the hand-written
+      # default.conf / tls.conf. The rendered file is gitignored (see
+      # infra/nginx/conf.d/.gitignore). The hand-written *.conf files are
+      # never modified by the entrypoint — it only emits filenames whose
+      # `.template` source exists in /etc/nginx/templates/.
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./nginx/templates:/etc/nginx/templates:ro
+      - ./nginx/html:/usr/share/nginx/html:ro
+      # AUTH-08 — shared snippets (proxy-backend, limit-headers) included
+      # from per-location blocks in default.conf.
+      - ./nginx/snippets:/etc/nginx/snippets:ro
+      # INF-06 — certbot writes here; nginx reads (ro) the live/<domain>/
+      # fullchain.pem + privkey.pem + chain.pem referenced in tls.conf.
+      - letsencrypt_etc:/etc/letsencrypt:ro
+      # INF-06 — ACME http-01 webroot. Served from the :80 server's
+      # `location ^~ /.well-known/acme-challenge/` block.
+      - letsencrypt_www:/var/www/certbot:ro
+      # INF-08 — basic-auth htpasswd file for /uptime/ admin gate. Seeded
+      # one-shot by §5.10 step 4; never committed to git.
+      - nginx_htpasswd:/etc/nginx/htpasswd:ro
+    networks:
+      - vita_net
+    depends_on:
+      # NGINX can start before its upstreams; the proxy_pass entries fail soft
+      # on 502 until they're healthy. depends_on here only orders boot.
+      - frontend
+      - backend
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O-", "http://localhost/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ---------------------------------------------------------------------------
+  # INF-03 — Next.js frontend (auth journey + dashboard shell).
+  # Built from ../frontend/ on the VPS; the build args inline the public
+  # Supabase values into the JS bundle at compile time.
+  # ---------------------------------------------------------------------------
+  frontend:
+    build:
+      # On the VPS, deploy.sh rsyncs `frontend/` to `$PROJECT_DIR/frontend/`,
+      # so `./frontend` resolves to the same location as on the developer laptop
+      # when running `docker compose -f infra/docker-compose.yml ...` from
+      # the repo root via a wrapper that cd's into the right place.
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://vitachain.ma}
+        # INF-08 — frontend Sentry DSN + env + release tag. All public values
+        # (the DSN is a write-only ingest token — leaking it is harmless beyond
+        # someone forging your event budget). SENTRY_AUTH_TOKEN is CI-only —
+        # NEVER ship it as a build arg on the VPS.
+        NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN:-}
+        NEXT_PUBLIC_VITACHAIN_ENV: ${SENTRY_ENVIRONMENT:-prod}
+        NEXT_PUBLIC_GIT_SHA: ${GIT_SHA:-unknown}
+    image: vitachain/frontend:latest
+    container_name: vita_frontend
+    restart: unless-stopped
+    # Runtime envs (server-action path). The bundle already has the public
+    # values inlined from build args; redeclaring here lets server-side reads
+    # of process.env.NEXT_PUBLIC_* work without rebuilding for local tweaks.
+    environment:
+      NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://vitachain.ma}
+      # INF-08 — Sentry. NEXT_PUBLIC_* values are inlined into the JS bundle
+      # at BUILD time (see build.args below); redeclaring at runtime lets
+      # server-action reads of process.env.NEXT_PUBLIC_* match the inlined
+      # values without a rebuild for an env-only tweak.
+      NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN:-}
+      NEXT_PUBLIC_VITACHAIN_ENV: ${SENTRY_ENVIRONMENT:-prod}
+      NEXT_PUBLIC_GIT_SHA: ${GIT_SHA:-unknown}
+    networks:
+      - vita_net
+    expose:
+      - "3000"   # Only NGINX may reach this; never published to the host.
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/api/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ---------------------------------------------------------------------------
+  # INF-06 — Certbot sidecar. Idle by default (`command: version` is a cheap
+  # no-op); real invocations override via `docker compose run --rm certbot …`
+  # from issue-cert.sh / renew-cert.sh on the VPS host.
+  #
+  # Image is pinned by tag for now — operators MUST swap to a sha256 digest
+  # before the first production issuance (story §5.2 + §5.10):
+  #     docker pull certbot/certbot:v3.0.1
+  #     docker inspect --format='{{index .RepoDigests 0}}' certbot/certbot:v3.0.1
+  #     # → replace the `image:` line with the digest form.
+  # ---------------------------------------------------------------------------
+  certbot:
+    image: certbot/certbot:v3.0.1   # TODO(INF-06): pin to sha256 before prod issue
+    container_name: vita_certbot
+    # Safe default; renewal/issue scripts override.
+    command: ["version"]
+    volumes:
+      - letsencrypt_etc:/etc/letsencrypt
+      - letsencrypt_www:/var/www/certbot
+    # One-shot — never restart on its own.
+    restart: "no"
+    # Not on vita_net: certbot only needs outbound HTTPS to acme-v02 and
+    # nginx is reached over the host (via `docker compose exec nginx …` in
+    # the deploy-hook).
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  # ---------------------------------------------------------------------------
+  # INF-04 — FastAPI backend (health + module placeholders today; domain
+  # routers attach in KAT-* / FAR-* / SEC-* / BOT-* / NOT-*).
+  # Built from ../backend/ on the VPS; service-role secrets are runtime-only.
+  # ---------------------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: vitachain/backend:latest
+    container_name: vita_backend
+    restart: unless-stopped
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-prod}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      GIT_SHA: ${GIT_SHA:-unknown}
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      SUPABASE_JWT_SECRET: ${SUPABASE_JWT_SECRET}
+      CORS_ALLOW_ORIGINS: ${CORS_ALLOW_ORIGINS:-http://vitachain.ma}
+      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-2}
+      # INF-08 — Sentry. Empty SENTRY_DSN no-ops the SDK; the explicit dev/ci
+      # guard in init_observability() is the documented contract.
+      SENTRY_DSN: ${SENTRY_DSN_BACKEND:-}
+      SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-prod}
+      SENTRY_TRACES_SAMPLE_RATE: ${SENTRY_TRACES_SAMPLE_RATE:-0.1}
+    networks:
+      - vita_net
+    expose:
+      - "8000"   # Only NGINX may reach this; never published to the host.
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/api/v1/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ---------------------------------------------------------------------------
+  # KAT-06 — Threshold-crossing email alert worker.
+  # LISTENs on `katara_telemetry_inserted` (emitted by KAT-03's ingest trigger),
+  # evaluates BR-K2 anti-spam against m1_katara_thresholds, dispatches a
+  # locale-appropriate Brevo template. Reuses the FastAPI image — different
+  # entry-point. Off the request loop entirely so a worker stall cannot wedge
+  # the API and a slow Brevo response never blocks ingest.
+  # ---------------------------------------------------------------------------
+  katara_threshold_worker:
+    image: vitachain/backend:latest
+    container_name: vita_katara_threshold_worker
+    command: ["python", "-m", "app.workers.katara_threshold"]
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-prod}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      GIT_SHA: ${GIT_SHA:-unknown}
+      # DATABASE_URL is the DIRECT (:5432) Postgres URL, NOT the pooler.
+      # asyncpg's LISTEN holds a connection — pgBouncer transaction mode
+      # would break the subscription on every statement boundary.
+      DATABASE_URL: ${SUPABASE_DB_URL}
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      BREVO_API_KEY: ${BREVO_API_KEY}
+      BREVO_SENDER_NAME: ${BREVO_SENDER_NAME:-VitaChain}
+      BREVO_SENDER_EMAIL: ${BREVO_SENDER_EMAIL:-no-reply@vitachain.ma}
+      BREVO_TEMPLATE_KAT_THRESHOLD_FR: ${BREVO_TEMPLATE_KAT_THRESHOLD_FR:-0}
+      BREVO_TEMPLATE_KAT_THRESHOLD_AR: ${BREVO_TEMPLATE_KAT_THRESHOLD_AR:-0}
+      BREVO_TEMPLATE_KAT_THRESHOLD_EN: ${BREVO_TEMPLATE_KAT_THRESHOLD_EN:-0}
+      FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-https://vitachain.ma}
+      SENTRY_DSN: ${SENTRY_DSN_BACKEND:-}
+      SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-prod}
+      SENTRY_TRACES_SAMPLE_RATE: ${SENTRY_TRACES_SAMPLE_RATE:-0.1}
+      HEALTHCHECKS_KAT_THRESHOLD_PING_URL: ${HEALTHCHECKS_KAT_THRESHOLD_PING_URL:-}
+    networks:
+      - vita_net
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f 'app.workers.katara_threshold' >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ---------------------------------------------------------------------------
+  # KAT-11 — Offline-device detection worker.
+  # CRON-style asyncio loop scans m1_katara_devices every 5 minutes for rows
+  # whose last_seen is older than 1 hour, atomically flips them to OFFLINE
+  # and emails the owning farmer in their saved locale. Reuses the FastAPI
+  # image — different entry-point. The atomic `UPDATE ... WHERE ...` claim
+  # plus the 24h anti-spam predicate (BR-K11-1) make this safe to run as a
+  # single instance for MVD; the same SQL is also N-replica-safe if needed.
+  # ---------------------------------------------------------------------------
+  katara_offline_worker:
+    image: vitachain/backend:latest
+    container_name: vita_katara_offline_worker
+    command: ["python", "-m", "app.workers.katara_offline"]
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-prod}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      GIT_SHA: ${GIT_SHA:-unknown}
+      # KAT-11 connects with DATABASE_URL (asyncpg) — service-role-scoped at
+      # the connection level, no Supabase service_client() callsite. Unlike
+      # KAT-06's LISTEN session this is a short-lived per-pass query so the
+      # pooled URL (SUPABASE_DB_POOLER_URL) would also work; we use the
+      # direct DSN for consistency with the other workers.
+      DATABASE_URL: ${SUPABASE_DB_URL}
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      BREVO_API_KEY: ${BREVO_API_KEY}
+      BREVO_SENDER_NAME: ${BREVO_SENDER_NAME:-VitaChain}
+      BREVO_SENDER_EMAIL: ${BREVO_SENDER_EMAIL:-no-reply@vitachain.ma}
+      BREVO_TEMPLATE_KAT_OFFLINE_FR: ${BREVO_TEMPLATE_KAT_OFFLINE_FR:-0}
+      BREVO_TEMPLATE_KAT_OFFLINE_AR: ${BREVO_TEMPLATE_KAT_OFFLINE_AR:-0}
+      BREVO_TEMPLATE_KAT_OFFLINE_EN: ${BREVO_TEMPLATE_KAT_OFFLINE_EN:-0}
+      FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-https://vitachain.ma}
+      SENTRY_DSN: ${SENTRY_DSN_BACKEND:-}
+      SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-prod}
+      SENTRY_TRACES_SAMPLE_RATE: ${SENTRY_TRACES_SAMPLE_RATE:-0.1}
+      HEALTHCHECKS_KAT_OFFLINE_PING_URL: ${HEALTHCHECKS_KAT_OFFLINE_PING_URL:-}
+    networks:
+      - vita_net
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f 'app.workers.katara_offline' >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ---------------------------------------------------------------------------
+  # KAT-08 — AI diagnostic worker (OWM + Sentinel-2 NDVI + 7d sensor avg + Gemini).
+  # LISTENs on `katara_diagnostic_requested` (emitted by KAT-08's migration 0023
+  # AFTER INSERT trigger on m1_katara_diagnostics), claims the PENDING row
+  # atomically, assembles the composite payload, calls Gemini, and writes back
+  # COMPLETED or FAILED. Same image as backend / katara_threshold_worker —
+  # different entrypoint. End-to-end p95 < 30 s. Single replica for MVD; the
+  # atomic-claim UPDATE pattern is N-replica-safe if demand grows.
+  # ---------------------------------------------------------------------------
+  katara_diagnostic_worker:
+    image: vitachain/backend:latest
+    container_name: vita_katara_diagnostic_worker
+    command: ["python", "-m", "app.workers.katara_diagnostic"]
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-prod}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      GIT_SHA: ${GIT_SHA:-unknown}
+      # DATABASE_URL is the DIRECT (:5432) Postgres URL, NOT the pooler. The
+      # LISTEN session must survive across statements — pgBouncer transaction
+      # mode would break the subscription on every COMMIT boundary.
+      DATABASE_URL: ${SUPABASE_DB_URL}
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      # KAT-08 — external API keys. The worker hits all three from inside the
+      # container; never exposed via NGINX so the rate limits are vendor-side.
+      OPENWEATHERMAP_API_KEY: ${OPENWEATHERMAP_API_KEY:-}
+      SENTINEL_HUB_API_KEY: ${SENTINEL_HUB_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.0-flash}
+      SENTRY_DSN: ${SENTRY_DSN_BACKEND:-}
+      SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-prod}
+      SENTRY_TRACES_SAMPLE_RATE: ${SENTRY_TRACES_SAMPLE_RATE:-0.1}
+      HEALTHCHECKS_KAT_DIAGNOSTIC_PING_URL: ${HEALTHCHECKS_KAT_DIAGNOSTIC_PING_URL:-}
+    networks:
+      - vita_net
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f 'app.workers.katara_diagnostic' >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ---------------------------------------------------------------------------
+  # KAT-09 — Diagnostic completion email worker.
+  # LISTENs on `katara_diagnostic_completed` (emitted by migration 0024's
+  # AFTER UPDATE trigger on m1_katara_diagnostics, on the first PROCESSING →
+  # COMPLETED transition only), fetches the diagnostic row + farmer profile +
+  # parcel name, renders result_text Markdown to HTML, and dispatches a Brevo
+  # template via NOT-01's mailer. `notified_at IS NULL` is the idempotency
+  # anchor — the worker stamps it AFTER Brevo 2xx; the 30-minute backstop
+  # retries any row that survived a worker restart between the Brevo call and
+  # the audit write. Same image as the other workers — different entrypoint.
+  # ---------------------------------------------------------------------------
+  katara_diagnostic_email_worker:
+    image: vitachain/backend:latest
+    container_name: vita_katara_diagnostic_email_worker
+    command: ["python", "-m", "app.workers.katara_diagnostic_email"]
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-prod}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      GIT_SHA: ${GIT_SHA:-unknown}
+      # DATABASE_URL is the DIRECT (:5432) Postgres URL, NOT the pooler. The
+      # LISTEN session must survive across statements — pgBouncer transaction
+      # mode would break the subscription on every COMMIT boundary.
+      DATABASE_URL: ${SUPABASE_DB_URL}
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      BREVO_API_KEY: ${BREVO_API_KEY}
+      BREVO_SENDER_NAME: ${BREVO_SENDER_NAME:-VitaChain}
+      BREVO_SENDER_EMAIL: ${BREVO_SENDER_EMAIL:-no-reply@vitachain.ma}
+      BREVO_TEMPLATE_KAT_DIAGNOSTIC_FR: ${BREVO_TEMPLATE_KAT_DIAGNOSTIC_FR:-0}
+      BREVO_TEMPLATE_KAT_DIAGNOSTIC_AR: ${BREVO_TEMPLATE_KAT_DIAGNOSTIC_AR:-0}
+      BREVO_TEMPLATE_KAT_DIAGNOSTIC_EN: ${BREVO_TEMPLATE_KAT_DIAGNOSTIC_EN:-0}
+      SENTRY_DSN: ${SENTRY_DSN_BACKEND:-}
+      SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-prod}
+      SENTRY_TRACES_SAMPLE_RATE: ${SENTRY_TRACES_SAMPLE_RATE:-0.1}
+      HEALTHCHECKS_KAT_DIAGNOSTIC_EMAIL_PING_URL: ${HEALTHCHECKS_KAT_DIAGNOSTIC_EMAIL_PING_URL:-}
+    networks:
+      - vita_net
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f 'app.workers.katara_diagnostic_email' >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ---------------------------------------------------------------------------
+  # INF-07 — Nightly pg_dump → Backblaze B2. Idle by default (the cron on the
+  # host invokes `docker compose run --rm db-backup` once a night). Custom
+  # image bundles postgres-client 17 + rclone; see infra/db-backup/Dockerfile.
+  #
+  # First-time setup (one-shot, before the first scheduled run):
+  #     make -C infra backup-rclone-config
+  # ---------------------------------------------------------------------------
+  db-backup:
+    build:
+      context: ./db-backup
+      dockerfile: Dockerfile
+    image: vitachain/db-backup:1.0   # TODO(INF-07): swap to sha256 digest after first push
+    container_name: vita_db_backup
+    # Safe default if someone runs `docker compose up db-backup` by mistake;
+    # the real invocation path is `docker compose run --rm db-backup`.
+    command: ["--help"]
+    environment:
+      SUPABASE_DB_URL:                  ${SUPABASE_DB_URL}
+      BACKUP_BUCKET:                    ${BACKUP_BUCKET:-vitachain-backups}
+      BACKUP_REMOTE_PATH:               ${BACKUP_REMOTE_PATH:-postgres}
+      BACKUP_RETENTION_LOCAL_DAYS:      ${BACKUP_RETENTION_LOCAL_DAYS:-7}
+      BACKUP_RETENTION_REMOTE_DAYS:     ${BACKUP_RETENTION_REMOTE_DAYS:-30}
+    volumes:
+      - db_backups:/backups
+      - rclone_config:/config/rclone
+      # The entrypoint script lives in the repo (not in the image) so an
+      # operator can fix a bug without a Docker rebuild.
+      - ./scripts/backup-entrypoint.sh:/usr/local/bin/backup-entrypoint.sh:ro
+    # One-shot — never restart. Errors are observed by the host wrapper.
+    restart: "no"
+    # Not on vita_net; only needs outbound (Supabase + B2). Skipping the
+    # bridge network avoids a tiny attack surface where a compromised
+    # backend could talk to the backup container.
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  # ---------------------------------------------------------------------------
+  # INF-08 — Uptime Kuma. Self-hosted active uptime probes + chat alerting.
+  # Reached ONLY through NGINX at https://vitachain.ma/uptime/ (basic-auth on
+  # the location block). The container does NOT publish a host port — :3001
+  # is exposed on vita_net so the nginx upstream can reach it but nothing else.
+  #
+  # State lives in a named volume (uptime_kuma_data). The monitor/notification
+  # config is also recoverable from `make -C infra uptime-export` (§5.9) so a
+  # volume loss is a 10-minute re-import, not an existential recovery.
+  # ---------------------------------------------------------------------------
+  uptime_kuma:
+    image: louislam/uptime-kuma:1.23.16   # TODO(INF-08): pin sha256 after first prod
+    container_name: vita_uptime_kuma
+    restart: unless-stopped
+    volumes:
+      - uptime_kuma_data:/app/data
+    networks:
+      - vita_net
+    expose:
+      - "3001"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3001"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+# -----------------------------------------------------------------------------
+# Named volumes
+#   letsencrypt_etc — /etc/letsencrypt: account state, live certs, archive,
+#                     options-ssl-nginx.conf, ssl-dhparams.pem. Written by
+#                     certbot, read-only on nginx. (INF-06)
+#   letsencrypt_www — /var/www/certbot: ephemeral ACME challenge tokens.   (INF-06)
+#   db_backups      — /backups: 7-day local pg_dump snapshot tier.         (INF-07)
+#   rclone_config   — /config/rclone: obfuscated B2 application key.        (INF-07)
+# All survive `docker compose down`; only `docker compose down -v` wipes
+# them. NEVER do that on the VPS unless you intend to re-issue / reconfigure
+# from scratch (and burn rate-limit budget / re-walk the rclone prompts).
+# -----------------------------------------------------------------------------
+volumes:
+  letsencrypt_etc:
+  letsencrypt_www:
+  db_backups:
+  rclone_config:
+  uptime_kuma_data:   # INF-08 — Kuma SQLite + monitor/notification config
+  nginx_htpasswd:     # INF-08 — basic-auth file for /uptime/ admin gate

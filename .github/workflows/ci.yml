@@ -1,0 +1,320 @@
+# VitaChain — CI (INF-05).
+# One workflow, multiple jobs, path-filtered. Pin every action to a 40-char
+# SHA — tag moves are silent re-deploys. Branch protection targets the single
+# `ci-required` job (§5.2 of the story).
+
+name: ci
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # changes — compute per-tree booleans so unaffected jobs short-circuit to
+  # `skipped`. The aggregator below counts `skipped` as success.
+  # ---------------------------------------------------------------------------
+  changes:
+    runs-on: ubuntu-24.04
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+      backend:  ${{ steps.filter.outputs.backend }}
+      db:       ${{ steps.filter.outputs.db }}
+      infra:    ${{ steps.filter.outputs.infra }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - id: filter
+        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+        with:
+          filters: |
+            frontend:
+              - 'frontend/**'
+              - '.github/workflows/ci.yml'
+            backend:
+              - 'backend/**'
+              - '.github/workflows/ci.yml'
+            db:
+              - 'db/**'
+              - 'supabase/**'
+              - '.github/workflows/ci.yml'
+            infra:
+              - 'infra/**'
+              - 'nginx/**'
+              - '.github/workflows/ci.yml'
+
+  # ---------------------------------------------------------------------------
+  # frontend — npm ci → lint → typecheck → build → docker build (no push).
+  # ---------------------------------------------------------------------------
+  frontend:
+    needs: changes
+    if: ${{ needs.changes.outputs.frontend == 'true' }}
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+        with:
+          node-version: '20.x'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: install
+        run: npm ci --no-audit --no-fund
+
+      - name: lint
+        run: npm run lint
+
+      - name: typecheck
+        run: npm run typecheck
+
+      - name: build
+        env:
+          # Build-time placeholders so `next build` doesn't 500 on missing
+          # NEXT_PUBLIC_*. Real values only matter at runtime / on the VPS.
+          NEXT_PUBLIC_SUPABASE_URL: https://ci.example.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon
+        run: npm run build
+
+      - name: AUTH-05 — frontend bundle scan
+        # Asserts the built bundle contains no service-role JWT value, no
+        # forbidden env-var NAMES (SUPABASE_SERVICE_ROLE_KEY / JWT_SECRET /
+        # DB_PASSWORD / DB_URL), and no role=service_role-decoded token.
+        # Runs only after a successful build — a failed build leaves no
+        # .next/ to scan and would otherwise emit a SKIP that masks the
+        # real failure attribution.
+        if: success()
+        run: bash ../scripts/check-frontend-bundle.sh .next
+
+      - name: docker build (no push)
+        run: docker build -t vitachain/frontend:ci .
+
+  # ---------------------------------------------------------------------------
+  # backend — pip install --require-hashes → ruff → ruff format --check →
+  # pytest → docker build (no push).
+  # ---------------------------------------------------------------------------
+  backend:
+    needs: changes
+    if: ${{ needs.changes.outputs.backend == 'true' }}
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      # Tests load Settings() at import; these are placeholders — no live calls.
+      SUPABASE_URL: https://ci.example.supabase.co
+      SUPABASE_SERVICE_ROLE_KEY: ci-placeholder-service-role
+      SUPABASE_JWT_SECRET: ci-placeholder-jwt-secret-min-32-bytes-XXX
+      ENVIRONMENT: ci
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: backend/requirements.lock.txt
+
+      - name: install (hash-pinned)
+        # If the lockfile is absent (first PR before INF-04 lock ships), fall
+        # back to requirements.in so this job is never the bottleneck for the
+        # repo's first green build.
+        run: |
+          python -m pip install --upgrade pip
+          if [[ -f requirements.lock.txt ]]; then
+            pip install --require-hashes -r requirements.lock.txt
+          else
+            pip install -r requirements.in
+          fi
+          pip install ruff
+
+      - name: ruff check
+        run: ruff check app tests
+
+      - name: ruff format --check
+        run: ruff format --check app tests
+
+      - name: pytest
+        run: pytest
+
+      - name: docker build (no push)
+        run: docker build -t vitachain/backend:ci .
+
+  # ---------------------------------------------------------------------------
+  # db — replay every migration against a throw-away Postgres 17 service.
+  # Catches "works on Supabase, not on a fresh DB" drift, and sets up the
+  # harness AUTH-07's RLS regression suite will lean on.
+  # ---------------------------------------------------------------------------
+  db:
+    needs: changes
+    if: ${{ needs.changes.outputs.db == 'true' }}
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: vita
+          POSTGRES_PASSWORD: vita
+          POSTGRES_DB: vita
+        ports:
+          - '5432:5432'
+        options: >-
+          --health-cmd "pg_isready -U vita"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      DB_URL: postgres://vita:vita@localhost:5432/vita
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: install psql client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends postgresql-client
+
+      - name: apply migrations (push)
+        run: make -C db push
+
+      - name: verify schema + RLS sanity
+        # Migration 0005 (RLS-recursion-fix) must apply cleanly on top of
+        # 0001..0004. AUTH-07 will add `tests/test_rls_*` here.
+        run: make -C db verify
+
+      - name: AUTH-02 — role enum parity (TS ↔ SQL)
+        run: bash scripts/check-role-enum-parity.sh
+
+      - name: AUTH-03 — JWT config guard
+        # Asserts supabase/config.toml carries the PRD §7.1 values
+        # (jwt_expiry=3600, enable_refresh_token_rotation=true,
+        # refresh_token_reuse_interval=10). The Dashboard is the runtime
+        # authority; this guard catches drift in source control.
+        run: bash scripts/verify-jwt-config.sh
+
+      - name: AUTH-04 — RLS enabled on every public.* table
+        # Runs against the throw-away Postgres 17 service started above.
+        # Migrations 0008/0009 + the existing 0002 enable RLS on profiles;
+        # this guard fails the build the moment any future migration adds
+        # a public.* table without `enable row level security`.
+        run: bash scripts/verify-rls-enabled.sh
+
+  # ---------------------------------------------------------------------------
+  # infra — yamllint, hadolint, shellcheck, nginx -t (in a container).
+  # ---------------------------------------------------------------------------
+  infra:
+    needs: changes
+    if: ${{ needs.changes.outputs.infra == 'true' }}
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: yamllint
+        run: |
+          python3 -m pip install --user yamllint==1.35.1
+          ~/.local/bin/yamllint -c .yamllint.yml \
+            infra/docker-compose.yml infra/compose.smoke.yml \
+            .github/workflows/ docs/spring-status.yml
+
+      - name: hadolint (backend Dockerfile)
+        uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
+        with:
+          dockerfile: backend/Dockerfile
+          # Allow apt-get without pin (INF-04 already curates ca-certificates +
+          # curl + tini); tightened in a follow-up if the dep surface grows.
+          ignore: DL3008,DL3015
+
+      - name: hadolint (frontend Dockerfile)
+        uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
+        with:
+          dockerfile: frontend/Dockerfile
+          ignore: DL3008,DL3015
+
+      - name: shellcheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends shellcheck
+          shellcheck infra/scripts/*.sh db/scripts/*.sh scripts/*.sh scripts/tests/*.sh
+
+      - name: AUTH-05 — compose build-args shape
+        # Asserts services.frontend.build.args contains only NEXT_PUBLIC_*
+        # keys. Anything else (e.g. SUPABASE_SERVICE_ROLE_KEY) would be
+        # inlined into the JS bundle at compile time — the worst leak shape.
+        run: |
+          sudo apt-get install -y --no-install-recommends yq
+          bash scripts/check-compose-build-args.sh infra/docker-compose.yml
+
+      - name: nginx -t (in container)
+        # Mount both the prod conf.d and the infra/nginx conf.d (the latter is
+        # the one the VPS picks up). The container itself never persists.
+        run: |
+          docker run --rm \
+            -v "$PWD/infra/nginx/conf.d:/etc/nginx/conf.d:ro" \
+            nginx:1.27-alpine nginx -t
+
+  # ---------------------------------------------------------------------------
+  # secret-leak — always runs, never skipped. AUTH-05 boundary + gitleaks.
+  # ---------------------------------------------------------------------------
+  secret-leak:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0   # gitleaks needs history to scan past commits.
+
+      - name: AUTH-05 — boundary self-test
+        # Run BEFORE the production scanner so a regression in the scanner
+        # fails fast with a clear message ("self-test broken") rather than
+        # surfacing as a confusing false-positive in production code.
+        run: bash scripts/tests/test_check_secrets_boundary.sh
+
+      - name: AUTH-05 boundary
+        run: bash scripts/check-secrets-boundary.sh
+
+      - name: gitleaks
+        uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2.3.7
+        env:
+          # GITLEAKS_LICENSE is only required for org-private dashboards.
+          # On public repos the CLI scan runs without it.
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+        with:
+          config-path: .gitleaks.toml
+
+  # ---------------------------------------------------------------------------
+  # ci-required — single branch-protection target. `if: always()` so this job
+  # runs even when a dependency failed; then explicitly asserts every required
+  # leg is `success` or `skipped`. Changing the matrix above never requires
+  # re-clicking GitHub's Settings → Branches UI.
+  # ---------------------------------------------------------------------------
+  ci-required:
+    if: always()
+    needs: [changes, frontend, backend, db, infra, secret-leak]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: assert all required jobs succeeded or were skipped cleanly
+        env:
+          NEEDS: ${{ toJson(needs) }}
+        run: |
+          set -e
+          # jq is pre-installed on ubuntu-24.04 runners.
+          fail=0
+          for j in frontend backend db infra secret-leak; do
+            r=$(jq -r --arg j "$j" '.[$j].result' <<< "$NEEDS")
+            if [[ "$r" != "success" && "$r" != "skipped" ]]; then
+              echo "::error::job $j ended with result=$r"
+              fail=1
+            else
+              echo "  ✓ $j ($r)"
+            fi
+          done
+          exit "$fail"

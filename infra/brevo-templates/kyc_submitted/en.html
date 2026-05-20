@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<!--
+  AUTH-06 — KYC submitted email (EN — P0).
+
+  Source-of-truth lives in the Brevo dashboard. This file is a mirror so the
+  team can re-create the transactional template without dashboard archaeology.
+  The Brevo template id is captured in `.env` under
+  `BREVO_TEMPLATE_KYC_SUBMITTED_EN`.
+
+  Subject (set in the Brevo dashboard, not here):
+    "Application received — VitaChain identity verification"
+
+  All params.* references must match the sender contract in
+  backend/app/workers/notifications_mailer/dispatcher.py — params are:
+    - full_name  : str   (may be empty)
+    - status_url : str   (e.g. https://vitachain.ma/onboarding/verification)
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>KYC Application Received — VitaChain</title>
+  </head>
+  <body style="font-family: 'Helvetica Neue', Arial, sans-serif; color: #1f2937; max-width: 640px; margin: 0 auto; padding: 24px;">
+    <h1 style="font-size: 22px; color: #047857;">
+      Your application has been received
+    </h1>
+
+    <p>Hi {{ params.full_name }},</p>
+
+    <p>
+      We have received your identity verification application. Our team will
+      review it as soon as possible.
+    </p>
+
+    <div style="background: #f9fafb; padding: 16px 20px; border-left: 4px solid #047857; margin: 16px 0; line-height: 1.55;">
+      You will receive an email once your application has been processed. You
+      can also check the status of your application at any time from the
+      verification page.
+    </div>
+
+    <p style="margin-top: 24px;">
+      <a href="{{ params.status_url }}"
+         style="display: inline-block; background: #047857; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: 600; font-size: 15px;">
+        Track my application status
+      </a>
+    </p>
+
+    <p style="font-size: 12px; color: #6b7280; margin-top: 32px;">
+      You received this email because you submitted an identity verification
+      request on VitaChain. If you did not initiate this request, please
+      contact our support team.
+    </p>
+  </body>
+</html>

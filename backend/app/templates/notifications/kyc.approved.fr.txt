@@ -1,0 +1,7 @@
+Bonjour {{ full_name }},
+
+Bonne nouvelle — votre document a été validé. Votre compte est désormais vérifié et vous pouvez publier sur la marketplace VitaChain.
+
+Vous pouvez vous reconnecter pour voir le statut « VERIFIED » et accéder aux fonctionnalités professionnelles.
+
+— L'équipe VitaChain
