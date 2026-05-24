@@ -31,6 +31,7 @@ from app.modules.katara.telemetry import router as katara_telemetry_router
 from app.modules.katara.thresholds import router as katara_thresholds_router
 from app.modules.notifications.router import router as notifications_router
 from app.modules.secondserve.router import router as secondserve_router
+from app.routers.admin.farmarket import router as admin_farmarket_router
 from app.routers.admin.kyc import router as admin_kyc_router
 from app.routers.health import router as health_router
 from app.routers.kyc import router as kyc_router
@@ -67,6 +68,7 @@ def create_app() -> FastAPI:
     app.include_router(health_router, prefix="/api/v1")
     app.include_router(kyc_router, prefix="/api/v1")
     app.include_router(admin_kyc_router, prefix="/api/v1")
+    app.include_router(admin_farmarket_router, prefix="/api/v1")
     app.include_router(katara_router, prefix="/api/v1")
     app.include_router(katara_devices_router, prefix="/api/v1")
     app.include_router(katara_unlink_router, prefix="/api/v1")

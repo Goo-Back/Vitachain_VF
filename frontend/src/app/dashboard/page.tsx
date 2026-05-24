@@ -82,6 +82,23 @@ export default async function DashboardPage() {
         </section>
       )}
 
+      {profile?.role === "RESTAURANT" && (
+        <section className="mt-8">
+          <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-neutral-500">
+            Module FarMarket
+          </h2>
+          <Link
+            href="/dashboard/restaurant/marketplace"
+            className="block rounded border border-neutral-200 bg-white p-4 text-sm shadow-sm transition hover:border-emerald-300"
+          >
+            <p className="font-medium text-neutral-900">Catalogue Producteurs</p>
+            <p className="mt-0.5 text-neutral-600">
+              Parcourez les annonces actives des producteurs et contactez-les.
+            </p>
+          </Link>
+        </section>
+      )}
+
       <p className="mt-8 text-sm text-neutral-500">
         {/* Other domain modules (FarMarket, SecondServe, Admin) plug in here. */}
         Les autres modules seront branchés dans les phases suivantes.

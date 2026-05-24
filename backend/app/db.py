@@ -23,10 +23,11 @@ AUTH-05 call-site allow-list
 (enforced mechanically by ``backend/tests/test_service_client_callsite_allowlist.py``,
 which walks the AST of every ``.py`` file under ``backend/app/``):
 
-* ``routers/admin/`` — admin endpoints (ADM-*)
-* ``workers/``       — async workers (NOT-01 mailer, KAT-09 diagnostic, …)
-* ``auth_hooks/``    — Supabase Auth on-signup post-processing
-* ``db.py``          — this file (the definition itself)
+* ``routers/admin/``                  — admin endpoints (ADM-*)
+* ``workers/``                        — async workers (NOT-01 mailer, KAT-09 diagnostic, …)
+* ``workers/farmarket_lead_email/``   — FAR-04: lead notification worker
+* ``auth_hooks/``                     — Supabase Auth on-signup post-processing
+* ``db.py``                           — this file (the definition itself)
 
 Every call site must also carry an inline ``# JUSTIFICATION:`` comment, e.g.::
 

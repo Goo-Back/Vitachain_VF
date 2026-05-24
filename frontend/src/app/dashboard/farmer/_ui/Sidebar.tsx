@@ -12,6 +12,7 @@ import {
   MenuIcon,
   SatelliteIcon,
   SettingsIcon,
+  StoreIcon,
   XIcon,
 } from "./Icon";
 import { Logo } from "./Logo";
@@ -46,6 +47,12 @@ const NAV: NavItem[] = [
     href: "/dashboard/farmer/parcels",
     label: "Mes parcelles",
     icon: ChartIcon,
+    matchPrefix: true,
+  },
+  {
+    href: "/dashboard/farmer/ads",
+    label: "Mes annonces",
+    icon: StoreIcon,
     matchPrefix: true,
   },
   { href: "/dashboard/farmer/weather", label: "Météo", icon: CloudIcon },

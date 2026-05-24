@@ -81,7 +81,10 @@ AUTH07_MATRIX: list[Cell] = [
          {"title": "Verified insert", "price_mad": 80, "quantity_kg": 5,
           "region": "Souss-Massa"}, 201,
          requires_path="/api/v1/farmarket/ads"),
-    Cell(11, "farmer_a", "GET", "/rest/v1/farmarket_leads", None, 200),
+    # Cell 11 — FAR-03 lead read — removed with migration 0039 (FarMarket
+    # pivot to logistics-intermediary model). New order-table cells will be
+    # added when FAR-03 (rewritten) + FAR-10 land.
+
     Cell(12, "restaurant", "GET",
          "/rest/v1/farmarket_ads?status=eq.ACTIVE&select=id", None, 200),
     Cell(13, "restaurant", "POST", "/api/v1/farmarket/ads",
@@ -109,7 +112,8 @@ AUTH07_MATRIX: list[Cell] = [
     Cell(20, "citizen_a", "GET",
          "/rest/v1/secondserve_reservations?citizen_id=neq.${CITIZEN_A_ID}",
          None, 200, expect_rows=0),
-    Cell(21, "admin", "GET", "/rest/v1/farmarket_leads?select=id", None, 200),
+    # Cell 21 — admin lead read — removed with migration 0039 (see Cell 11).
+
     Cell(22, "anon", "GET",
          "/rest/v1/secondserve_meals?status=eq.ACTIVE&select=id", None, 200),
 ]

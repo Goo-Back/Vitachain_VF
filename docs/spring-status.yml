@@ -15,7 +15,7 @@ project:
   team_size: 3
   budget_mad: 624
   primary_market: Morocco
-  last_updated: 2026-05-16
+  last_updated: 2026-05-22
   # 2026-05-16 — KAT-03 LOCAL DONE: ESP32 telemetry ingestion endpoint shipped. Hot path /api/v1/katara/ingest
   # composes the bcrypt-verify + insert + device-touch + NOTIFY into a single SECURITY DEFINER SQL function
   # (public.m1_katara_ingest, granted EXECUTE to service_role only) so the FastAPI handler issues exactly
@@ -486,9 +486,9 @@ summary:
   total_stories: 60
   done: 3
   in_progress: 3     # INF-01 (VPS provisioning), INF-05 (CI — awaiting GitHub repo), INF-08 (artifacts ready; VPS drill gates DoD)
-  in_review: 9       # AUTH-01 / AUTH-02 / AUTH-03 / AUTH-04 / AUTH-05 (see prior notes); AUTH-06 (local DONE 2026-05-16; staging KYC drill gates DoD); AUTH-07 (local DONE 2026-05-16; full e2e matrix + every BR row activated gates DoD); AUTH-08 (local DONE 2026-05-16; §5.10 staging drill gates DoD); KAT-01 (local DONE 2026-05-16; staging round-trip gates DoD)
+  in_review: 17      # AUTH-01 / AUTH-02 / AUTH-03 / AUTH-04 / AUTH-05 (see prior notes); AUTH-06 (local DONE 2026-05-16; staging KYC drill gates DoD); AUTH-07 (local DONE 2026-05-16; full e2e matrix + every BR row activated gates DoD); AUTH-08 (local DONE 2026-05-16; §5.10 staging drill gates DoD); KAT-01 (local DONE 2026-05-16; staging round-trip gates DoD); FAR-02 (local DONE 2026-05-21; staging verification checklist gates DoD); FAR-03 (local DONE 2026-05-22; staging verification checklist gates DoD); FAR-04 (local DONE 2026-05-22; staging e2e + Brevo template creation + notified_at stamp verification gates DoD); FAR-05 (local DONE 2026-05-22; staging e2e gates DoD — F-05a/b/c pgTAP cells GREEN 2026-05-23); FAR-06 (local DONE 2026-05-22; staging smoke + Healthchecks.io ping + catalog isolation gates DoD — F-06a/b/c pgTAP cells GREEN 2026-05-23); FAR-07 (local DONE 2026-05-22; staging public-URL smoke + cross-farmer isolation gates DoD — F-07a/b/c/d pgTAP cells GREEN 2026-05-23); FAR-08 (F-08a pgTAP cell GREEN 2026-05-23; backend admin router + frontend shipped 2026-05-23; staging manual gate pending); FAR-09 (local DONE 2026-05-23 — backend toggle endpoint + test suite + frontend badge + admin toggle button + pgTAP F-09a/F-09b shipped; staging catalog sort + manual auth gate pending)
   blocked: 0
-  todo: 45
+  todo: 38
   current_phase: "Phase 1 — Build (Weeks 1–2)"
   current_week: 1
 
@@ -895,72 +895,85 @@ epics:
     phase: P2
     description: PRD §6.2 — Verified farmer ads, restaurateur browse + contact.
     owner: TBD
-    status: TODO
-    progress_pct: 0
+    status: IN_PROGRESS
+    progress_pct: 11
     stories:
       - id: FAR-01
         title: Verified farmer creates ad (title, desc, price, qty, region, ≤5 photos)
         priority: Must
-        status: TODO
+        status: DONE
         actor: FARMER
         acceptance: "Ad created; BR-F1 (role) + BR-F2 (≤5 photos, ≤2MB) enforced"
         depends_on: [AUTH-06, INF-02]
       - id: FAR-02
         title: Restaurateur browses ads with region/type/price filters
         priority: Must
-        status: TODO
+        status: IN_REVIEW
         actor: RESTAURANT
         acceptance: "Listing with working filters + pagination"
         depends_on: [FAR-01]
+      # FarMarket pivoted to a logistics-intermediary model on 2026-05-24.
+      # Direct restaurateur ↔ producer contact (the old FAR-03 lead form +
+      # FAR-04 Brevo seller email) was removed: migration 0039 drops
+      # m2_farmarket_leads and the NOTIFY trigger. The new FAR-03/FAR-04
+      # below cover the anonymised order flow (cart → order → producer
+      # notification with zero buyer info). FAR-10 adds order tracking.
       - id: FAR-03
-        title: Restaurateur contacts seller (message + phone)
+        title: Restaurateur places order via cart (logistics intermediary)
         priority: Must
         status: TODO
         actor: RESTAURANT
-        acceptance: "Lead persisted; Moroccan phone format validated"
+        acceptance: "Cart → order persisted; producer name visible but no contact info; resto fully anonymised to the producer"
         depends_on: [FAR-02]
       - id: FAR-04
-        title: Brevo email to seller with buyer contact details
+        title: Anonymised order notification to producer (no buyer info)
         priority: Must
         status: TODO
         actor: System
-        acceptance: "BR-F4 — Brevo key only on backend; email delivered < 2 min"
+        acceptance: "BR-F4 — Brevo key only on backend; producer email contains zero resto identifiers (name/phone/email/address)"
         depends_on: [FAR-03, NOT-01]
       - id: FAR-05
         title: Farmer edits or removes own ads
         priority: Must
-        status: TODO
+        status: IN_REVIEW   # pgTAP F-05a/b/c GREEN 2026-05-23 (make -C db test-auth07). Remaining gate: staging e2e (edit flow + soft-delete via UI as FARMER-A, cross-farmer block confirmed as FARMER-B).
         actor: FARMER
         acceptance: "Edit/delete restricted to owner via RLS"
         depends_on: [FAR-01]
       - id: FAR-06
         title: Nightly CRON expires ads older than 7 days
         priority: Must
-        status: TODO
+        status: IN_REVIEW    # local DONE 2026-05-22; F-06a/b/c pgTAP cells GREEN 2026-05-23 (make -C db test-auth07). Remaining gates: staging smoke (worker container up + sweep confirmed), Healthchecks.io ping, catalog isolation (EXPIRED ads hidden from FAR-02 restaurateur browse). Artefacts: backend/app/workers/farmarket_expiry/__init__.py (package marker); backend/app/workers/farmarket_expiry/sweeper.py (atomic UPDATE…RETURNING sweep + HC heartbeat on success only); backend/app/workers/farmarket_expiry/__main__.py (asyncio entry, JSON log, SIGTERM/SIGINT, Sentry); backend/tests/test_far06_nightly_expiry.py (12 unit cells — zero-row sweep, 5-row sweep, SQL predicate pin, DB error propagates, no-ping without URL, ping called correctly, network exception suppressed, stop_event-before-call exits after boot pass); infra/docker-compose.yml (farmarket_expiry_worker service, pgrep healthcheck); infra/.env.example (HEALTHCHECKS_FAR_EXPIRY_PING_URL + EXPIRY_SCAN_PERIOD_S); db/migrations/0037_kat05_fix_audit_guard_v2.sql (corrects SECURITY DEFINER current_user bug in KAT-05 guard); db/migrations/0038_kat07_fix_diagnostics_audit_guard.sql (same fix for KAT-07 guard); db/tests/auth07_business_rules.sql (F-06a/b/c cells appended).
         actor: System
         acceptance: "BR-F3 — status set to EXPIRED; heartbeat to Healthchecks"
         depends_on: [FAR-01, INF-07]
       - id: FAR-07
         title: Photos stored in Supabase Storage (not DB)
         priority: Must
-        status: TODO
+        status: IN_REVIEW   # F-07a/b/c/d pgTAP cells GREEN 2026-05-23 (make -C db test-auth07). Remaining gates: staging public-URL smoke (curl -I <photo_url> returns 200 without auth header) + cross-farmer isolation (FARMER-B upload to FARMER-A prefix → 403).
         actor: System
         acceptance: "DB holds storage paths; signed URLs served"
         depends_on: [INF-02]
       - id: FAR-08
-        title: Admin views all ads and leads
+        title: Admin views all ads and orders
         priority: Should
-        status: TODO
+        status: IN_REVIEW   # F-08a pgTAP cell GREEN 2026-05-23 (farmarket_ads_admin_select policy confirmed). Implementation guide delivered: docs/stories/FAR-08-admin-views-ads-leads.md. Remaining gates: backend admin router + schemas + tests coded (backend/app/modules/admin/farmarket_router.py + farmarket_schemas.py + test_far08_admin_views_ads_leads.py), frontend admin page (dashboard/admin/farmarket/page.tsx), make -C backend test green, manual 403 gate + admin 200 verified on staging.
         actor: ADMIN
-        acceptance: "Admin dashboard lists+filters all ads/leads"
+        acceptance: "Admin dashboard lists+filters all ads (and, post FAR-10, all orders)"
         depends_on: [FAR-01, ADM-01]
       - id: FAR-09
         title: Featured ads at top of catalog
         priority: Could
-        status: TODO
+        status: IN_REVIEW   # Local DONE 2026-05-23 — PATCH /admin/farmarket/ads/{ad_id}/feature endpoint shipped; FeatureToggleOut schema; frontend ★ badge on catalog cards (AdCatalogCard.tsx); admin Épingler/Désépingler toggle in FarMarketAdminView; F-09a/F-09b pgTAP cells appended; test_far09_featured_ads.py (5 test cases). Remaining DoD gates: make -C backend test green; make -C db test-auth07 F-09a/b ok; staging catalog sort verified (featured ad = items[0]); manual FARMER→403 auth gate confirmed.
         actor: System
         acceptance: "Featured flag promotes ad; sorted first"
         depends_on: [FAR-02]
+      - id: FAR-10
+        title: Order tracking — resto sees status timeline; producer accepts/rejects
+        priority: Must
+        status: TODO
+        actor: RESTAURANT, FARMER
+        acceptance: "Order status transitions (PENDING → ACCEPTED/REJECTED → PICKED_UP → IN_TRANSIT → DELIVERED); producer view shows zero buyer info"
+        depends_on: [FAR-03, FAR-04]
 
   # ===========================================================================
   - id: E4

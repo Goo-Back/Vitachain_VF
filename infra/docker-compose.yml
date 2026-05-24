@@ -402,6 +402,59 @@ services:
         max-file: "3"
 
   # ---------------------------------------------------------------------------
+  # FAR-04 — (rewritten) anonymised order notification worker.
+  # The previous lead-email worker (which forwarded buyer contact info to the
+  # producer) has been removed in migration 0039. The rewritten FAR-04 story
+  # will introduce a new worker that emits an *anonymised* order alert to the
+  # producer — no resto name, phone, email, or address. To be added once
+  # FAR-03 (place order) lands.
+  # ---------------------------------------------------------------------------
+
+  # ---------------------------------------------------------------------------
+  # FAR-06 — FarMarket ad expiry worker.
+  # CRON-style asyncio loop: runs at boot then every EXPIRY_SCAN_PERIOD_S
+  # seconds (default 86400 = 24 h). Issues one atomic UPDATE per pass that
+  # flips m2_farmarket_ads rows from ACTIVE → EXPIRED where expires_at < now().
+  # Uses the direct DATABASE_URL (service-role postgres DSN) to bypass RLS —
+  # documented pattern; see sweeper.py # JUSTIFICATION comment.
+  # Single replica is safe: the WHERE clause is idempotent — already-EXPIRED
+  # rows are never matched.
+  # ---------------------------------------------------------------------------
+  farmarket_expiry_worker:
+    image: vitachain/backend:latest
+    container_name: vita_farmarket_expiry_worker
+    command: ["python", "-m", "app.workers.farmarket_expiry"]
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-prod}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      GIT_SHA: ${GIT_SHA:-unknown}
+      # FAR-06 connects via asyncpg direct :5432 DSN — service-role level,
+      # bypasses RLS (see sweeper.py JUSTIFICATION). Never use the pooler
+      # :6543 here — asyncpg needs a persistent session connection.
+      DATABASE_URL: ${SUPABASE_DB_URL}
+      EXPIRY_SCAN_PERIOD_S: ${EXPIRY_SCAN_PERIOD_S:-86400}
+      HEALTHCHECKS_FAR_EXPIRY_PING_URL: ${HEALTHCHECKS_FAR_EXPIRY_PING_URL:-}
+      SENTRY_DSN: ${SENTRY_DSN_BACKEND:-}
+      SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-prod}
+      SENTRY_TRACES_SAMPLE_RATE: ${SENTRY_TRACES_SAMPLE_RATE:-0.0}
+    networks:
+      - vita_net
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f 'app.workers.farmarket_expiry' >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ---------------------------------------------------------------------------
   # INF-07 — Nightly pg_dump → Backblaze B2. Idle by default (the cron on the
   # host invokes `docker compose run --rm db-backup` once a night). Custom
   # image bundles postgres-client 17 + rclone; see infra/db-backup/Dockerfile.

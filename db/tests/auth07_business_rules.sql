@@ -2225,6 +2225,879 @@ begin
     raise notice 'OK BR-KAT14 (K-14b): overview view exposes only the documented columns (no api_key_hash, no last_seen)';
 end$$;
 
+-- ===========================================================================
+-- FAR-01 — public.m2_farmarket_ads RLS + BR-F2 photo-paths CHECK.
+--   F-01a  VERIFIED FARMER INSERT → succeeds; farmer_id = auth.uid()
+--   F-01b  PENDING FARMER INSERT  → insufficient_privilege (verification gate)
+--   F-01c  CITIZEN INSERT         → insufficient_privilege (role gate)
+--   F-01d  BR-F2 CHECK            → 6-element photo_paths rejected at DB layer
+--          even under service_role (CHECK constraints ignore row-level security)
+-- ===========================================================================
+do $$
+declare
+    v_ad_id uuid := gen_random_uuid();
+    v_seen  bigint;
+begin
+    if to_regclass('public.m2_farmarket_ads') is null then
+        raise notice 'SKIP FAR-01 BR: public.m2_farmarket_ads not yet merged (FAR-01)';
+        return;
+    end if;
+
+    -- ----- F-01a: VERIFIED FARMER INSERT succeeds ---------------------------
+    perform set_config(
+        'request.jwt.claims',
+        jsonb_build_object(
+            'sub',                 current_setting('auth07.farmer_a_id'),
+            'user_role',           'FARMER',
+            'verification_status', 'VERIFIED',
+            'role',                'authenticated'
+        )::text,
+        true
+    );
+    execute 'set local role authenticated';
+
+    execute format(
+        $sql$
+            insert into public.m2_farmarket_ads
+                (id, farmer_id, title, description, product_type,
+                 price_mad, quantity_kg, region)
+            values
+                (%L::uuid, %L::uuid,
+                 'Tomates BIO Souss', 'Récolte fraîche de Souss-Massa.',
+                 'Tomates', 4.50, 500,
+                 'Souss-Massa'::public.m2_farmarket_region)
+        $sql$,
+        v_ad_id, current_setting('auth07.farmer_a_id')
+    );
+
+    -- Verify the row landed with the correct farmer_id (own-rows RLS applies).
+    execute format(
+        'select count(*) from public.m2_farmarket_ads where id = %L::uuid and farmer_id = %L::uuid',
+        v_ad_id, current_setting('auth07.farmer_a_id')
+    ) into v_seen;
+    if v_seen <> 1 then
+        raise exception 'AUTH-07 FAR-01 (F-01a): VERIFIED FARMER INSERT did not land (% rows)', v_seen;
+    end if;
+    raise notice 'OK BR-FAR01 (F-01a): VERIFIED FARMER INSERT succeeds; farmer_id = auth.uid()';
+
+    execute 'reset role';
+    perform set_config('request.jwt.claims', '{"role":"service_role"}', true);
+
+    -- ----- F-01b: PENDING FARMER INSERT → verification gate blocks ----------
+    perform set_config(
+        'request.jwt.claims',
+        jsonb_build_object(
+            'sub',                 current_setting('auth07.farmer_b_id'),
+            'user_role',           'FARMER',
+            'verification_status', 'PENDING',
+            'role',                'authenticated'
+        )::text,
+        true
+    );
+    execute 'set local role authenticated';
+
+    begin
+        execute format(
+            $sql$
+                insert into public.m2_farmarket_ads
+                    (farmer_id, title, description, product_type,
+                     price_mad, quantity_kg, region)
+                values
+                    (%L::uuid,
+                     'Pending farmer leak', 'Should not land.',
+                     'Tomates', 4.50, 500,
+                     'Oriental'::public.m2_farmarket_region)
+            $sql$,
+            current_setting('auth07.farmer_b_id')
+        );
+        raise exception 'AUTH-07 FAR-01 (F-01b): PENDING FARMER INSERT succeeded (verification gate bypassed)';
+    exception
+        when insufficient_privilege then
+            raise notice 'OK BR-FAR01 (F-01b): PENDING FARMER INSERT -> 42501 (verification gate)';
+        when check_violation then
+            raise notice 'OK BR-FAR01 (F-01b): PENDING FARMER INSERT -> 23514 (alternate surface)';
+    end;
+
+    execute 'reset role';
+    perform set_config('request.jwt.claims', '{"role":"service_role"}', true);
+
+    -- ----- F-01c: CITIZEN INSERT → role gate blocks -------------------------
+    perform set_config(
+        'request.jwt.claims',
+        jsonb_build_object(
+            'sub',                 current_setting('auth07.citizen_a_id'),
+            'user_role',           'CITIZEN',
+            'verification_status', 'VERIFIED',
+            'role',                'authenticated'
+        )::text,
+        true
+    );
+    execute 'set local role authenticated';
+
+    begin
+        execute format(
+            $sql$
+                insert into public.m2_farmarket_ads
+                    (farmer_id, title, description, product_type,
+                     price_mad, quantity_kg, region)
+                values
+                    (%L::uuid,
+                     'Citizen leak', 'Should not land.',
+                     'Tomates', 4.50, 100,
+                     'Casablanca-Settat'::public.m2_farmarket_region)
+            $sql$,
+            current_setting('auth07.citizen_a_id')
+        );
+        raise exception 'AUTH-07 FAR-01 (F-01c): CITIZEN INSERT into m2_farmarket_ads SUCCEEDED (role gate bypassed)';
+    exception
+        when insufficient_privilege then
+            raise notice 'OK BR-FAR01 (F-01c): CITIZEN INSERT -> 42501 (role gate)';
+        when check_violation then
+            raise notice 'OK BR-FAR01 (F-01c): CITIZEN INSERT -> 23514 (alternate surface)';
+    end;
+
+    execute 'reset role';
+    perform set_config('request.jwt.claims', '{"role":"service_role"}', true);
+
+    -- ----- F-01d: BR-F2 — 6 photo_paths rejected by the DB CHECK -----------
+    -- CHECK constraints fire regardless of role; this proves the guard is at
+    -- the schema layer and not just at the FastAPI layer.
+    begin
+        insert into public.m2_farmarket_ads
+            (farmer_id, title, description, product_type,
+             price_mad, quantity_kg, region,
+             photo_paths)
+        values (
+            current_setting('auth07.farmer_a_id')::uuid,
+            'Too many photos', 'Six photos should fail the CHECK.',
+            'Tomates', 4.50, 100,
+            'Souss-Massa'::public.m2_farmarket_region,
+            array['p1.jpg','p2.jpg','p3.jpg','p4.jpg','p5.jpg','p6.jpg']
+        );
+        raise exception 'AUTH-07 FAR-01 (F-01d): 6-photo INSERT succeeded (BR-F2 CHECK missing on m2_farmarket_ads)';
+    exception
+        when check_violation then
+            raise notice 'OK BR-FAR01 (F-01d): 6-photo array -> 23514 (BR-F2 CHECK fires at schema layer)';
+    end;
+end$$;
+
+-- ===========================================================================
+-- BR-B1 / FAR-03 — m2_farmarket_leads: phone format + role gate + RLS.
+-- F-03a: RESTAURANT can insert a lead for an ACTIVE ad.
+-- F-03b: FARMER role is blocked by the INSERT RLS policy.
+-- F-03c: DB CHECK rejects an invalid Moroccan phone number.
+-- F-03d: Ad owner (FARMER-A) can SELECT leads on their own ad.
+-- F-03e: RESTAURANT buyer sees only their own leads (not other buyers').
+-- ===========================================================================
+
+do $far03$
+declare
+    v_ad_id         uuid := 'f03ad000-0000-0000-0000-000000000001';
+    v_farmer_a      uuid;
+    v_restaurant    uuid;
+    v_citizen_a     uuid;
+    v_lead_id       uuid;
+begin
+    -- Skip the whole block if the table hasn't been created yet.
+    if to_regclass('public.m2_farmarket_leads') is null then
+        raise notice 'SKIP FAR-03 cells — m2_farmarket_leads not yet created (migration 0034 not applied)';
+        return;
+    end if;
+
+    v_farmer_a   := current_setting('auth07.farmer_a_id')::uuid;
+    v_restaurant := current_setting('auth07.restaurant_id')::uuid;
+    v_citizen_a  := current_setting('auth07.citizen_a_id')::uuid;
+
+    -- Seed: one ACTIVE ad owned by FARMER-A (idempotent via ON CONFLICT).
+    perform set_config('request.jwt.claims', '{"role":"service_role"}', true);
+    execute 'reset role';
+
+    execute format(
+        $sql$
+            insert into public.m2_farmarket_ads
+                (id, farmer_id, title, description, product_type,
+                 price_mad, quantity_kg, region)
+            values
+                (%L::uuid, %L::uuid,
+                 'Poivrons FAR-03 test',
+                 'Description suffisante pour le test FAR-03.',
+                 'Poivrons', 3.00, 200.00,
+                 'Fès-Meknès'::public.m2_farmarket_region)
+            on conflict (id) do nothing
+        $sql$,
+        v_ad_id, v_farmer_a
+    );
+
+    -- ── F-03a: RESTAURANT can insert a lead for an ACTIVE ad ─────────────────
+    perform set_config(
+        'request.jwt.claims',
+        jsonb_build_object(
+            'sub',       v_restaurant,
+            'user_role', 'RESTAURANT',
+            'role',      'authenticated'
+        )::text,
+        true
+    );
+    execute 'set local role authenticated';
+
+    begin
+        execute format(
+            $sql$
+                insert into public.m2_farmarket_leads
+                    (ad_id, buyer_id, message, buyer_phone)
+                values
+                    (%L::uuid, %L::uuid,
+                     'Je suis intéressé par vos poivrons, rappel svp.',
+                     '0612345678')
+                returning id
+            $sql$,
+            v_ad_id, v_restaurant
+        ) into v_lead_id;
+        raise notice 'OK FAR-03 (F-03a): RESTAURANT inserted lead id=%', v_lead_id;
+    exception
+        when others then
+            raise exception 'FAIL FAR-03 (F-03a): RESTAURANT could not insert lead — % %', sqlstate, sqlerrm;
+    end;
+
+    execute 'reset role';
+    perform set_config('request.jwt.claims', '{"role":"service_role"}', true);
+
+    -- ── F-03b: FARMER role is blocked by the INSERT RLS policy ────────────────
+    perform set_config(
+        'request.jwt.claims',
+        jsonb_build_object(
+            'sub',                 v_farmer_a,
+            'user_role',           'FARMER',
+            'verification_status', 'VERIFIED',
+            'role',                'authenticated'
+        )::text,
+        true
+    );
+    execute 'set local role authenticated';
+
+    begin
+        execute format(
+            $sql$
+                insert into public.m2_farmarket_leads
+                    (ad_id, buyer_id, message, buyer_phone)
+                values
+                    (%L::uuid, %L::uuid,
+                     'Farmer tries to insert a lead — should fail.',
+                     '0611111111')
+            $sql$,
+            v_ad_id, v_farmer_a
+        );
+        raise exception 'FAIL FAR-03 (F-03b): FARMER INSERT into m2_farmarket_leads SUCCEEDED (role gate bypassed)';
+    exception
+        when insufficient_privilege then
+            raise notice 'OK FAR-03 (F-03b): FARMER INSERT -> 42501 (RLS INSERT role gate)';
+        when check_violation then
+            raise notice 'OK FAR-03 (F-03b): FARMER INSERT -> 23514 (alternate surface — role guard via CHECK)';
+    end;
+
+    execute 'reset role';
+    perform set_config('request.jwt.claims', '{"role":"service_role"}', true);
+
+    -- ── F-03c: DB CHECK rejects invalid Moroccan phone (^0[5-7][0-9]{8}$) ────
+    begin
+        execute format(
+            $sql$
+                insert into public.m2_farmarket_leads
+                    (ad_id, buyer_id, message, buyer_phone)
+                values
+                    (%L::uuid, %L::uuid,
+                     'Message avec numéro invalide.',
+                     '0312345678')   -- starts with 03 — invalid prefix
+            $sql$,
+            v_ad_id, v_restaurant
+        );
+        raise exception 'FAIL FAR-03 (F-03c): invalid phone 0312345678 was accepted (BR-B1 CHECK missing on m2_farmarket_leads)';
+    exception
+        when check_violation then
+            raise notice 'OK FAR-03 (F-03c): invalid phone -> 23514 (BR-B1 CHECK fires at schema layer)';
+    end;
+
+    -- ── F-03d: FARMER-A can SELECT leads on their own ad ─────────────────────
+    perform set_config(
+        'request.jwt.claims',
+        jsonb_build_object(
+            'sub',                 v_farmer_a,
+            'user_role',           'FARMER',
+            'verification_status', 'VERIFIED',
+            'role',                'authenticated'
+        )::text,
+        true
+    );
+    execute 'set local role authenticated';
+
+    declare
+        v_count int;
+    begin
+        execute format(
+            $sql$
+                select count(*) from public.m2_farmarket_leads
+                 where ad_id = %L::uuid
+            $sql$,
+            v_ad_id
+        ) into v_count;
+        if v_count >= 1 then
+            raise notice 'OK FAR-03 (F-03d): FARMER-A sees % lead(s) on their ad (farmarket_leads_select_own_farmer)', v_count;
+        else
+            raise exception 'FAIL FAR-03 (F-03d): FARMER-A sees 0 leads — farmarket_leads_select_own_farmer policy missing or wrong';
+        end if;
+    end;
+
+    execute 'reset role';
+    perform set_config('request.jwt.claims', '{"role":"service_role"}', true);
+
+    -- ── F-03e: RESTAURANT buyer sees only their own leads ────────────────────
+    -- Seed a second lead under CITIZEN-A bypassing RLS (service-role context).
+    execute format(
+        $sql$
+            insert into public.m2_farmarket_leads
+                (ad_id, buyer_id, message, buyer_phone)
+            values
+                (%L::uuid, %L::uuid,
+                 'Autre acheteur — seed direct.', '0655555555')
+            on conflict do nothing
+        $sql$,
+        v_ad_id, v_citizen_a
+    );
+
+    perform set_config(
+        'request.jwt.claims',
+        jsonb_build_object(
+            'sub',       v_restaurant,
+            'user_role', 'RESTAURANT',
+            'role',      'authenticated'
+        )::text,
+        true
+    );
+    execute 'set local role authenticated';
+
+    declare
+        v_visible int;
+    begin
+        execute format(
+            $sql$
+                select count(*) from public.m2_farmarket_leads
+                 where ad_id = %L::uuid
+            $sql$,
+            v_ad_id
+        ) into v_visible;
+        if v_visible = 1 then
+            raise notice 'OK FAR-03 (F-03e): RESTAURANT sees exactly 1 lead (own), not the CITIZEN-A seed (buyer isolation)';
+        else
+            raise exception 'FAIL FAR-03 (F-03e): RESTAURANT sees % leads — expected 1 (own only); RLS farmarket_leads_select_own_buyer may be broken', v_visible;
+        end if;
+    end;
+
+    execute 'reset role';
+    perform set_config('request.jwt.claims', '{"role":"service_role"}', true);
+
+end $far03$;
+
+-- ===========================================================================
+-- FAR-04 — m2_farmarket_leads: notified_at column + NOTIFY trigger.
+-- F-04a: notified_at column exists and is nullable (timestamptz).
+-- F-04b: AFTER INSERT trigger trg_far04_notify_lead_created is attached.
+-- F-04c: a fresh lead INSERT leaves notified_at NULL (worker stamps it).
+-- Prerequisites: FAR-03 must be merged (m2_farmarket_leads) + migration 0035.
+-- ===========================================================================
+
+do $far04$
+declare
+    v_col_type  text;
+    v_nullable  text;
+    v_trig_cnt  int;
+    v_lead_id   uuid;
+    v_notified  timestamptz;
+    v_farmer_a  uuid;
+    v_restaurant uuid;
+    v_ad_id     uuid := 'f04ad000-0000-0000-0000-000000000001'::uuid;
+begin
+    -- Skip if FAR-03 hasn't landed yet.
+    if to_regclass('public.m2_farmarket_leads') is null then
+        raise notice 'SKIP FAR-04 cells — m2_farmarket_leads not yet created (migration 0034 not applied)';
+        return;
+    end if;
+
+    -- Skip if migration 0035 hasn't been applied (notified_at column absent).
+    if not exists (
+        select 1 from information_schema.columns
+         where table_schema = 'public'
+           and table_name   = 'm2_farmarket_leads'
+           and column_name  = 'notified_at'
+    ) then
+        raise notice 'SKIP FAR-04 cells — notified_at column not yet created (migration 0035 not applied)';
+        return;
+    end if;
+
+    -- ── F-04a: notified_at column type + nullability ──────────────────────────
+    select data_type, is_nullable
+      into v_col_type, v_nullable
+      from information_schema.columns
+     where table_schema = 'public'
+       and table_name   = 'm2_farmarket_leads'
+       and column_name  = 'notified_at';
+
+    if v_col_type = 'timestamp with time zone' then
+        raise notice 'OK FAR-04 (F-04a-type): m2_farmarket_leads.notified_at is timestamptz';
+    else
+        raise exception 'FAIL FAR-04 (F-04a-type): notified_at type=% (expected timestamptz)', v_col_type;
+    end if;
+
+    if v_nullable = 'YES' then
+        raise notice 'OK FAR-04 (F-04a-null): m2_farmarket_leads.notified_at is nullable (NULL = not yet emailed)';
+    else
+        raise exception 'FAIL FAR-04 (F-04a-null): notified_at is NOT NULL — must be nullable';
+    end if;
+
+    -- ── F-04b: trigger trg_far04_notify_lead_created is attached ──────────────
+    select count(*)::int into v_trig_cnt
+      from information_schema.triggers
+     where event_object_schema = 'public'
+       and event_object_table  = 'm2_farmarket_leads'
+       and trigger_name        = 'trg_far04_notify_lead_created'
+       and event_manipulation  = 'INSERT'
+       and action_timing       = 'AFTER';
+
+    if v_trig_cnt = 1 then
+        raise notice 'OK FAR-04 (F-04b): AFTER INSERT trigger trg_far04_notify_lead_created exists';
+    else
+        raise exception 'FAIL FAR-04 (F-04b): trigger trg_far04_notify_lead_created count=% (expected 1)', v_trig_cnt;
+    end if;
+
+    -- ── F-04c: fresh INSERT leaves notified_at NULL ───────────────────────────
+    if to_regclass('public.m2_farmarket_ads') is null then
+        raise notice 'SKIP FAR-04 (F-04c) — m2_farmarket_ads not yet created (FAR-01 not merged)';
+        return;
+    end if;
+
+    -- Resolve seed UUIDs from the shared _auth07_seed.psql settings.
+    v_farmer_a   := current_setting('auth07.farmer_a_id', true)::uuid;
+    v_restaurant := current_setting('auth07.restaurant_id', true)::uuid;
+
+    insert into public.m2_farmarket_ads
+        (id, farmer_id, title, description, product_type, price_mad, quantity_kg, region)
+    values
+        (v_ad_id, v_farmer_a,
+         'Tomates FAR-04 test', 'Description test suffisante pour le pgTAP.', 'Tomates',
+         2.50, 100.00, 'Souss-Massa')
+    on conflict (id) do nothing;
+
+    insert into public.m2_farmarket_leads
+        (ad_id, buyer_id, message, buyer_phone)
+    values
+        (v_ad_id, v_restaurant,
+         'Message test FAR-04, suffisamment long.', '0612345678')
+    returning id into v_lead_id;
+
+    select notified_at into v_notified
+      from public.m2_farmarket_leads
+     where id = v_lead_id;
+
+    if v_notified is null then
+        raise notice 'OK FAR-04 (F-04c): notified_at IS NULL immediately after INSERT (worker stamps it later)';
+    else
+        raise exception 'FAIL FAR-04 (F-04c): notified_at=% immediately after INSERT (expected NULL)', v_notified;
+    end if;
+
+    perform set_config('request.jwt.claims', '{"role":"service_role"}', true);
+
+end $far04$;
+
+-- ===========================================================================
+-- FAR-05 — m2_farmarket_ads: owner-only UPDATE + soft-delete (DELETED status).
+-- F-05a: farmarket_ads_update_own UPDATE policy exists on m2_farmarket_ads.
+-- F-05b: farmarket_ads_delete_own DELETE policy exists on m2_farmarket_ads.
+-- F-05c: FARMER-A can soft-delete their own ad; FARMER-B cannot UPDATE it.
+-- Prerequisites: FAR-01 must be merged (migration 0032 applied).
+-- ===========================================================================
+
+do $far05$
+declare
+    v_policy_cnt  int;
+    v_farmer_a    uuid;
+    v_farmer_b    uuid;
+    v_ad_id       uuid := 'f05ad000-0000-0000-0000-000000000001'::uuid;
+    v_status      text;
+    v_updated_cnt int;
+begin
+    if to_regclass('public.m2_farmarket_ads') is null then
+        raise notice 'SKIP FAR-05 cells — m2_farmarket_ads not yet created (migration 0032 not applied)';
+        return;
+    end if;
+
+    -- ── F-05a: farmarket_ads_update_own UPDATE policy exists ─────────────────
+    select count(*)::int into v_policy_cnt
+      from pg_policies
+     where schemaname = 'public'
+       and tablename  = 'm2_farmarket_ads'
+       and policyname = 'farmarket_ads_update_own'
+       and cmd        = 'UPDATE';
+
+    if v_policy_cnt = 1 then
+        raise notice 'OK FAR-05 (F-05a): farmarket_ads_update_own UPDATE policy exists on m2_farmarket_ads';
+    else
+        raise exception 'FAIL FAR-05 (F-05a): farmarket_ads_update_own UPDATE policy count=% (expected 1)', v_policy_cnt;
+    end if;
+
+    -- ── F-05b: farmarket_ads_delete_own DELETE policy exists ─────────────────
+    select count(*)::int into v_policy_cnt
+      from pg_policies
+     where schemaname = 'public'
+       and tablename  = 'm2_farmarket_ads'
+       and policyname = 'farmarket_ads_delete_own'
+       and cmd        = 'DELETE';
+
+    if v_policy_cnt = 1 then
+        raise notice 'OK FAR-05 (F-05b): farmarket_ads_delete_own DELETE policy exists on m2_farmarket_ads';
+    else
+        raise exception 'FAIL FAR-05 (F-05b): farmarket_ads_delete_own DELETE policy count=% (expected 1)', v_policy_cnt;
+    end if;
+
+    -- ── F-05c: ownership enforcement at the DB layer ─────────────────────────
+    v_farmer_a := current_setting('auth07.farmer_a_id', true)::uuid;
+    v_farmer_b := current_setting('auth07.farmer_b_id', true)::uuid;
+
+    insert into public.m2_farmarket_ads
+        (id, farmer_id, title, description, product_type, price_mad, quantity_kg, region)
+    values
+        (v_ad_id, v_farmer_a,
+         'Tomates FAR-05 test', 'Description test pour FAR-05.', 'Tomates',
+         2.50, 100.00, 'Souss-Massa')
+    on conflict (id) do nothing;
+
+    -- FARMER-A (owner) soft-deletes their own ad via UPDATE.
+    perform set_config(
+        'request.jwt.claims',
+        jsonb_build_object(
+            'sub',       v_farmer_a::text,
+            'role',      'authenticated',
+            'user_role', 'FARMER'
+        )::text,
+        true
+    );
+    execute 'set local role authenticated';
+
+    update public.m2_farmarket_ads
+       set status = 'DELETED'
+     where id = v_ad_id;
+    get diagnostics v_updated_cnt = row_count;
+
+    if v_updated_cnt = 1 then
+        raise notice 'OK FAR-05 (F-05c.owner): FARMER-A can soft-delete their own ad (status → DELETED)';
+    else
+        raise exception 'FAIL FAR-05 (F-05c.owner): FARMER-A UPDATE returned % rows (expected 1 — RLS broken?)', v_updated_cnt;
+    end if;
+
+    -- Reset to ACTIVE so the cross-farmer attempt targets a live row.
+    execute 'reset role';
+    perform set_config('request.jwt.claims', '{"role":"service_role"}', true);
+    update public.m2_farmarket_ads set status = 'ACTIVE' where id = v_ad_id;
+
+    -- FARMER-B (non-owner) cannot UPDATE FARMER-A's ad — RLS returns 0 rows.
+    perform set_config(
+        'request.jwt.claims',
+        jsonb_build_object(
+            'sub',       v_farmer_b::text,
+            'role',      'authenticated',
+            'user_role', 'FARMER'
+        )::text,
+        true
+    );
+    execute 'set local role authenticated';
+
+    update public.m2_farmarket_ads
+       set title = 'Hacked title'
+     where id = v_ad_id;
+    get diagnostics v_updated_cnt = row_count;
+
+    if v_updated_cnt = 0 then
+        raise notice 'OK FAR-05 (F-05c.sibling): FARMER-B cannot UPDATE FARMER-A''s ad (RLS blocks cross-farmer UPDATE)';
+    else
+        raise exception 'FAIL FAR-05 (F-05c.sibling): FARMER-B UPDATE affected % rows (RLS LEAK)', v_updated_cnt;
+    end if;
+
+    execute 'reset role';
+    perform set_config('request.jwt.claims', '{"role":"service_role"}', true);
+
+end $far05$;
+
+-- ===========================================================================
+-- FAR-06 — m2_farmarket_ads expiry sweep invariants.
+-- F-06a: m2_farmarket_ads_expiry_idx partial index exists (WHERE status='ACTIVE').
+-- F-06b: sweep SQL transitions ACTIVE → EXPIRED for ads past expires_at.
+-- F-06c: ACTIVE ads not yet past expires_at are untouched by the sweep.
+-- Prerequisites: FAR-01 must be merged (migration 0032 applied).
+-- ===========================================================================
+
+do $far06$
+declare
+    v_idx_cnt  int;
+    v_ad_stale uuid := 'f06ad000-0000-0000-0000-000000000001'::uuid;
+    v_ad_fresh uuid := 'f06ad000-0000-0000-0000-000000000002'::uuid;
+    v_farmer_a uuid;
+    v_status   text;
+begin
+    if to_regclass('public.m2_farmarket_ads') is null then
+        raise notice 'SKIP FAR-06 cells — m2_farmarket_ads not yet created (migration 0032 not applied)';
+        return;
+    end if;
+
+    v_farmer_a := current_setting('auth07.farmer_a_id', true)::uuid;
+
+    -- ── F-06a: m2_farmarket_ads_expiry_idx exists with WHERE status='ACTIVE' ──
+    select count(*)::int into v_idx_cnt
+      from pg_indexes
+     where schemaname = 'public'
+       and tablename  = 'm2_farmarket_ads'
+       and indexname  = 'm2_farmarket_ads_expiry_idx'
+       and indexdef   ilike '%where%status%ACTIVE%';
+
+    if v_idx_cnt = 1 then
+        raise notice 'OK FAR-06 (F-06a): m2_farmarket_ads_expiry_idx partial index (WHERE status=ACTIVE) exists';
+    else
+        raise exception 'FAIL FAR-06 (F-06a): m2_farmarket_ads_expiry_idx not found or predicate incorrect (count=%)', v_idx_cnt;
+    end if;
+
+    -- ── F-06b: sweep SQL transitions ACTIVE → EXPIRED for past-expiry rows ────
+    insert into public.m2_farmarket_ads
+        (id, farmer_id, title, description, product_type,
+         price_mad, quantity_kg, region, status, expires_at)
+    values
+        (v_ad_stale, v_farmer_a,
+         'Tomates FAR-06 expiry test',
+         'Description de test pour FAR-06 suffisamment longue.',
+         'Tomates',
+         2.50, 100.00,
+         'Souss-Massa',
+         'ACTIVE',
+         now() - interval '1 day')
+    on conflict (id) do nothing;
+
+    -- Run the exact sweep SQL the worker issues (service-role context, no JWT).
+    update public.m2_farmarket_ads
+       set status     = 'EXPIRED',
+           updated_at = now()
+     where status     = 'ACTIVE'
+       and expires_at < now();
+
+    select status::text into v_status
+      from public.m2_farmarket_ads
+     where id = v_ad_stale;
+
+    if v_status is distinct from 'EXPIRED' then
+        raise exception 'FAIL FAR-06 (F-06b): past-expiry ad still % (expected EXPIRED)', v_status;
+    end if;
+    raise notice 'OK FAR-06 (F-06b): sweep SQL transitions ACTIVE → EXPIRED for ads past expires_at';
+
+    -- ── F-06c: ACTIVE ads not yet past expires_at are untouched ──────────────
+    insert into public.m2_farmarket_ads
+        (id, farmer_id, title, description, product_type,
+         price_mad, quantity_kg, region, status, expires_at)
+    values
+        (v_ad_fresh, v_farmer_a,
+         'Courgettes FAR-06 future expiry',
+         'Description de test pour FAR-06 futur suffisamment longue.',
+         'Courgettes',
+         3.00, 50.00,
+         'Souss-Massa',
+         'ACTIVE',
+         now() + interval '3 days')
+    on conflict (id) do nothing;
+
+    -- The sweep above already ran; the fresh row must remain ACTIVE.
+    select status::text into v_status
+      from public.m2_farmarket_ads
+     where id = v_ad_fresh;
+
+    if v_status is distinct from 'ACTIVE' then
+        raise exception 'FAIL FAR-06 (F-06c): future-expiry ad became % (expected ACTIVE — boundary regression)', v_status;
+    end if;
+    raise notice 'OK FAR-06 (F-06c): ACTIVE ads not yet past expires_at are untouched by the sweep';
+
+end $far06$;
+
+-- ===========================================================================
+-- FAR-07 — Photos stored in Supabase Storage (not DB).
+-- F-07a: photo_paths column is text[] (not bytea, not json).
+-- F-07b: DB CHECK constraint caps photos at 5 (BR-F2).
+-- F-07c: farmarket-photos bucket exists and is public.
+-- F-07d: Storage INSERT RLS policy for VERIFIED FARMER exists on storage.objects.
+-- Prerequisites: m2_farmarket_ads must exist (FAR-01 merged, migration 0032 applied).
+-- ===========================================================================
+
+do $far07$
+declare
+    v_data_type  text;
+    v_udt_name   text;
+    v_chk_cnt    int;
+    v_bucket_pub boolean;
+    v_policy_cnt int;
+begin
+    if to_regclass('public.m2_farmarket_ads') is null then
+        raise notice 'SKIP FAR-07 cells — m2_farmarket_ads not yet created (migration 0032 not applied)';
+        return;
+    end if;
+
+    -- ── F-07a: photo_paths column is text[] (not bytea, not json) ────────────
+    select data_type::text, udt_name::text
+      into v_data_type, v_udt_name
+      from information_schema.columns
+     where table_schema = 'public'
+       and table_name   = 'm2_farmarket_ads'
+       and column_name  = 'photo_paths';
+
+    if v_data_type is distinct from 'ARRAY' then
+        raise exception 'FAIL FAR-07 (F-07a): photo_paths data_type=% (expected ARRAY)', v_data_type;
+    end if;
+    if v_udt_name is distinct from '_text' then
+        raise exception 'FAIL FAR-07 (F-07a): photo_paths udt_name=% (expected _text, i.e. text[])', v_udt_name;
+    end if;
+    raise notice 'OK FAR-07 (F-07a): photo_paths is ARRAY/_text — binary data not in DB';
+
+    -- ── F-07b: DB CHECK constraint caps photos at 5 (BR-F2) ──────────────────
+    select count(*)::int into v_chk_cnt
+      from information_schema.table_constraints
+     where table_schema    = 'public'
+       and table_name      = 'm2_farmarket_ads'
+       and constraint_type = 'CHECK'
+       and constraint_name ilike '%max_photos%';
+
+    if v_chk_cnt = 0 then
+        raise exception 'FAIL FAR-07 (F-07b): no CHECK constraint matching %%max_photos%% found on m2_farmarket_ads (BR-F2)';
+    end if;
+    raise notice 'OK FAR-07 (F-07b): m2_farmarket_ads_max_photos CHECK constraint exists (BR-F2 ≤5 photos)';
+
+    -- ── F-07c: farmarket-photos bucket exists and is public ───────────────────
+    select public into v_bucket_pub
+      from storage.buckets
+     where id = 'farmarket-photos';
+
+    if v_bucket_pub is null then
+        raise exception 'FAIL FAR-07 (F-07c): farmarket-photos bucket not found in storage.buckets';
+    end if;
+    if v_bucket_pub is distinct from true then
+        raise exception 'FAIL FAR-07 (F-07c): farmarket-photos bucket exists but public=% (expected true)', v_bucket_pub;
+    end if;
+    raise notice 'OK FAR-07 (F-07c): farmarket-photos Storage bucket exists and is public=true';
+
+    -- ── F-07d: Storage INSERT RLS policy for VERIFIED FARMER ─────────────────
+    select count(*)::int into v_policy_cnt
+      from pg_policies
+     where schemaname = 'storage'
+       and tablename  = 'objects'
+       and policyname = 'farmarket_photos_insert_verified_farmer';
+
+    if v_policy_cnt = 0 then
+        raise exception 'FAIL FAR-07 (F-07d): farmarket_photos_insert_verified_farmer INSERT policy not found on storage.objects';
+    end if;
+    raise notice 'OK FAR-07 (F-07d): farmarket_photos_insert_verified_farmer INSERT policy exists on storage.objects';
+
+end $far07$;
+
+-- ===========================================================================
+-- FAR-08 — Admin views all ads and leads.
+-- F-08a: admin-read SELECT policy exists on m2_farmarket_ads (defence-in-depth
+--        for the service_client() admin endpoints; blocks user-scoped leaks).
+-- Prerequisites: m2_farmarket_ads must exist (FAR-01 merged, migration 0032 applied).
+-- ===========================================================================
+
+do $far08$
+declare
+    v_policy_cnt int;
+begin
+    if to_regclass('public.m2_farmarket_ads') is null then
+        raise notice 'SKIP FAR-08 cells — m2_farmarket_ads not yet created (migration 0032 not applied)';
+        return;
+    end if;
+
+    -- ── F-08a: admin SELECT policy exists on m2_farmarket_ads ────────────────
+    select count(*)::int into v_policy_cnt
+      from pg_policies
+     where schemaname = 'public'
+       and tablename  = 'm2_farmarket_ads'
+       and cmd        = 'SELECT'
+       and policyname ilike '%admin%';
+
+    if v_policy_cnt = 0 then
+        raise exception 'FAIL FAR-08 (F-08a): no admin SELECT policy found on m2_farmarket_ads — defence-in-depth for FAR-08 admin endpoints is missing';
+    end if;
+    raise notice 'OK FAR-08 (F-08a): admin SELECT policy exists on m2_farmarket_ads (farmarket_ads_admin_select)';
+
+end $far08$;
+
+-- ===========================================================================
+-- FAR-09 — Featured ads at top of catalog.
+-- F-09a: m2_farmarket_ads_featured_idx partial index exists (sort perf guarantee).
+-- F-09b: is_featured defaults to false on new rows (no auto-grant).
+-- Prerequisite: m2_farmarket_ads must exist (FAR-01 merged, migration 0032 applied).
+-- ===========================================================================
+
+do $guard_f09$
+begin
+  if to_regclass('public.m2_farmarket_ads') is null then
+    raise notice 'SKIP FAR-09 cells — m2_farmarket_ads not yet created (migration 0032 not applied)';
+    return;
+  end if;
+end $guard_f09$;
+
+-- F-09a: the featured partial index exists on m2_farmarket_ads.
+-- This index is the performance guarantee for the sort; its absence means
+-- featured ads still appear first but via a full-scan rather than an index seek.
+do $f09a$
+begin
+  if to_regclass('public.m2_farmarket_ads') is null then
+    return;
+  end if;
+
+  perform isnt(
+    (
+      select indexname
+        from pg_indexes
+       where schemaname = 'public'
+         and tablename  = 'm2_farmarket_ads'
+         and indexname  = 'm2_farmarket_ads_featured_idx'
+    ),
+    null,
+    'F-09a: m2_farmarket_ads_featured_idx exists (FAR-09 sort performance guarantee)'
+  );
+end $f09a$;
+
+-- F-09b: is_featured defaults to false on new rows (premium slots not auto-granted).
+do $f09b$
+declare
+  v_farmer_id  uuid := gen_random_uuid();
+  v_ad_id      uuid := gen_random_uuid();
+  v_featured   boolean;
+begin
+  if to_regclass('public.m2_farmarket_ads') is null then
+    return;
+  end if;
+
+  insert into public.m2_farmarket_ads (
+      id, farmer_id, title, description, product_type,
+      price_mad, quantity_kg, region
+  ) values (
+      v_ad_id, v_farmer_id,
+      'Test FAR-09', 'Description longue pour test FAR-09 (min 10 chars)', 'Tomates',
+      5.00, 100.00, 'Souss-Massa'
+  );
+
+  select is_featured into v_featured
+    from public.m2_farmarket_ads
+   where id = v_ad_id;
+
+  perform ok(
+    v_featured = false,
+    'F-09b: newly inserted ad has is_featured = false by default'
+  );
+
+  delete from public.m2_farmarket_ads where id = v_ad_id;
+end $f09b$;
+
 do $$ begin
     raise notice 'AUTH-07 business-rule suite completed — rolling back';
 end$$;
