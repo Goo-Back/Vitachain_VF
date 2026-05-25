@@ -272,5 +272,179 @@ class CatalogPage(BaseModel):
     page_size: int
     has_next: bool
 
-# FAR-03 / FAR-04 lead-contact schemas removed (migration 0039) — replaced by
-# the anonymised order flow specced in the rewritten FAR-03 / FAR-04 stories.
+# ---------------------------------------------------------------------------
+# FAR-03 / FAR-04 / FAR-10 — Order placement, notification, tracking.
+#
+# The original lead-contact schemas (migration 0039) have been replaced by
+# the anonymised order flow. A producer never receives buyer identifiers.
+# ---------------------------------------------------------------------------
+
+OrderStatusLiteral = Literal[
+    "PENDING",
+    "PARTIALLY_ACCEPTED",
+    "ACCEPTED",
+    "REJECTED",
+    "IN_PROGRESS",
+    "DELIVERED",
+    "CANCELLED",
+]
+
+ItemStatusLiteral = Literal[
+    "PENDING",
+    "ACCEPTED",
+    "REJECTED",
+    "PICKED_UP",
+    "IN_TRANSIT",
+    "DELIVERED",
+]
+
+ORDER_MIN_ITEMS: int = 1
+ORDER_MAX_ITEMS: int = 20
+LOGISTICS_FEE_FLAT_MIN: Decimal = Decimal("50.00")
+LOGISTICS_FEE_RATE: Decimal = Decimal("0.05")
+
+
+def compute_logistics_fee(subtotal: Decimal) -> Decimal:
+    """MVP logistics fee formula — max(50, 5% of subtotal), rounded to 2dp.
+
+    The contract is locked here so the frontend cart preview and the backend
+    placement endpoint never drift.
+    """
+    rate_based = (subtotal * LOGISTICS_FEE_RATE).quantize(Decimal("0.01"))
+    return max(LOGISTICS_FEE_FLAT_MIN, rate_based)
+
+
+class OrderItemCreate(BaseModel):
+    """One line of the resto's cart."""
+
+    ad_id: UUID
+    quantity_kg: Decimal
+
+    @field_validator("quantity_kg")
+    @classmethod
+    def quantity_positive(cls, v: Decimal) -> Decimal:
+        if v <= 0:
+            raise ValueError("quantity_kg must be positive")
+        return v
+
+
+class OrderCreate(BaseModel):
+    """Payload for POST /farmarket/orders."""
+
+    delivery_region: str
+    delivery_notes: str | None = None
+    items: list[OrderItemCreate]
+
+    @field_validator("delivery_region")
+    @classmethod
+    def region_valid(cls, v: str) -> str:
+        if v not in MOROCCO_REGIONS:
+            raise ValueError(
+                "delivery_region must be one of the 12 Moroccan administrative regions"
+            )
+        return v
+
+    @field_validator("delivery_notes")
+    @classmethod
+    def notes_length(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        v = v.strip()
+        if len(v) == 0:
+            return None
+        if len(v) > 500:
+            raise ValueError("delivery_notes must be ≤ 500 characters")
+        return v
+
+    @field_validator("items")
+    @classmethod
+    def items_count_and_uniqueness(
+        cls, v: list[OrderItemCreate]
+    ) -> list[OrderItemCreate]:
+        if not (ORDER_MIN_ITEMS <= len(v) <= ORDER_MAX_ITEMS):
+            raise ValueError(
+                f"order must contain between {ORDER_MIN_ITEMS} and "
+                f"{ORDER_MAX_ITEMS} items"
+            )
+        ad_ids = [item.ad_id for item in v]
+        if len(set(ad_ids)) != len(ad_ids):
+            raise ValueError("items must contain distinct ad_ids")
+        return v
+
+
+class OrderItemOut(BaseModel):
+    """One persisted line returned from the API.
+
+    NOTE: this is the resto/admin view. The producer side reads
+    ``v_farmer_incoming_items`` which projects ``resto_handle`` in place of
+    any restaurant identifier — see :class:`FarmerIncomingItemOut`.
+    """
+
+    id: UUID
+    order_id: UUID
+    ad_id: UUID
+    farmer_id: UUID
+    quantity_kg: Decimal
+    unit_price_mad: Decimal
+    line_total_mad: Decimal
+    status: ItemStatusLiteral
+    producer_note: str | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class OrderOut(BaseModel):
+    """Order header returned to RESTAURANT / ADMIN callers."""
+
+    id: UUID
+    restaurant_id: UUID
+    status: OrderStatusLiteral
+    delivery_region: str
+    delivery_notes: str | None
+    subtotal_mad: Decimal
+    logistics_fee_mad: Decimal
+    total_mad: Decimal
+    payment_status: str
+    items: list[OrderItemOut]
+    created_at: datetime
+    updated_at: datetime
+
+
+class FarmerIncomingItemOut(BaseModel):
+    """Anonymised producer-side projection (matches v_farmer_incoming_items).
+
+    BR-F5: contains ``resto_handle`` (sha256-derived) and the coarse
+    ``delivery_region`` — no field can resolve to the restaurant's identity.
+    """
+
+    id: UUID
+    order_id: UUID
+    resto_handle: str
+    ad_id: UUID
+    quantity_kg: Decimal
+    unit_price_mad: Decimal
+    line_total_mad: Decimal
+    status: ItemStatusLiteral
+    producer_note: str | None
+    delivery_region: str
+    created_at: datetime
+    updated_at: datetime
+
+
+class OrderItemStatusUpdate(BaseModel):
+    """Payload for PATCH /farmarket/orders/items/{item_id}/status (FARMER)."""
+
+    new_status: ItemStatusLiteral
+    producer_note: str | None = None
+
+    @field_validator("producer_note")
+    @classmethod
+    def note_length(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        v = v.strip()
+        if len(v) == 0:
+            return None
+        if len(v) > 500:
+            raise ValueError("producer_note must be ≤ 500 characters")
+        return v

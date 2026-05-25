@@ -1,4 +1,5 @@
 import type { Ad } from "@/app/dashboard/farmer/ads/actions";
+import { AddToCartButton } from "./AddToCartButton";
 
 export function AdCatalogCard({ ad }: { ad: Ad }) {
   const price = Number(ad.price_mad).toFixed(2);
@@ -39,16 +40,10 @@ export function AdCatalogCard({ ad }: { ad: Ad }) {
           <p className="text-xs text-neutral-500">{qty} kg disponibles</p>
           <p className="mt-1 text-xs text-neutral-400">{ad.region}</p>
 
-          {/* FAR-03 (rewritten) hook: cart-based ordering replaces direct
-              contact. VitaChain acts as the logistics intermediary — no
-              contact info is ever exchanged between resto and producer. */}
-          <button
-            disabled
-            className="mt-4 w-full cursor-not-allowed rounded bg-neutral-100 px-4 py-2 text-sm text-neutral-400"
-            title="Ajouter au panier — disponible dans FAR-03 (commande)"
-          >
-            Ajouter au panier
-          </button>
+          {/* FAR-03 (rewritten) — cart-based ordering. VitaChain acts as the
+              logistics intermediary; no contact info is ever exchanged
+              between resto and producer. */}
+          <AddToCartButton ad={ad} />
         </div>
       </div>
     </li>

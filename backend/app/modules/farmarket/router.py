@@ -36,7 +36,7 @@ from fastapi.responses import ORJSONResponse, Response
 from supabase import Client
 
 from app.core.config import get_settings
-from app.core.security import AuthUser, get_current_user, get_db_for_user, require_verified
+from app.core.security import AuthUser, get_current_user, get_db_for_user, require_role, require_verified
 from app.modules.farmarket.schemas import (
     CATALOG_PAGE_SIZE_DEFAULT,
     MAX_PHOTO_BYTES,
@@ -47,11 +47,20 @@ from app.modules.farmarket.schemas import (
     AdUpdate,
     CatalogPage,
     CatalogQuery,
+    FarmerIncomingItemOut,
+    OrderCreate,
+    OrderItemOut,
+    OrderItemStatusUpdate,
+    OrderOut,
+    compute_logistics_fee,
 )
 
 router = APIRouter(prefix="/farmarket", tags=["farmarket"])
 
 _ADS_TABLE = "m2_farmarket_ads"
+_ORDERS_TABLE = "m2_farmarket_orders"
+_ORDER_ITEMS_TABLE = "m2_farmarket_order_items"
+_FARMER_INCOMING_VIEW = "v_farmer_incoming_items"
 _BUCKET = "farmarket-photos"
 
 # ---------------------------------------------------------------------------
@@ -475,3 +484,364 @@ async def browse_catalog(
         page_size=params.page_size,
         has_next=(offset + params.page_size) < total,
     )
+
+
+# ===========================================================================
+# FAR-03 / FAR-04 / FAR-10 — anonymised order flow
+# ===========================================================================
+
+
+def _row_to_order_item(row: dict) -> OrderItemOut:
+    return OrderItemOut(
+        id=row["id"],
+        order_id=row["order_id"],
+        ad_id=row["ad_id"],
+        farmer_id=row["farmer_id"],
+        quantity_kg=Decimal(str(row["quantity_kg"])),
+        unit_price_mad=Decimal(str(row["unit_price_mad"])),
+        line_total_mad=Decimal(str(row["line_total_mad"])),
+        status=row["status"],
+        producer_note=row.get("producer_note"),
+        created_at=row["created_at"],
+        updated_at=row["updated_at"],
+    )
+
+
+def _row_to_order_out(order_row: dict, item_rows: list[dict]) -> OrderOut:
+    return OrderOut(
+        id=order_row["id"],
+        restaurant_id=order_row["restaurant_id"],
+        status=order_row["status"],
+        delivery_region=order_row["delivery_region"],
+        delivery_notes=order_row.get("delivery_notes"),
+        subtotal_mad=Decimal(str(order_row["subtotal_mad"])),
+        logistics_fee_mad=Decimal(str(order_row["logistics_fee_mad"])),
+        total_mad=Decimal(str(order_row["total_mad"])),
+        payment_status=order_row["payment_status"],
+        items=[_row_to_order_item(r) for r in item_rows],
+        created_at=order_row["created_at"],
+        updated_at=order_row["updated_at"],
+    )
+
+
+@router.post(
+    "/orders",
+    status_code=status.HTTP_201_CREATED,
+    response_model=OrderOut,
+    response_class=ORJSONResponse,
+)
+async def place_order(
+    payload: OrderCreate,
+    user: Annotated[AuthUser, Depends(require_role("RESTAURANT"))],
+    db: Annotated[Client, Depends(get_db_for_user)],
+) -> OrderOut:
+    """POST /api/v1/farmarket/orders — create an order from a cart payload.
+
+    FAR-03 anonymisation contract:
+    * The producer is NEVER told who placed the order.
+    * The order header carries the resto's UUID; the per-producer notification
+      worker (FAR-04) joins to ``v_farmer_incoming_items`` which strips it.
+
+    Pricing contract:
+    * ``unit_price_mad`` is snapshot from the ad at order time. Future ad
+      edits never mutate historical orders.
+    * ``logistics_fee_mad`` is the MVP placeholder formula in
+      :func:`compute_logistics_fee` — keep frontend cart preview in sync.
+    """
+    # 1. Fetch ad rows in one go. RLS ``farmarket_ads_select_active`` allows
+    #    the resto to read ACTIVE rows; non-ACTIVE rows are simply absent
+    #    from the result, which we surface as ``ad_not_purchasable``.
+    requested_ad_ids = [str(item.ad_id) for item in payload.items]
+    ads_result = (
+        db.table(_ADS_TABLE)
+        .select("id, farmer_id, price_mad, quantity_kg, status")
+        .in_("id", requested_ad_ids)
+        .execute()
+    )
+    ads_by_id: dict[str, dict] = {str(r["id"]): r for r in (ads_result.data or [])}
+
+    missing = [a for a in requested_ad_ids if a not in ads_by_id]
+    if missing:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"ad_not_purchasable: {missing[0]} is not an ACTIVE ad",
+        )
+
+    # 2. Build per-item snapshots.
+    item_specs: list[dict] = []
+    subtotal = Decimal("0")
+    for item in payload.items:
+        ad = ads_by_id[str(item.ad_id)]
+        if ad["status"] != "ACTIVE":
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"ad_not_purchasable: {item.ad_id}",
+            )
+        ad_qty = Decimal(str(ad["quantity_kg"]))
+        if item.quantity_kg > ad_qty:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=(
+                    f"quantity_exceeds_stock: requested {item.quantity_kg} kg "
+                    f"on ad {item.ad_id} (stock={ad_qty})"
+                ),
+            )
+
+        unit_price = Decimal(str(ad["price_mad"]))
+        line_total = (item.quantity_kg * unit_price).quantize(Decimal("0.01"))
+        subtotal += line_total
+        item_specs.append(
+            {
+                "ad_id": str(item.ad_id),
+                "farmer_id": str(ad["farmer_id"]),
+                "quantity_kg": str(item.quantity_kg),
+                "unit_price_mad": str(unit_price),
+                "line_total_mad": str(line_total),
+            }
+        )
+
+    subtotal = subtotal.quantize(Decimal("0.01"))
+    logistics_fee = compute_logistics_fee(subtotal)
+    total = (subtotal + logistics_fee).quantize(Decimal("0.01"))
+
+    # 3. INSERT the header. RLS ``orders_insert_own_restaurant`` enforces
+    #    restaurant_id = auth.uid() and the RESTAURANT role gate.
+    order_id = uuid.uuid4()
+    order_insert = (
+        db.table(_ORDERS_TABLE)
+        .insert(
+            {
+                "id": str(order_id),
+                "restaurant_id": str(user.id),
+                "status": "PENDING",
+                "delivery_region": payload.delivery_region,
+                "delivery_notes": payload.delivery_notes,
+                "subtotal_mad": str(subtotal),
+                "logistics_fee_mad": str(logistics_fee),
+                "total_mad": str(total),
+            }
+        )
+        .execute()
+    )
+    if not order_insert.data:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="order_insert_failed",
+        )
+    order_row = order_insert.data[0]
+
+    # 4. INSERT the line items. supabase-py forwards a list as one bulk INSERT.
+    items_payload = [{"order_id": str(order_id), **spec} for spec in item_specs]
+    items_insert = (
+        db.table(_ORDER_ITEMS_TABLE)
+        .insert(items_payload)
+        .execute()
+    )
+    if not items_insert.data or len(items_insert.data) != len(item_specs):
+        # The header is now orphaned. We let it be — admin can clean up; the
+        # restaurant can re-attempt the order. (No two-phase commit in MVP.)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="order_items_insert_failed",
+        )
+
+    return _row_to_order_out(order_row, items_insert.data)
+
+
+@router.get(
+    "/orders/me",
+    response_model=list[OrderOut],
+    response_class=ORJSONResponse,
+)
+async def list_my_orders(
+    user: Annotated[AuthUser, Depends(require_role("RESTAURANT"))],
+    db: Annotated[Client, Depends(get_db_for_user)],
+) -> list[OrderOut]:
+    """GET /api/v1/farmarket/orders/me — restaurant's own order history."""
+    orders_result = (
+        db.table(_ORDERS_TABLE)
+        .select("*")
+        .eq("restaurant_id", str(user.id))
+        .order("created_at", desc=True)
+        .execute()
+    )
+    orders = orders_result.data or []
+    if not orders:
+        return []
+
+    order_ids = [str(o["id"]) for o in orders]
+    items_result = (
+        db.table(_ORDER_ITEMS_TABLE)
+        .select("*")
+        .in_("order_id", order_ids)
+        .execute()
+    )
+    items_by_order: dict[str, list[dict]] = {oid: [] for oid in order_ids}
+    for it in (items_result.data or []):
+        items_by_order.setdefault(str(it["order_id"]), []).append(it)
+
+    return [_row_to_order_out(o, items_by_order.get(str(o["id"]), [])) for o in orders]
+
+
+@router.get(
+    "/orders/incoming",
+    response_model=list[FarmerIncomingItemOut],
+    response_class=ORJSONResponse,
+)
+async def list_incoming_items(
+    user: Annotated[AuthUser, Depends(require_verified("FARMER"))],
+    db: Annotated[Client, Depends(get_db_for_user)],
+) -> list[FarmerIncomingItemOut]:
+    """GET /api/v1/farmarket/orders/incoming — producer's anonymised queue.
+
+    Reads ``v_farmer_incoming_items`` which projects ``resto_handle``
+    (sha256-derived) in place of any restaurant identifier (BR-F5).
+    """
+    result = (
+        db.table(_FARMER_INCOMING_VIEW)
+        .select("*")
+        .order("created_at", desc=True)
+        .execute()
+    )
+    return [
+        FarmerIncomingItemOut(
+            id=row["id"],
+            order_id=row["order_id"],
+            resto_handle=row["resto_handle"],
+            ad_id=row["ad_id"],
+            quantity_kg=Decimal(str(row["quantity_kg"])),
+            unit_price_mad=Decimal(str(row["unit_price_mad"])),
+            line_total_mad=Decimal(str(row["line_total_mad"])),
+            status=row["status"],
+            producer_note=row.get("producer_note"),
+            delivery_region=row["delivery_region"],
+            created_at=row["created_at"],
+            updated_at=row["updated_at"],
+        )
+        for row in (result.data or [])
+    ]
+
+
+@router.patch(
+    "/orders/items/{item_id}/status",
+    response_model=OrderItemOut,
+    response_class=ORJSONResponse,
+)
+async def update_item_status(
+    item_id: uuid.UUID,
+    payload: OrderItemStatusUpdate,
+    user: Annotated[AuthUser, Depends(require_verified("FARMER"))],
+    db: Annotated[Client, Depends(get_db_for_user)],
+) -> OrderItemOut:
+    """PATCH /api/v1/farmarket/orders/items/{item_id}/status (FARMER).
+
+    The DB trigger ``trg_far10_item_transition`` validates the transition
+    graph. P0001 from the trigger surfaces as a 409 here.
+    """
+    existing = (
+        db.table(_ORDER_ITEMS_TABLE)
+        .select("id, farmer_id, status")
+        .eq("id", str(item_id))
+        .maybe_single()
+        .execute()
+    )
+    if not existing.data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="item_not_found",
+        )
+    if str(existing.data["farmer_id"]) != str(user.id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="not_item_owner",
+        )
+
+    patch: dict = {"status": payload.new_status}
+    if payload.producer_note is not None:
+        patch["producer_note"] = payload.producer_note
+
+    try:
+        update_result = (
+            db.table(_ORDER_ITEMS_TABLE)
+            .update(patch)
+            .eq("id", str(item_id))
+            .execute()
+        )
+    except Exception as exc:  # noqa: BLE001
+        # PostgREST surfaces P0001 as a generic error with the message in the
+        # `message`/`details` JSON. Treat any failure here as a 409 on the
+        # transition graph — defensive but explicit.
+        msg = str(exc)
+        if "invalid_transition" in msg:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"invalid_transition: {existing.data['status']} -> {payload.new_status}",
+            ) from exc
+        raise
+
+    if not update_result.data:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="item_update_failed",
+        )
+
+    return _row_to_order_item(update_result.data[0])
+
+
+@router.patch(
+    "/orders/{order_id}/cancel",
+    response_model=OrderOut,
+    response_class=ORJSONResponse,
+)
+async def cancel_order(
+    order_id: uuid.UUID,
+    user: Annotated[AuthUser, Depends(require_role("RESTAURANT"))],
+    db: Annotated[Client, Depends(get_db_for_user)],
+) -> OrderOut:
+    """PATCH /api/v1/farmarket/orders/{order_id}/cancel (RESTAURANT).
+
+    RLS ``orders_update_cancel_own_restaurant`` enforces the narrow
+    PENDING → CANCELLED transition at the DB layer.
+    """
+    existing = (
+        db.table(_ORDERS_TABLE)
+        .select("id, restaurant_id, status")
+        .eq("id", str(order_id))
+        .maybe_single()
+        .execute()
+    )
+    if not existing.data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="order_not_found",
+        )
+    if str(existing.data["restaurant_id"]) != str(user.id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="not_order_owner",
+        )
+    if existing.data["status"] != "PENDING":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="not_cancellable",
+        )
+
+    update_result = (
+        db.table(_ORDERS_TABLE)
+        .update({"status": "CANCELLED"})
+        .eq("id", str(order_id))
+        .execute()
+    )
+    if not update_result.data:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="order_cancel_failed",
+        )
+
+    items_result = (
+        db.table(_ORDER_ITEMS_TABLE)
+        .select("*")
+        .eq("order_id", str(order_id))
+        .execute()
+    )
+    return _row_to_order_out(update_result.data[0], items_result.data or [])

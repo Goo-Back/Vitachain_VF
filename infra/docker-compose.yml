@@ -402,13 +402,57 @@ services:
         max-file: "3"
 
   # ---------------------------------------------------------------------------
-  # FAR-04 — (rewritten) anonymised order notification worker.
-  # The previous lead-email worker (which forwarded buyer contact info to the
-  # producer) has been removed in migration 0039. The rewritten FAR-04 story
-  # will introduce a new worker that emits an *anonymised* order alert to the
-  # producer — no resto name, phone, email, or address. To be added once
-  # FAR-03 (place order) lands.
+  # FAR-04 — anonymised order-notification worker.
+  # LISTENs on `farmarket_order_placed` (emitted by migration 0041's AFTER
+  # INSERT trigger on m2_farmarket_orders). For each order it fans out one
+  # Brevo email per distinct producer — each email contains ONLY that
+  # producer's items + a coarse delivery_region + a sha256 resto_handle.
+  # BR-F5 contract: restaurant_id is read for the audit log only and NEVER
+  # copied into the Brevo `params` dict. `notified_at IS NULL` is the
+  # idempotency anchor — stamped AFTER Brevo 2xx. 30-minute backstop retries
+  # rows missed during a restart. BR-F4 preserved (BREVO_API_KEY backend-side).
   # ---------------------------------------------------------------------------
+  farmarket_order_notify_worker:
+    image: vitachain/backend:latest
+    container_name: vita_farmarket_order_notify_worker
+    command: ["python", "-m", "app.workers.farmarket_order_notify"]
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-prod}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      GIT_SHA: ${GIT_SHA:-unknown}
+      # DATABASE_URL must be the DIRECT (:5432) DSN — the LISTEN session must
+      # survive across statements; pgBouncer transaction mode would break it.
+      DATABASE_URL: ${SUPABASE_DB_URL}
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      BREVO_API_KEY: ${BREVO_API_KEY}
+      BREVO_SENDER_NAME: ${BREVO_SENDER_NAME:-VitaChain}
+      BREVO_SENDER_EMAIL: ${BREVO_SENDER_EMAIL:-no-reply@vitachain.ma}
+      BREVO_TEMPLATE_FAR_ORDER_FR: ${BREVO_TEMPLATE_FAR_ORDER_FR:-0}
+      BREVO_TEMPLATE_FAR_ORDER_AR: ${BREVO_TEMPLATE_FAR_ORDER_AR:-0}
+      BREVO_TEMPLATE_FAR_ORDER_EN: ${BREVO_TEMPLATE_FAR_ORDER_EN:-0}
+      FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-https://vitachain.ma}
+      SENTRY_DSN: ${SENTRY_DSN_BACKEND:-}
+      SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-prod}
+      SENTRY_TRACES_SAMPLE_RATE: ${SENTRY_TRACES_SAMPLE_RATE:-0.1}
+      HEALTHCHECKS_FAR_ORDER_NOTIFY_PING_URL: ${HEALTHCHECKS_FAR_ORDER_NOTIFY_PING_URL:-}
+    networks:
+      - vita_net
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f 'app.workers.farmarket_order_notify' >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
 
   # ---------------------------------------------------------------------------
   # FAR-06 — FarMarket ad expiry worker.

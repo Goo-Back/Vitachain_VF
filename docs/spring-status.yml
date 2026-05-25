@@ -921,14 +921,14 @@ epics:
       - id: FAR-03
         title: Restaurateur places order via cart (logistics intermediary)
         priority: Must
-        status: TODO
+        status: IN_REVIEW   # 2026-05-24 LOCAL: migration 0040 (m2_farmarket_orders + m2_farmarket_order_items + RLS + v_farmer_incoming_items SHA256-handle projection), schemas (OrderCreate/OrderItemCreate/OrderOut/FarmerIncomingItemOut + compute_logistics_fee), endpoints (POST /farmarket/orders, GET /orders/me), test_far03_place_order.py (schema + logistics fee), frontend (lib/cart.tsx CartProvider + CartPageClient + AddToCartButton + /dashboard/restaurant/cart). Remaining DoD gates: migration applied on Supabase + cross-role RLS smoke on staging (RESTAURANT sees only own orders; FARMER querying m2_farmarket_orders returns 0 rows; FARMER querying v_farmer_incoming_items returns only own items with opaque resto_handle).
         actor: RESTAURANT
         acceptance: "Cart → order persisted; producer name visible but no contact info; resto fully anonymised to the producer"
         depends_on: [FAR-02]
       - id: FAR-04
         title: Anonymised order notification to producer (no buyer info)
         priority: Must
-        status: TODO
+        status: IN_REVIEW   # 2026-05-24 LOCAL: migration 0041 (notified_at + farmarket_order_placed NOTIFY trigger), worker backend/app/workers/farmarket_order_notify/* (__main__ + listener + sender + sanitise + __init__), docker-compose service farmarket_order_notify_worker, infra/.env.example BREVO_TEMPLATE_FAR_ORDER_* + HEALTHCHECKS_FAR_ORDER_NOTIFY_PING_URL, test_far04_order_notification.py (sanitiser regex + BR-F5 payload purity check — restaurant_id never in Brevo params). Remaining DoD gates: Brevo templates created + ids in env; staging end-to-end (2-producer order → 2 distinct emails, each filtered to own items); BR-F4 grep guard verified (BREVO_API_KEY absent from frontend bundle).
         actor: System
         acceptance: "BR-F4 — Brevo key only on backend; producer email contains zero resto identifiers (name/phone/email/address)"
         depends_on: [FAR-03, NOT-01]
@@ -970,7 +970,7 @@ epics:
       - id: FAR-10
         title: Order tracking — resto sees status timeline; producer accepts/rejects
         priority: Must
-        status: TODO
+        status: IN_REVIEW   # 2026-05-24 LOCAL: migration 0042 (transition trigger + header derivation trigger + cancel RLS PENDING→CANCELLED), endpoints (GET /orders/incoming, PATCH /orders/items/{id}/status, PATCH /orders/{id}/cancel), schemas (OrderItemStatusUpdate), test_far10_order_tracking.py (status payload validation), frontend resto (/dashboard/restaurant/orders list + [id] detail + CancelButton + OrderStatusBadge), frontend farmer (/dashboard/farmer/orders + IncomingItemRow accept/reject/expedite + Sidebar 'Commandes' link). Remaining DoD gates: migration 0042 applied; pgTAP cells for transition graph + header derivation appended in db/tests/auth07_business_rules.sql; staging cross-role smoke (full lifecycle PENDING→ACCEPTED→PICKED_UP→IN_TRANSIT→DELIVERED with resto + producer); BR-F5 regression — DOM grep on producer page returns 0 matches for any restaurant UUID.
         actor: RESTAURANT, FARMER
         acceptance: "Order status transitions (PENDING → ACCEPTED/REJECTED → PICKED_UP → IN_TRANSIT → DELIVERED); producer view shows zero buyer info"
         depends_on: [FAR-03, FAR-04]
