@@ -287,6 +287,21 @@ OrderStatusLiteral = Literal[
     "IN_PROGRESS",
     "DELIVERED",
     "CANCELLED",
+    # Migration 0050 — terminal state set only by admin/ops after delivery.
+    "RETURNED",
+]
+
+# Payment method + status — migration 0043. PSP_TRANSFER orders are paid in
+# advance via the payment partner; COD orders are paid in cash/cheque to the
+# courier and reconciled when the restaurant confirms reception.
+PaymentMethodLiteral = Literal["COD", "PSP_TRANSFER"]
+PaymentStatusLiteral = Literal[
+    "DUE",
+    "PAID",
+    "FAILED",
+    # legacy values kept for back-compat with rows created before 0043
+    "SIMULATED_PAID",
+    "PENDING",
 ]
 
 ItemStatusLiteral = Literal[
@@ -329,11 +344,24 @@ class OrderItemCreate(BaseModel):
 
 
 class OrderCreate(BaseModel):
-    """Payload for POST /farmarket/orders."""
+    """Payload for POST /farmarket/orders.
+
+    Delivery-contact fields (migration 0050) carry the courier-facing details
+    the logistics intermediary needs. They are NEVER projected to the producer
+    (anonymisation BR-F5 — v_farmer_incoming_items exposes only delivery_region).
+    They are optional so clients that pre-date 0050 keep working.
+    """
 
     delivery_region: str
     delivery_notes: str | None = None
+    delivery_contact_name: str | None = None
+    delivery_phone: str | None = None
+    delivery_address: str | None = None
+    delivery_city: str | None = None
     items: list[OrderItemCreate]
+    # Defaults to COD so existing clients that pre-date migration 0043 keep
+    # working — they'll behave exactly like an explicit COD order.
+    payment_method: PaymentMethodLiteral = "COD"
 
     @field_validator("delivery_region")
     @classmethod
@@ -342,6 +370,54 @@ class OrderCreate(BaseModel):
             raise ValueError(
                 "delivery_region must be one of the 12 Moroccan administrative regions"
             )
+        return v
+
+    @field_validator("delivery_contact_name")
+    @classmethod
+    def contact_name_length(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        v = v.strip()
+        if len(v) == 0:
+            return None
+        if not (2 <= len(v) <= 120):
+            raise ValueError("delivery_contact_name must be between 2 and 120 characters")
+        return v
+
+    @field_validator("delivery_phone")
+    @classmethod
+    def phone_length(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        v = v.strip()
+        if len(v) == 0:
+            return None
+        if not (6 <= len(v) <= 30):
+            raise ValueError("delivery_phone must be between 6 and 30 characters")
+        return v
+
+    @field_validator("delivery_address")
+    @classmethod
+    def address_length(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        v = v.strip()
+        if len(v) == 0:
+            return None
+        if not (4 <= len(v) <= 300):
+            raise ValueError("delivery_address must be between 4 and 300 characters")
+        return v
+
+    @field_validator("delivery_city")
+    @classmethod
+    def city_length(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        v = v.strip()
+        if len(v) == 0:
+            return None
+        if not (2 <= len(v) <= 120):
+            raise ValueError("delivery_city must be between 2 and 120 characters")
         return v
 
     @field_validator("delivery_notes")
@@ -401,10 +477,16 @@ class OrderOut(BaseModel):
     status: OrderStatusLiteral
     delivery_region: str
     delivery_notes: str | None
+    delivery_contact_name: str | None
+    delivery_phone: str | None
+    delivery_address: str | None
+    delivery_city: str | None
     subtotal_mad: Decimal
     logistics_fee_mad: Decimal
     total_mad: Decimal
-    payment_status: str
+    payment_method: PaymentMethodLiteral
+    payment_status: PaymentStatusLiteral
+    paid_at: datetime | None
     items: list[OrderItemOut]
     created_at: datetime
     updated_at: datetime
@@ -448,3 +530,75 @@ class OrderItemStatusUpdate(BaseModel):
         if len(v) > 500:
             raise ValueError("producer_note must be ≤ 500 characters")
         return v
+
+
+# ---------------------------------------------------------------------------
+# FAR-11 / FAR-12 — Farmer public profile + ratings (discovery-side identity).
+#
+# The order pipeline stays anonymous (BR-F5, v_farmer_incoming_items). These
+# schemas power the DISCOVERY surface only: a restaurant browsing offers can
+# see who is selling, their other ads, and how other restaurants rated them.
+# ---------------------------------------------------------------------------
+
+REVIEW_MAX_LEN: int = 1000
+
+
+class FarmerPublicProfileOut(BaseModel):
+    """Whitelisted producer profile shown to restaurants on offer discovery.
+
+    Built from ``v_farmarket_farmer_public`` (safe columns only — never email
+    or phone) plus the rating-stats view and an ACTIVE-ad count.
+    """
+
+    id: UUID
+    first_name: str | None
+    last_name: str | None
+    full_name: str | None
+    display_name: str
+    region: str | None
+    member_since: datetime
+    rating_avg: float | None
+    rating_count: int
+    active_ad_count: int
+
+
+class FarmerRatingOut(BaseModel):
+    """One public review on a farmer."""
+
+    id: UUID
+    farmer_id: UUID
+    reviewer_name: str
+    rating: int
+    review: str | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class RatingCreate(BaseModel):
+    """Payload for POST /farmarket/farmers/{farmer_id}/ratings."""
+
+    rating: int = Field(ge=1, le=5)
+    review: str | None = None
+
+    @field_validator("review")
+    @classmethod
+    def review_length(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        v = v.strip()
+        if len(v) == 0:
+            return None
+        if len(v) > REVIEW_MAX_LEN:
+            raise ValueError(f"review must be ≤ {REVIEW_MAX_LEN} characters")
+        return v
+
+
+class MyRatingOut(BaseModel):
+    """Eligibility + current rating for the calling restaurant.
+
+    ``can_rate`` mirrors the RLS verified-buyer gate (a DELIVERED order item
+    from this farmer). ``my_rating`` is the caller's existing review, if any.
+    """
+
+    can_rate: bool
+    my_rating: FarmerRatingOut | None

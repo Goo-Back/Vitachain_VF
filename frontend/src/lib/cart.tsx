@@ -105,14 +105,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const addToCart = useCallback<CartContextValue["addToCart"]>(
     (ad, quantity_kg) => {
       setLines((prev) => {
-        const existing = prev.findIndex((l) => l.ad_id === ad.id);
-        if (existing >= 0) {
-          const next = [...prev];
-          next[existing] = {
-            ...next[existing],
-            quantity_kg: next[existing].quantity_kg + quantity_kg,
-          };
-          return next;
+        const alreadyInCart = prev.some((l) => l.ad_id === ad.id);
+        if (alreadyInCart) {
+          return prev.map((l) =>
+            l.ad_id === ad.id
+              ? { ...l, quantity_kg: l.quantity_kg + quantity_kg }
+              : l,
+          );
         }
         return [
           ...prev,

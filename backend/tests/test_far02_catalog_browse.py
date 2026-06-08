@@ -2,15 +2,36 @@
 
 from __future__ import annotations
 
+import uuid
 from decimal import Decimal
 
 import pytest
+from fastapi.testclient import TestClient
 
+from app.main import app
 from app.modules.farmarket.schemas import (
     CATALOG_PAGE_SIZE_DEFAULT,
     CATALOG_PAGE_SIZE_MAX,
     CatalogQuery,
 )
+from tests.test_security import _make_token
+
+
+@pytest.fixture
+def test_client() -> TestClient:
+    return TestClient(app)
+
+
+@pytest.fixture
+def farmer_token() -> str:
+    # Any authenticated user may browse the catalog; a VERIFIED FARMER token
+    # is convenient and exercises the auth path without needing a DB round-trip
+    # (the handler rejects bad query params before any query runs).
+    return _make_token(
+        sub=str(uuid.uuid4()),
+        role="FARMER",
+        extra={"verification_status": "VERIFIED"},
+    )
 
 
 class TestCatalogQuery:

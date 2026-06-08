@@ -1,55 +1,54 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getServerProfile, getServerSession } from "@/lib/auth/session";
 import { CartProvider } from "@/lib/cart";
-import type { ProfileRow } from "@/lib/supabase/types";
+import { FavoritesProvider } from "@/lib/favorites";
+
+import { Sidebar } from "./_ui/Sidebar";
+import { Topbar } from "./_ui/Topbar";
+
+export const dynamic = "force-dynamic";
+
+function initialsOf(name?: string | null, email?: string | null) {
+  const src = (name ?? email ?? "").trim();
+  if (!src) return "·";
+  const parts = src.split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return src[0]?.toUpperCase() ?? "·";
+  if (parts.length === 1) return (parts[0] ?? "").slice(0, 2).toUpperCase();
+  const first = parts[0] ?? "";
+  const last = parts[parts.length - 1] ?? "";
+  return ((first[0] ?? "") + (last[0] ?? "")).toUpperCase() || "·";
+}
 
 export default async function RestaurantLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  const session = await getServerSession();
+  if (!session) redirect("/login");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single<Pick<ProfileRow, "role">>();
-
+  // cache()-memoised: the child page's getServerProfile() reuses this result,
+  // so only one public.profiles query runs for the whole request.
+  const profile = await getServerProfile();
   if (profile?.role !== "RESTAURANT") redirect("/dashboard");
+
+  const displayName = profile.full_name ?? profile.email;
+  const initials = initialsOf(profile.full_name, profile.email);
 
   return (
     <CartProvider>
-      <div className="min-h-screen bg-neutral-50">
-        <header className="border-b border-neutral-200 bg-white px-6 py-4">
-          <div className="mx-auto flex max-w-7xl items-center justify-between">
-            <p className="text-sm font-semibold text-neutral-700">
-              Tableau de bord Restaurateur
-            </p>
-            <nav className="flex items-center gap-4 text-sm">
-              <Link href="/dashboard/restaurant/marketplace" className="text-neutral-600 hover:text-leaf-700">
-                Marketplace
-              </Link>
-              <Link href="/dashboard/restaurant/orders" className="text-neutral-600 hover:text-leaf-700">
-                Mes commandes
-              </Link>
-              <Link
-                href="/dashboard/restaurant/cart"
-                className="rounded-full bg-leaf-50 px-3 py-1 text-leaf-700 hover:bg-leaf-100"
-              >
-                Panier
-              </Link>
-            </nav>
+      <FavoritesProvider>
+        <div className="min-h-screen bg-neutral-50">
+          <Sidebar />
+          <div className="lg:pl-64">
+            <Topbar userName={displayName} userInitials={initials} />
+            <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
+              {children}
+            </main>
           </div>
-        </header>
-        <main className="mx-auto max-w-7xl px-4 py-8">{children}</main>
-      </div>
+        </div>
+      </FavoritesProvider>
     </CartProvider>
   );
 }

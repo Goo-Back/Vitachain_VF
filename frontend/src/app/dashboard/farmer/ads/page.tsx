@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { createSupabaseServerClient } from "@/lib/supabase/server";
-import type { ProfileRow } from "@/lib/supabase/types";
+import { getServerProfile } from "@/lib/auth/session";
 
 import {
   ArrowRightIcon,
@@ -15,6 +14,7 @@ import {
   TagIcon,
 } from "../_ui/Icon";
 import { PageHeader } from "../_ui/PageHeader";
+import { MotionCard, Stagger } from "../_ui/motion";
 import { deleteAd, fetchMyAds, type Ad } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -28,29 +28,18 @@ const STATUS_LABEL: Record<Ad["status"], string> = {
 const STATUS_CLASS: Record<Ad["status"], string> = {
   ACTIVE: "bg-leaf-50 text-leaf-700 ring-leaf-200",
   EXPIRED: "bg-neutral-100 text-neutral-500 ring-neutral-200",
-  DELETED: "bg-red-50 text-red-600 ring-red-200",
+  DELETED: "bg-danger-50 text-danger-700 ring-danger-500/30",
 };
 
 export default async function AdsPage() {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role, verification_status")
-    .eq("id", user.id)
-    .single<Pick<ProfileRow, "role" | "verification_status">>();
-
+  const profile = await getServerProfile();
   if (profile?.role !== "FARMER") redirect("/dashboard");
 
   const isUnverified = profile.verification_status !== "VERIFIED";
   const ads = isUnverified ? [] : await fetchMyAds();
 
   return (
-    <div className="mx-auto max-w-5xl vc-fade-in">
+    <div className="mx-auto max-w-6xl vc-fade-in">
       <PageHeader
         crumbs={[
           { label: "Mon exploitation", href: "/dashboard/farmer" },
@@ -77,11 +66,11 @@ export default async function AdsPage() {
       ) : ads.length === 0 ? (
         <EmptyState />
       ) : (
-        <ul className="grid gap-3 sm:grid-cols-2">
+        <Stagger as="ul" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {ads.map((ad) => (
             <AdCard key={ad.id} ad={ad} />
           ))}
-        </ul>
+        </Stagger>
       )}
     </div>
   );
@@ -135,10 +124,11 @@ function AdCard({ ad }: { ad: Ad }) {
   );
 
   return (
-    <li>
-      <div className="vc-card group block p-5">
-        <div className="flex items-start justify-between gap-3">
-          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-leaf-50">
+    <MotionCard as="li" interactive={false} className="h-full">
+      <div className="katara-card group relative flex h-full flex-col overflow-hidden p-5">
+        <span aria-hidden="true" className="katara-glow" />
+        <div className="relative flex items-start justify-between gap-3">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-leaf-50 ring-1 ring-inset ring-leaf-500/10">
             {ad.photo_urls[0] ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -183,7 +173,7 @@ function AdCard({ ad }: { ad: Ad }) {
         )}
 
         {ad.status === "ACTIVE" && (
-          <div className="mt-4 flex items-center gap-2 border-t border-neutral-100 pt-4">
+          <div className="mt-auto flex items-center gap-2 border-t border-neutral-100 pt-4">
             <Link
               href={`/dashboard/farmer/ads/${ad.id}/edit`}
               className="vc-btn-ghost flex-1 py-1.5 text-xs"
@@ -199,7 +189,7 @@ function AdCard({ ad }: { ad: Ad }) {
             >
               <button
                 type="submit"
-                className="w-full rounded-lg px-3 py-1.5 text-xs font-medium text-red-600 ring-1 ring-red-200 hover:bg-red-50 transition-colors"
+                className="w-full rounded-lg px-3 py-1.5 text-xs font-medium text-danger-700 ring-1 ring-danger-500/30 transition-colors hover:bg-danger-50"
               >
                 Supprimer
               </button>
@@ -207,6 +197,6 @@ function AdCard({ ad }: { ad: Ad }) {
           </div>
         )}
       </div>
-    </li>
+    </MotionCard>
   );
 }

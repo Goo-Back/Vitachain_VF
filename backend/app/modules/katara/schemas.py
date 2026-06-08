@@ -224,18 +224,32 @@ class TelemetryPayload(BaseModel):
 
     The device authenticates via two headers (``X-Device-Id`` +
     ``X-Device-Api-Key``), never a JWT — the body carries only the metrics.
-    The ``soil_pH`` alias preserves the literal field name in the firmware's
-    JSON while keeping the Python attribute snake_case.
+    The firmware sends the literal JSON key ``soil_pH`` (camelCase); the
+    before-validator below remaps it to the snake_case attribute.
     """
 
     soil_moisture: float = Field(..., ge=0, le=100)
     soil_temperature: float = Field(..., ge=-20, le=80)
-    soil_ph: float = Field(..., ge=0, le=14, alias="soil_pH")
+    soil_ph: float = Field(..., ge=0, le=14)
     soil_conductivity: float = Field(..., ge=0, le=20000)
     battery_level: int = Field(..., ge=0, le=100)
     recorded_at: datetime  # UTC; the device sends an ISO-8601 string
 
-    model_config = ConfigDict(populate_by_name=True)
+    @model_validator(mode="before")
+    @classmethod
+    def _accept_soil_pH_key(cls, data: Any) -> Any:
+        # The firmware sends ``soil_pH`` (camelCase). We map it here rather than
+        # via ``Field(alias="soil_pH")`` because FastAPI rebuilds a standalone
+        # ``TypeAdapter`` per field when it extracts the request body, and a
+        # field-level alias on that adapter has no target — Pydantic 2.13 then
+        # emits an UnsupportedFieldAttributeWarning on *every* ingest request.
+        # Remapping in a before-validator keeps the firmware contract while
+        # leaving the field free of alias metadata. The snake_case ``soil_ph``
+        # spelling is still accepted directly, so both keys round-trip.
+        if isinstance(data, dict) and "soil_pH" in data and "soil_ph" not in data:
+            data = {**data, "soil_ph": data["soil_pH"]}
+            data.pop("soil_pH", None)
+        return data
 
     @field_validator("recorded_at")
     @classmethod

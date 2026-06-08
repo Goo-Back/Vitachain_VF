@@ -16,6 +16,17 @@ const config = [
       // Auth journey relies on server actions; explicit `any` is banned to keep
       // the server/client boundary clear (AUTH-05).
       "@typescript-eslint/no-explicit-any": "error",
+      // Honour the `_`-prefix convention for intentionally-unused bindings and
+      // the destructure-to-omit idiom (e.g. `const { signal: _signal, ...rest }`
+      // strips an option before forwarding the rest).
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          ignoreRestSiblings: true,
+        },
+      ],
     },
   },
 ];

@@ -13,6 +13,11 @@ export interface ProfileRow {
   id: string;
   email: string;
   full_name: string | null;
+  // FAR-11: first/last name split + farmer region (migration 0045). Nullable;
+  // only farmers populate farmer_region.
+  first_name: string | null;
+  last_name: string | null;
+  farmer_region: string | null;
   phone: string | null;
   role: UserRole;
   verification_status: VerificationStatus;

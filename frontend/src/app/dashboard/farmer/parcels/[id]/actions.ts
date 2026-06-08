@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { authedApiFetch } from "@/lib/api/authed-fetch";
 
 /**
  * KAT-02 — server actions wrapping the FastAPI device endpoints.
@@ -15,8 +15,6 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
  * crosses the wire. The response is returned to the client (modal) and
  * never logged.
  */
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 export type Device = {
   id: string;
@@ -38,28 +36,20 @@ export type PairDeviceResult =
   | { ok: true; device: PairedDevice }
   | { ok: false; error: string };
 
+// Delegates to the shared helper, which self-heals a stale verification_status
+// JWT claim (admin-verified mid-session) by refreshing the token and retrying
+// once. JSON default Content-Type kept here so the shared helper stays
+// body-agnostic for multipart callers elsewhere.
 async function _authedFetch(
   path: string,
   init: RequestInit = {},
 ): Promise<Response> {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (!session) {
-    throw new Error("not_authenticated");
-  }
   const headers = new Headers(init.headers);
-  headers.set("Authorization", `Bearer ${session.access_token}`);
   if (init.body && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
-  return fetch(`${API_BASE}/api/v1${path}`, {
-    ...init,
-    headers,
-    cache: "no-store",
-    signal: AbortSignal.timeout(10_000),
-  });
+  const { signal: _signal, ...rest } = init;
+  return authedApiFetch(path, { ...rest, headers, timeoutMs: 10_000 });
 }
 
 export async function fetchParcelDevices(parcelId: string): Promise<Device[]> {

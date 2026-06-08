@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { createSupabaseServerClient } from "@/lib/supabase/server";
-import type { ProfileRow } from "@/lib/supabase/types";
+import { getServerProfile } from "@/lib/auth/session";
 
 import { EmptyState } from "./EmptyState";
 import { KpiStrip } from "./KpiStrip";
@@ -21,18 +20,7 @@ import { fetchFarmerOverview } from "./overview-actions";
 export const dynamic = "force-dynamic";
 
 export default async function FarmerDashboardPage() {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role, full_name")
-    .eq("id", user.id)
-    .single<Pick<ProfileRow, "role" | "full_name">>();
-
+  const profile = await getServerProfile();
   if (profile?.role !== "FARMER") redirect("/dashboard");
 
   const overview = await fetchFarmerOverview();

@@ -1,8 +1,6 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 
-import { createSupabaseServerClient } from "@/lib/supabase/server";
-import type { ProfileRow } from "@/lib/supabase/types";
+import { getServerProfile } from "@/lib/auth/session";
 
 import {
   ArrowRightIcon,
@@ -11,7 +9,9 @@ import {
   LogoutIcon,
   SettingsIcon,
 } from "../_ui/Icon";
+import { Stagger, StaggerItem } from "../_ui/motion";
 import { PageHeader } from "../_ui/PageHeader";
+import { ProfileForm } from "./ProfileForm";
 
 /**
  * Paramètres · /dashboard/farmer/settings
@@ -28,22 +28,7 @@ import { PageHeader } from "../_ui/PageHeader";
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("full_name, email, role, locale, verification_status")
-    .eq("id", user.id)
-    .single<
-      Pick<
-        ProfileRow,
-        "full_name" | "email" | "role" | "locale" | "verification_status"
-      >
-    >();
+  const profile = await getServerProfile();
 
   const isVerified = profile?.verification_status === "VERIFIED";
   const localeLabel =
@@ -61,21 +46,29 @@ export default async function SettingsPage() {
         subtitle="Informations de profil et statut de vérification."
       />
 
-      <div className="space-y-6">
+      <Stagger className="space-y-6">
         {/* Profil */}
+        <StaggerItem>
         <SectionCard
-          icon={<SettingsIcon size={18} className="text-leaf-700" />}
+          icon={<SettingsIcon size={18} className="text-sky-tint-700" />}
+          tint="blue"
           title="Profil"
         >
-          <dl className="grid gap-4 sm:grid-cols-2">
-            <Row label="Nom" value={profile?.full_name ?? "—"} />
-            <Row label="Email" value={profile?.email ?? user.email ?? "—"} />
+          <ProfileForm
+            firstName={profile?.first_name ?? ""}
+            lastName={profile?.last_name ?? ""}
+            region={profile?.farmer_region ?? ""}
+          />
+          <dl className="mt-6 grid gap-4 border-t border-neutral-100 pt-6 sm:grid-cols-2">
+            <Row label="Email" value={profile?.email ?? "—"} />
             <Row label="Rôle" value={profile?.role ?? "—"} />
             <Row label="Langue" value={localeLabel} />
           </dl>
         </SectionCard>
+        </StaggerItem>
 
         {/* Vérification */}
+        <StaggerItem>
         <SectionCard
           icon={<CheckCircleIcon size={18} className="text-leaf-700" />}
           title="Vérification d'identité"
@@ -120,10 +113,13 @@ export default async function SettingsPage() {
             </div>
           </div>
         </SectionCard>
+        </StaggerItem>
 
         {/* Déconnexion */}
+        <StaggerItem>
         <SectionCard
           icon={<LogoutIcon size={18} className="text-neutral-500" />}
+          tint="neutral"
           title="Session"
         >
           <form action="/auth/signout" method="post">
@@ -132,7 +128,8 @@ export default async function SettingsPage() {
             </button>
           </form>
         </SectionCard>
-      </div>
+        </StaggerItem>
+      </Stagger>
     </div>
   );
 }
@@ -140,16 +137,23 @@ export default async function SettingsPage() {
 function SectionCard({
   icon,
   title,
+  tint = "leaf",
   children,
 }: {
   icon: React.ReactNode;
   title: string;
+  tint?: "leaf" | "blue" | "neutral";
   children: React.ReactNode;
 }) {
+  const tileBg = {
+    leaf: "bg-leaf-50",
+    blue: "bg-sky-tint-50",
+    neutral: "bg-neutral-100",
+  }[tint];
   return (
-    <section className="vc-card p-6">
+    <section className="katara-card p-6">
       <div className="mb-4 flex items-center gap-3">
-        <span className="grid h-9 w-9 place-items-center rounded-lg bg-leaf-50">
+        <span className={`grid h-9 w-9 place-items-center rounded-xl ${tileBg}`}>
           {icon}
         </span>
         <h2 className="text-base font-semibold text-neutral-900">{title}</h2>

@@ -132,6 +132,9 @@ class TestRunSweeperStops:
             return _FakePool(rows_returned=0)
 
         with (
+            # run_sweeper reads DATABASE_URL before building the pool; the pool
+            # itself is mocked, so the value only needs to be present.
+            mock.patch.dict(os.environ, {"DATABASE_URL": "postgresql://test/test"}),
             mock.patch("asyncpg.create_pool", side_effect=_fake_create_pool),
             mock.patch(
                 "app.workers.farmarket_expiry.sweeper.sweep_once",

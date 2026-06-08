@@ -3,15 +3,17 @@ import { NextResponse, type NextRequest } from "next/server";
 
 type CookieToSet = { name: string; value: string; options: CookieOptions };
 
-// Routes that require an authenticated session. Domain stories extend this
-// prefix list (e.g. "/admin" once ADM-01 lands).
-const PROTECTED_PREFIXES = ["/dashboard", "/onboarding/verification", "/admin"];
+// Routes that require an authenticated session. The admin console lives under
+// /dashboard/admin, so it is already covered by the "/dashboard" prefix.
+const PROTECTED_PREFIXES = ["/dashboard", "/onboarding/verification"];
 
 // AUTH-06 — pro-only publishing routes. An unverified FARMER / RESTAURANT
 // who hits one of these gets redirected to /onboarding/verification.
 // Citizens and admins pass through. This is UX, not security — the
 // FastAPI dependency `require_verified()` is the actual gate.
-const VERIFIED_PRO_PREFIXES = ["/farmarket/new", "/secondserve/new"];
+// NOTE: SecondServe publishing is NOT here — it lives in the separate
+// SecondServe app (other origin) and is gated by SecondServe's own RLS.
+const VERIFIED_PRO_PREFIXES = ["/farmarket/new"];
 
 // Auth pages that redirect AWAY when the user is already signed in.
 const AUTH_PAGES = new Set(["/login", "/register"]);

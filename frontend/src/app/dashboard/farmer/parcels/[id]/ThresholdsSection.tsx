@@ -2,6 +2,8 @@
 
 import { useState, useTransition } from "react";
 
+import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
+
 import type {
   Metric,
   ThresholdRow,
@@ -44,6 +46,11 @@ export function ThresholdsSection({
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState<"idle" | "ok">("idle");
   const [pending, startTransition] = useTransition();
+  // The token is server-rendered at page load, so its verification_status
+  // claim can be stale if the farmer was verified mid-session. On a
+  // verification_required 403 we refresh the session client-side and retry,
+  // then keep the fresh token for subsequent saves.
+  const [token, setToken] = useState(accessToken);
 
   function patch(metric: Metric, p: Partial<ThresholdRow>) {
     setRows((rs) => {
@@ -58,17 +65,40 @@ export function ThresholdsSection({
     setError(null);
     startTransition(async () => {
       try {
-        const r = await fetch(
-          `${API_BASE}/api/v1/katara/parcels/${parcelId}/thresholds`,
-          {
-            method: "PUT",
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-              "Content-Type": "application/json",
+        const doPut = (t: string) =>
+          fetch(
+            `${API_BASE}/api/v1/katara/parcels/${parcelId}/thresholds`,
+            {
+              method: "PUT",
+              headers: {
+                Authorization: `Bearer ${t}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ rows }),
             },
-            body: JSON.stringify({ rows }),
-          },
-        );
+          );
+
+        let r = await doPut(token);
+
+        // Heal a stale verification claim: refresh the session client-side
+        // (re-runs the JWT hook → fresh claim) and retry the save once.
+        if (r.status === 403) {
+          const detail = await r
+            .clone()
+            .json()
+            .then((b: { detail?: unknown }) => b?.detail)
+            .catch(() => undefined);
+          if (detail === "verification_required") {
+            const supabase = createSupabaseBrowserClient();
+            const { data, error: refreshError } =
+              await supabase.auth.refreshSession();
+            if (!refreshError && data.session) {
+              setToken(data.session.access_token);
+              r = await doPut(data.session.access_token);
+            }
+          }
+        }
+
         if (r.status === 403) {
           setError("verification_required");
           return;

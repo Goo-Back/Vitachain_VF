@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { createSupabaseServerClient } from "@/lib/supabase/server";
-import type { ProfileRow } from "@/lib/supabase/types";
+import { getServerProfile } from "@/lib/auth/session";
 
 import { PageHeader } from "../../../_ui/PageHeader";
 import { fetchAdById } from "../../actions";
@@ -16,23 +15,19 @@ interface Props {
 export default async function EditAdPage({ params }: Props) {
   const { id } = await params;
 
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role, verification_status")
-    .eq("id", user.id)
-    .single<Pick<ProfileRow, "role" | "verification_status">>();
+  // Profile gate + ad load are independent — run them in parallel so the form
+  // paints after one round-trip instead of two sequential ones. The backend
+  // RLS still scopes the ad to its owner, so loading it before the role check
+  // is safe.
+  const [profile, ad] = await Promise.all([
+    getServerProfile(),
+    fetchAdById(id),
+  ]);
 
   if (profile?.role !== "FARMER" || profile.verification_status !== "VERIFIED") {
     redirect("/dashboard/farmer/ads");
   }
 
-  const ad = await fetchAdById(id);
   if (!ad) redirect("/dashboard/farmer/ads");
   if (ad.status !== "ACTIVE") redirect("/dashboard/farmer/ads");
 

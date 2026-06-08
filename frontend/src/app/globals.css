@@ -281,6 +281,252 @@
   .vc-leaf-anim { animation: vc-leaf-rise 4s ease-in-out infinite; }
 }
 
+/* ---------------------------------------------------------------
+ * Katara theme — scoped to the farmer dashboard (.theme-katara)
+ * ---------------------------------------------------------------
+ * The Katara mark is a blue water-drop sitting above green leaves.
+ * The default chrome is all-green, so here we re-introduce blue as a
+ * co-primary: brand gradients run blue → green (drop → leaf), CTAs and
+ * accents carry the same sweep, component shapes are rounded a touch
+ * more for a softer, more "fluid" feel that echoes the droplet, and
+ * transitions get a consistent spring-like easing. Green is kept as the
+ * nature/secondary tone so the two logo colours stay in balance.
+ *
+ * Everything is nested under .theme-katara so the restaurant chrome,
+ * auth, and landing keep the original VitaChain look untouched.
+ */
+@layer components {
+  .theme-katara {
+    /* Logo-matched azure for the water drop. */
+    --katara-blue-400: oklch(0.66 0.13 245);
+    --katara-blue-500: oklch(0.58 0.15 245);
+    --katara-blue-600: oklch(0.50 0.15 248);
+    --katara-blue-700: oklch(0.43 0.13 250);
+
+    /* Brand sweeps: drop (blue) → leaf (green). */
+    --gradient-katara: linear-gradient(135deg, var(--katara-blue-500), var(--color-leaf-500));
+    --gradient-katara-strong: linear-gradient(135deg, var(--katara-blue-600), var(--color-leaf-600));
+    --gradient-katara-soft: linear-gradient(135deg, oklch(0.95 0.04 245), var(--color-leaf-50));
+
+    /* Softer, more uniform shapes across the farmer surface. */
+    --radius-tile: 1rem;
+    --katara-blue-shadow: 0 8px 20px -8px oklch(0.5 0.15 248 / 0.45);
+  }
+
+  /* Surface cards — rounder corners + a blue-leaning lift on hover. */
+  .theme-katara .vc-card { border-radius: var(--radius-tile); }
+  .theme-katara .vc-card:hover { border-color: var(--katara-blue-400); }
+  .theme-katara .vc-card-interactive:hover {
+    border-color: var(--katara-blue-400);
+    box-shadow: var(--shadow-lifted), var(--katara-blue-shadow);
+  }
+
+  /* Primary CTA — the Katara blue→green sweep. */
+  .theme-katara .vc-btn-primary {
+    background: var(--gradient-katara-strong);
+    border-radius: 0.75rem;
+    box-shadow: 0 1px 2px oklch(0 0 0 / 0.05), var(--katara-blue-shadow);
+  }
+  .theme-katara .vc-btn-primary:hover {
+    box-shadow: 0 1px 2px oklch(0 0 0 / 0.05), 0 12px 24px -8px oklch(0.5 0.15 248 / 0.55);
+  }
+
+  /* Ghost button + inputs — blue focus/hover to match. */
+  .theme-katara .vc-btn-ghost { border-radius: 0.75rem; }
+  .theme-katara .vc-btn-ghost:hover {
+    border-color: var(--katara-blue-400);
+    color: var(--katara-blue-700);
+    background: oklch(0.96 0.03 245);
+  }
+  .theme-katara .vc-input { border-radius: 0.75rem; }
+  .theme-katara .vc-input:hover { border-color: var(--katara-blue-400); }
+  .theme-katara .vc-input:focus {
+    border-color: var(--katara-blue-500);
+    box-shadow: 0 0 0 3px oklch(0.93 0.05 245);
+  }
+
+  /* Eyebrow label picks up the brand blue. */
+  .theme-katara .vc-eyebrow { color: var(--katara-blue-600); }
+
+  /* Premium card surface — a barely-there top sheen + layered depth, with
+     a soft brand glow that fades in on hover. Pair with `group`. */
+  .theme-katara .katara-card {
+    position: relative;
+    isolation: isolate; /* own stacking context so the glow sits behind content */
+    background:
+      linear-gradient(180deg, oklch(1 0 0 / 0.9), oklch(0.99 0.004 230 / 0.85)),
+      white;
+    border: 1px solid oklch(0.93 0.006 230);
+    border-radius: var(--radius-tile);
+    box-shadow: var(--shadow-soft);
+    transition:
+      box-shadow 280ms var(--ease-out-soft),
+      border-color 280ms var(--ease-out-soft);
+  }
+  .theme-katara .katara-card:hover {
+    border-color: var(--katara-blue-400);
+    box-shadow: var(--shadow-card), var(--katara-blue-shadow);
+  }
+  /* Brand glow wash revealed on hover — sits under the content. */
+  .theme-katara .katara-glow {
+    position: absolute;
+    inset: 0;
+    z-index: -1; /* behind the card content, above the surface */
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: 0;
+    background:
+      radial-gradient(120% 80% at 50% -10%, oklch(0.62 0.14 245 / 0.12), transparent 55%),
+      radial-gradient(120% 80% at 50% 110%, oklch(0.64 0.15 152 / 0.10), transparent 55%);
+    transition: opacity 420ms var(--ease-out-soft);
+  }
+  .theme-katara .group:hover .katara-glow { opacity: 1; }
+
+  /* Brand surface helpers, used by farmer components. */
+  .theme-katara .katara-gradient { background: var(--gradient-katara); }
+  .theme-katara .katara-gradient-strong { background: var(--gradient-katara-strong); }
+  .theme-katara .katara-text {
+    background: var(--gradient-katara-strong);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+  }
+  .theme-katara .katara-ring { box-shadow: 0 0 0 1px oklch(0.5 0.15 248 / 0.18); }
+}
+
+/* Registered so the conic gradient angle can be animated smoothly. */
+@property --shine-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+/* ---- Landing primitives (Magic UI / React Bits ports) --------- */
+@layer components {
+  /* Infinite marquee row. Driven by --duration / --gap CSS vars. */
+  .animate-marquee {
+    animation: vc-marquee var(--duration, 30s) linear infinite;
+  }
+  .animate-marquee-reverse {
+    animation: vc-marquee var(--duration, 30s) linear infinite reverse;
+  }
+  @keyframes vc-marquee {
+    from { transform: translateX(0); }
+    to   { transform: translateX(calc(-100% - var(--gap, 1rem))); }
+  }
+
+  /* Animated gradient text — sweeps a multi-stop gradient horizontally. */
+  .vc-gradient-text {
+    background-size: 300% 100%;
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    animation: vc-gradient-pan 6s linear infinite;
+  }
+  @keyframes vc-gradient-pan {
+    to { background-position: -300% 0; }
+  }
+
+  /* Shimmer button — a soft highlight travels across the surface. */
+  .vc-shimmer::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      110deg,
+      transparent 30%,
+      oklch(1 0 0 / 0.35) 50%,
+      transparent 70%
+    );
+    background-size: 220% 100%;
+    animation: vc-shimmer-slide 2.6s linear infinite;
+  }
+  @keyframes vc-shimmer-slide {
+    from { background-position: 180% 0; }
+    to   { background-position: -80% 0; }
+  }
+
+  /* Border beam — a dot of light runs along a card's border. */
+  .vc-border-beam {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+  }
+  .vc-border-beam::after {
+    content: "";
+    position: absolute;
+    aspect-ratio: 1;
+    width: var(--beam-size, 64px);
+    offset-path: rect(0 auto auto 0 round var(--beam-size, 64px));
+    offset-distance: 0%;
+    background: linear-gradient(
+      to left,
+      var(--beam-from, var(--color-leaf-400)),
+      var(--beam-to, var(--color-sky-tint-500)),
+      transparent
+    );
+    animation: vc-border-beam var(--beam-duration, 8s) linear infinite;
+    animation-delay: var(--beam-delay, 0s);
+  }
+  @keyframes vc-border-beam {
+    to { offset-distance: 100%; }
+  }
+
+  /* Shine border — a glowing gradient arc rotates around the edge. */
+  .vc-shine {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: var(--shine-width, 1.5px);
+    pointer-events: none;
+    background: conic-gradient(
+      from var(--shine-angle, 0deg),
+      transparent 0deg,
+      var(--shine-from, var(--color-leaf-400)) 40deg,
+      var(--shine-to, var(--color-sky-tint-500)) 80deg,
+      transparent 130deg
+    );
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    animation: vc-shine-spin var(--shine-duration, 6s) linear infinite;
+  }
+  @keyframes vc-shine-spin {
+    to { --shine-angle: 360deg; }
+  }
+
+  /* Aurora / spotlight wash — slow drifting radial gradients. */
+  .vc-aurora {
+    background:
+      radial-gradient(40% 60% at 20% 10%, oklch(0.85 0.12 152 / 0.45), transparent 60%),
+      radial-gradient(45% 55% at 85% 20%, oklch(0.82 0.10 220 / 0.40), transparent 60%),
+      radial-gradient(50% 60% at 60% 90%, oklch(0.88 0.09 60 / 0.35), transparent 65%);
+    filter: blur(12px);
+    animation: vc-aurora-drift 18s ease-in-out infinite alternate;
+  }
+  @keyframes vc-aurora-drift {
+    0%   { transform: translate3d(0, 0, 0) scale(1); }
+    50%  { transform: translate3d(-3%, 2%, 0) scale(1.08); }
+    100% { transform: translate3d(3%, -2%, 0) scale(1.04); }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee,
+  .animate-marquee-reverse,
+  .vc-gradient-text,
+  .vc-shimmer::before,
+  .vc-border-beam::after,
+  .vc-shine,
+  .vc-aurora,
+  .vc-leaf-anim {
+    animation: none !important;
+  }
+}
+
 /* Print friendliness — useful for the reports page. */
 @media print {
   body { background: white; }

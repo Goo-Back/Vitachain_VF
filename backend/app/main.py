@@ -7,6 +7,7 @@ gunicorn can do ``app.main:app``. Tests build a fresh app per test via
 
 from __future__ import annotations
 
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import ORJSONResponse
@@ -33,8 +34,18 @@ from app.modules.notifications.router import router as notifications_router
 from app.modules.secondserve.router import router as secondserve_router
 from app.routers.admin.farmarket import router as admin_farmarket_router
 from app.routers.admin.kyc import router as admin_kyc_router
+from app.routers.admin.users import router as admin_users_router
 from app.routers.health import router as health_router
 from app.routers.kyc import router as kyc_router
+
+# Mirror every worker __main__: load backend/.env into os.environ. pydantic-
+# settings reads .env for the Settings object, but NOT into os.environ — so the
+# request-time clients that read os.environ directly (owm_client /
+# sentinel_client, behind /katara/parcels/{id}/weather and /ndvi) raise
+# KeyError → 500 when the API is started with `uvicorn app.main:app`. Loading
+# here (override=False, so real env vars and the conftest test-seed always win)
+# makes those keys available without changing the documented dev workflow.
+load_dotenv()
 
 
 def create_app() -> FastAPI:
@@ -69,6 +80,7 @@ def create_app() -> FastAPI:
     app.include_router(kyc_router, prefix="/api/v1")
     app.include_router(admin_kyc_router, prefix="/api/v1")
     app.include_router(admin_farmarket_router, prefix="/api/v1")
+    app.include_router(admin_users_router, prefix="/api/v1")
     app.include_router(katara_router, prefix="/api/v1")
     app.include_router(katara_devices_router, prefix="/api/v1")
     app.include_router(katara_unlink_router, prefix="/api/v1")

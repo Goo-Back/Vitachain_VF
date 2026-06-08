@@ -1,5 +1,6 @@
 "use client";
 
+import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -16,7 +17,7 @@ import {
   StoreIcon,
   XIcon,
 } from "./Icon";
-import { Logo } from "./Logo";
+import { KataraLogo } from "./KataraLogo";
 
 /**
  * Vertical navigation rail used across every /dashboard/farmer/* route.
@@ -30,6 +31,10 @@ import { Logo } from "./Logo";
  * rate-limit and email notification, which is the canonical path.
  * Settings is pinned at the bottom because it's account-level, not
  * exploitation-level.
+ *
+ * Motion: the active item carries a shared-layout highlight that slides
+ * between rows (`layoutId`), and the mobile drawer animates in/out with
+ * AnimatePresence. Branding is Katara (farmer-scoped).
  *
  * Mobile (<lg): hidden behind a hamburger drawer; the drawer state is held
  * in a small client wrapper so everything else can stay server-rendered.
@@ -82,7 +87,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           onClick={onNavigate}
           className="inline-flex"
         >
-          <Logo size="sm" />
+          <KataraLogo size="sm" />
         </Link>
       </div>
 
@@ -97,23 +102,30 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                   href={item.href}
                   onClick={onNavigate}
                   aria-current={active ? "page" : undefined}
-                  className={`group flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition ${
+                  className={`group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition ${
                     active
-                      ? "bg-leaf-50 font-medium text-leaf-800"
+                      ? "font-medium text-sky-tint-700"
                       : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
                   }`}
                 >
+                  {active ? (
+                    <motion.span
+                      layoutId="farmer-nav-active"
+                      transition={{ type: "spring", stiffness: 500, damping: 40 }}
+                      className="absolute inset-0 -z-0 rounded-lg bg-sky-tint-50"
+                    />
+                  ) : null}
                   <Icon
                     size={18}
-                    className={
+                    className={`relative z-10 ${
                       active
-                        ? "text-leaf-600"
+                        ? "text-sky-tint-700"
                         : "text-neutral-400 group-hover:text-neutral-600"
-                    }
+                    }`}
                   />
-                  <span className="flex-1 truncate">{item.label}</span>
+                  <span className="relative z-10 flex-1 truncate">{item.label}</span>
                   {active ? (
-                    <span className="h-1.5 w-1.5 rounded-full bg-leaf-500" />
+                    <span className="relative z-10 h-1.5 w-1.5 rounded-full bg-sky-tint-500" />
                   ) : null}
                 </Link>
               </li>
@@ -128,7 +140,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           onClick={onNavigate}
           className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition ${
             pathname?.startsWith("/dashboard/farmer/settings")
-              ? "bg-leaf-50 font-medium text-leaf-800"
+              ? "bg-sky-tint-50 font-medium text-sky-tint-700"
               : "text-neutral-600 hover:bg-neutral-100"
           }`}
         >
@@ -181,26 +193,38 @@ export function Sidebar() {
         <SidebarContent />
       </aside>
 
-      {open ? (
-        <div className="fixed inset-0 z-40 lg:hidden">
-          <div
-            aria-hidden="true"
-            className="absolute inset-0 bg-neutral-900/40"
-            onClick={() => setOpen(false)}
-          />
-          <div className="absolute inset-y-0 left-0 w-72 bg-white shadow-lifted">
-            <button
-              type="button"
-              aria-label="Fermer la navigation"
+      <AnimatePresence>
+        {open ? (
+          <div className="fixed inset-0 z-40 lg:hidden">
+            <motion.div
+              aria-hidden="true"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="absolute inset-0 bg-neutral-900/40"
               onClick={() => setOpen(false)}
-              className="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100"
+            />
+            <motion.div
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "-100%" }}
+              transition={{ type: "spring", stiffness: 380, damping: 38 }}
+              className="absolute inset-y-0 left-0 w-72 bg-white shadow-lifted"
             >
-              <XIcon size={18} />
-            </button>
-            <SidebarContent onNavigate={() => setOpen(false)} />
+              <button
+                type="button"
+                aria-label="Fermer la navigation"
+                onClick={() => setOpen(false)}
+                className="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100"
+              >
+                <XIcon size={18} />
+              </button>
+              <SidebarContent onNavigate={() => setOpen(false)} />
+            </motion.div>
           </div>
-        </div>
-      ) : null}
+        ) : null}
+      </AnimatePresence>
     </>
   );
 }

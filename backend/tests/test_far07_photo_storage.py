@@ -304,9 +304,22 @@ class TestAuth05Boundary:
         forwarded).  The service-role key must never be used in this module.
         AUTH-05 allow-list does not include modules/farmarket/.
         """
-        router_src = _ROUTER_PATH.read_text()
-        assert "service_client" not in router_src, (
-            "farmarket/router.py calls service_client() — AUTH-05 violation (FAR-07). "
+        # Parse the AST rather than grepping the raw text: the module docstring
+        # legitimately *mentions* service_client() to explain the AUTH-05
+        # rationale, and a substring check would flag that prose as a violation.
+        # Real usage shows up as a Name/Attribute reference or an import.
+        tree = ast.parse(_ROUTER_PATH.read_text())
+        referenced = any(
+            (isinstance(node, ast.Name) and node.id == "service_client")
+            or (isinstance(node, ast.Attribute) and node.attr == "service_client")
+            or (
+                isinstance(node, ast.ImportFrom)
+                and any(alias.name == "service_client" for alias in node.names)
+            )
+            for node in ast.walk(tree)
+        )
+        assert not referenced, (
+            "farmarket/router.py references service_client() — AUTH-05 violation (FAR-07). "
             "Photo uploads must use the user-scoped client (get_db_for_user)."
         )
 

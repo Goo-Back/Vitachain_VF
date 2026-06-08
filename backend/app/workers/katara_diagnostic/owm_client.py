@@ -62,7 +62,12 @@ def fetch_weather(lat: float, lng: float) -> dict[str, Any]:
     sentry_sdk.add_breadcrumb(category="owm", message="cache_miss")
     log.info("owm_cache_miss lat_q=%s lng_q=%s", lat_q, lng_q)
 
-    api_key = os.environ["OPENWEATHERMAP_API_KEY"]
+    api_key = os.environ.get("OPENWEATHERMAP_API_KEY")
+    if not api_key:
+        # Raise a clear, catchable config error instead of a bare KeyError so
+        # the /weather endpoint maps it to 502 (weather_upstream_unavailable)
+        # rather than leaking an opaque 500.
+        raise RuntimeError("OPENWEATHERMAP_API_KEY is not configured")
     resp = httpx.get(
         _OWM_URL,
         params={

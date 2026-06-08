@@ -262,10 +262,15 @@ function UnavailablePanel() {
         </p>
         <p className="mt-1 text-sm text-neutral-600">
           Aucune image Sentinel-2 cloud-free n&apos;a été trouvée sur la
-          période, le backend n&apos;est pas joignable, ou la clé Sentinel Hub
-          n&apos;est pas configurée côté serveur (variable d&apos;env{" "}
+          période, le backend n&apos;est pas joignable, ou les identifiants
+          OAuth Sentinel Hub ne sont pas configurés côté serveur (variables
+          d&apos;env{" "}
           <code className="rounded bg-neutral-100 px-1 py-0.5 text-xs font-mono">
-            SENTINEL_HUB_API_KEY
+            SENTINEL_HUB_CLIENT_ID
+          </code>{" "}
+          /{" "}
+          <code className="rounded bg-neutral-100 px-1 py-0.5 text-xs font-mono">
+            SENTINEL_HUB_CLIENT_SECRET
           </code>
           ). Les données Sentinel-2 sont mises à jour environ tous les 5 jours.
         </p>

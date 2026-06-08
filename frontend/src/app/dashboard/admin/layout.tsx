@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
 
-import { createSupabaseServerClient } from "@/lib/supabase/server";
-import type { ProfileRow } from "@/lib/supabase/types";
+import { getServerProfile, getServerSession } from "@/lib/auth/session";
+
+import { AdminNav } from "./AdminNav";
 
 export const dynamic = "force-dynamic";
 
@@ -10,38 +11,46 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  const session = await getServerSession();
+  if (!session) redirect("/login");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single<Pick<ProfileRow, "role">>();
-
+  const profile = await getServerProfile();
   if (profile?.role !== "ADMIN") redirect("/dashboard");
+
+  const displayName = profile.full_name ?? profile.email;
 
   return (
     <div className="min-h-screen bg-neutral-50">
-      <header className="border-b border-neutral-200 bg-white px-6 py-4">
-        <div className="mx-auto flex max-w-7xl items-center justify-between">
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-neutral-400">
-              VitaChain
-            </p>
-            <p className="text-sm font-semibold text-neutral-800">
-              Administration
-            </p>
-          </div>
-          <span className="rounded-full bg-rose-100 px-2.5 py-0.5 text-xs font-semibold text-rose-700">
+      <aside className="fixed inset-y-0 left-0 z-20 flex w-56 flex-col border-r border-neutral-200 bg-white">
+        <div className="flex h-16 items-center justify-between gap-2 border-b border-neutral-100 px-5">
+          <span className="text-sm font-semibold tracking-tight text-neutral-900">
+            VitaChain <span className="text-neutral-400">Admin</span>
+          </span>
+          <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-semibold text-rose-700">
             ADMIN
           </span>
         </div>
-      </header>
-      <main className="mx-auto max-w-7xl px-4 py-8">{children}</main>
+
+        <AdminNav />
+
+        <div className="border-t border-neutral-100 p-3">
+          <p className="truncate px-3 py-1 text-xs text-neutral-500">
+            {displayName}
+          </p>
+          <form action="/auth/signout" method="post">
+            <button
+              type="submit"
+              className="mt-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-neutral-600 hover:bg-neutral-100 hover:text-red-700"
+            >
+              Déconnexion
+            </button>
+          </form>
+        </div>
+      </aside>
+
+      <div className="pl-56">
+        <main className="mx-auto max-w-7xl px-6 py-8">{children}</main>
+      </div>
     </div>
   );
 }

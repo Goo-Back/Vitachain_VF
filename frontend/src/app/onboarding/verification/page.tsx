@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { SecondServeLink } from "@/components/SecondServeLink";
 import { fetchMySubmissions } from "./actions";
 import UploadForm from "./upload-form";
 
@@ -40,8 +41,9 @@ export default async function VerificationPage() {
   // visit while signed out should land on /login, not crash on the API call.
   const supabase = await createSupabaseServerClient();
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   if (!user) {
     redirect("/login?next=/onboarding/verification");
   }
@@ -129,14 +131,24 @@ export default async function VerificationPage() {
       ) : null}
 
       {latest?.status === "APPROVED" ? (
-        <a
-          href={role === "FARMER" ? "/farmarket/new" : "/secondserve/new"}
-          className="inline-block rounded bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
-        >
-          {role === "FARMER"
-            ? "Publier une annonce"
-            : "Publier une surprise box"}
-        </a>
+        role === "FARMER" ? (
+          // FarMarket lives inside this Next app — internal route.
+          <a
+            href="/farmarket/new"
+            className="inline-block rounded bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+          >
+            Publier une annonce
+          </a>
+        ) : (
+          // SecondServe is a separate app (other origin) — external link with
+          // session handoff, new tab to keep the VitaChain session.
+          <SecondServeLink
+            path="/restaurant-dashboard"
+            className="inline-block rounded bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+          >
+            Publier une surprise box
+          </SecondServeLink>
+        )
       ) : (
         <UploadForm />
       )}

@@ -6,6 +6,7 @@ const STATUS_LABELS: Record<string, { fr: string; cls: string }> = {
   IN_PROGRESS: { fr: "En cours de livraison", cls: "bg-sky-100 text-sky-700" },
   DELIVERED: { fr: "Livrée", cls: "bg-green-100 text-green-700" },
   CANCELLED: { fr: "Annulée", cls: "bg-neutral-200 text-neutral-700" },
+  RETURNED: { fr: "Retournée", cls: "bg-orange-100 text-orange-700" },
 };
 
 const ITEM_STATUS_LABELS: Record<string, { fr: string; cls: string }> = {

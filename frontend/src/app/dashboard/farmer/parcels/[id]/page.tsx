@@ -1,9 +1,9 @@
+import { Suspense } from "react";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 
 import { fetchFarmerOverview } from "@/app/dashboard/farmer/overview-actions";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
-import type { ProfileRow } from "@/lib/supabase/types";
+import { getServerProfile, getServerSession } from "@/lib/auth/session";
 
 import {
   AlertIcon,
@@ -17,12 +17,8 @@ import { PageHeader } from "@/app/dashboard/farmer/_ui/PageHeader";
 
 import { fetchParcel } from "../actions";
 import { DeleteParcelButton } from "./DeleteParcelButton";
-import { fetchParcelDevices } from "./actions";
-import { fetchLatestDiagnostic } from "./diagnostic-actions";
-import { ParcelPageTabs } from "./ParcelPageTabs";
 import { ParcelSwitcher } from "./ParcelSwitcher";
-import { fetchInitialTelemetry } from "./telemetry-actions";
-import { fetchThresholds } from "./thresholds-actions";
+import { ParcelTabsStream } from "./ParcelTabsStream";
 
 export const dynamic = "force-dynamic";
 
@@ -33,40 +29,23 @@ export default async function ParcelDetailPage({
 }) {
   const { id } = await params;
 
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  const session = await getServerSession();
+  if (!session) redirect("/login");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role, verification_status")
-    .eq("id", user.id)
-    .single<Pick<ProfileRow, "role" | "verification_status">>();
-
+  const profile = await getServerProfile();
   if (profile?.role !== "FARMER") redirect("/dashboard");
 
   const isVerified = profile.verification_status === "VERIFIED";
 
-  // Get session once — token is forwarded to all backend calls to avoid
-  // redundant getSession() round-trips inside each server action.
-  const { data: { session } } = await supabase.auth.getSession();
-  const token = session?.access_token;
+  // Token forwarded to all backend calls to avoid redundant getSession()
+  // round-trips inside each server action.
+  const token = session.access_token;
 
-  const [
-    parcel,
-    devices,
-    initialTelemetry,
-    initialThresholds,
-    initialDiagnostic,
-    overview,
-  ] = await Promise.all([
+  // Critical path: only the parcel identity (one fast read) + the overview that
+  // feeds the switcher/status pill. The heavy telemetry/devices/diagnostic
+  // reads stream in below via <Suspense>, so the header paints immediately.
+  const [parcel, overview] = await Promise.all([
     fetchParcel(id),
-    isVerified ? fetchParcelDevices(id).catch(() => []) : Promise.resolve([]),
-    fetchInitialTelemetry(id, token).catch(() => null),
-    fetchThresholds(id, token),
-    fetchLatestDiagnostic(id, token).catch(() => null),
     fetchFarmerOverview(token).catch(() => null),
   ]);
 
@@ -133,17 +112,21 @@ export default async function ParcelDetailPage({
         </span>
       </div>
 
-      <ParcelPageTabs
-        parcelId={parcel.id}
-        parcelName={parcel.name}
-        accessToken={token ?? ""}
-        isVerified={isVerified}
-        initialDevices={devices}
-        canPair={isVerified}
-        initialTelemetry={initialTelemetry}
-        initialThresholds={initialThresholds}
-        initialDiagnostic={initialDiagnostic}
-      />
+      <Suspense
+        fallback={
+          <div aria-busy="true">
+            <div className="vc-skeleton h-10 w-full max-w-sm" />
+            <div className="vc-skeleton mt-6 h-64 w-full" />
+          </div>
+        }
+      >
+        <ParcelTabsStream
+          parcelId={parcel.id}
+          parcelName={parcel.name}
+          token={token}
+          isVerified={isVerified}
+        />
+      </Suspense>
     </div>
   );
 }

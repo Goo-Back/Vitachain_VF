@@ -177,7 +177,9 @@ async def get_parcel_weather(
 
     try:
         raw = owm_client.fetch_weather(lat=lat, lng=lng)
-    except httpx.HTTPError as exc:
+    except (httpx.HTTPError, RuntimeError) as exc:
+        # httpx.HTTPError → OWM upstream down; RuntimeError → key not configured.
+        # Both surface to the dashboard as the same "indisponible" panel.
         log.warning("owm_unreachable parcel_id=%s err=%s", parcel_id, exc)
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,

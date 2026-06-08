@@ -1,0 +1,93 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn() 
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid)) 
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    function isPartner() {
+      return isSignedIn() 
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid)) 
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'restaurant';
+    }
+
+    match /users/{userId} {
+      allow read: if (isSignedIn() && (isOwner(userId) || isAdmin()))
+                  || (resource.data.role == 'restaurant'
+                      && resource.data.approved == true
+                      && resource.data.banned == false);
+
+      // Self-signup: role must be consumer/restaurant (never admin),
+      // banned must be false, restaurants start unapproved, consumers auto-approved.
+      allow create: if isSignedIn() && isOwner(userId)
+                    && request.resource.data.role in ['consumer', 'restaurant']
+                    && request.resource.data.banned == false
+                    && ((request.resource.data.role == 'consumer' && request.resource.data.approved == true)
+                        || (request.resource.data.role == 'restaurant' && request.resource.data.approved == false));
+
+      // Admin can update anything. Owner can update their own doc but cannot
+      // change role/approved/banned (those are admin-controlled).
+      allow update: if isAdmin()
+                    || (isOwner(userId)
+                        && request.resource.data.role == resource.data.role
+                        && request.resource.data.approved == resource.data.approved
+                        && request.resource.data.banned == resource.data.banned);
+
+      allow delete: if isAdmin();
+    }
+
+    match /offers/{offerId} {
+      allow read: if true;
+      allow create: if isPartner() && request.resource.data.restaurantId == request.auth.uid;
+      allow update: if isSignedIn() && (resource.data.restaurantId == request.auth.uid || isAdmin());
+      allow delete: if isSignedIn() && (resource.data.restaurantId == request.auth.uid || isAdmin());
+    }
+
+    match /orders/{orderId} {
+      allow read: if isSignedIn() && (
+        resource.data.consumerId == request.auth.uid || 
+        resource.data.restaurantId == request.auth.uid || 
+        isAdmin()
+      );
+      allow create: if isSignedIn() && request.resource.data.consumerId == request.auth.uid;
+      allow update: if isSignedIn() && (
+        resource.data.consumerId == request.auth.uid || 
+        resource.data.restaurantId == request.auth.uid || 
+        isAdmin()
+      );
+      allow delete: if isAdmin();
+    }
+
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isSignedIn() && request.resource.data.consumerId == request.auth.uid;
+      allow update: if isSignedIn() && (resource.data.consumerId == request.auth.uid || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    match /notifications/{notificationId} {
+      allow read: if isSignedIn() && (resource.data.recipientId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && (resource.data.recipientId == request.auth.uid || isAdmin());
+      allow delete: if isSignedIn() && (resource.data.recipientId == request.auth.uid || isAdmin());
+    }
+
+    match /supportTickets/{ticketId} {
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+  }
+}

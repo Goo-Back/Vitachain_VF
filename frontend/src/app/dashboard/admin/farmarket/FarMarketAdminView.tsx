@@ -2,6 +2,12 @@
 
 import { useState } from "react";
 
+import { CodReconciliationPanel } from "./CodReconciliationPanel";
+import { OrdersManagementPanel } from "./OrdersManagementPanel";
+import { ReportsPanel } from "./ReportsPanel";
+import { StatsDashboard } from "./StatsDashboard";
+import type { AdminOrderListItem, AdminStats } from "./types";
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 export type AdminAd = {
@@ -23,7 +29,14 @@ type Props = {
   ads: AdminAd[];
   accessToken: string;
   adTotal: number;
+  outstandingCod: AdminOrderListItem[];
+  outstandingCodTotal: number;
+  orders: AdminOrderListItem[];
+  ordersTotal: number;
+  stats: AdminStats | null;
 };
+
+type Tab = "dashboard" | "orders" | "ads" | "cod" | "reports";
 
 const STATUS_COLORS: Record<string, string> = {
   ACTIVE: "bg-green-100 text-green-700",
@@ -34,7 +47,9 @@ const STATUS_COLORS: Record<string, string> = {
 function StatusBadge({ status }: { status: string }) {
   const cls = STATUS_COLORS[status] ?? "bg-neutral-100 text-neutral-600";
   return (
-    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${cls}`}>
+    <span
+      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${cls}`}
+    >
       {status}
     </span>
   );
@@ -52,7 +67,13 @@ export function FarMarketAdminView({
   ads: initialAds,
   accessToken,
   adTotal,
+  outstandingCod,
+  outstandingCodTotal,
+  orders,
+  ordersTotal,
+  stats,
 }: Props) {
+  const [tab, setTab] = useState<Tab>("dashboard");
   const [ads, setAds] = useState<AdminAd[]>(initialAds);
   const [toggling, setToggling] = useState<string | null>(null);
 
@@ -84,33 +105,83 @@ export function FarMarketAdminView({
       <div>
         <h1 className="text-2xl font-bold text-neutral-900">FarMarket</h1>
         <p className="mt-1 text-sm text-neutral-500">
-          Vue opérateur — annonces du marché B2B agricole ({adTotal}).
+          Vue opérateur — annonces du marché B2B agricole + réconciliation
+          paiements.
         </p>
       </div>
 
-      {/* Ads table (Leads tab removed — see migration 0039 and the rewritten
-          FAR-03/FAR-04 stories. Order tracking will land in FAR-10.) */}
-      <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-sm">
+      <nav className="flex flex-wrap gap-1 border-b border-neutral-200">
+        <TabButton
+          active={tab === "dashboard"}
+          onClick={() => setTab("dashboard")}
+          label="Tableau de bord"
+          count={stats?.orders_total ?? 0}
+        />
+        <TabButton
+          active={tab === "orders"}
+          onClick={() => setTab("orders")}
+          label="Commandes"
+          count={ordersTotal}
+        />
+        <TabButton
+          active={tab === "ads"}
+          onClick={() => setTab("ads")}
+          label="Annonces"
+          count={adTotal}
+        />
+        <TabButton
+          active={tab === "cod"}
+          onClick={() => setTab("cod")}
+          label="Réconciliation COD"
+          count={outstandingCodTotal}
+          highlight={outstandingCodTotal > 0}
+        />
+        <TabButton
+          active={tab === "reports"}
+          onClick={() => setTab("reports")}
+          label="Rapports"
+          count={stats?.delivered_count ?? 0}
+        />
+      </nav>
+
+      {tab === "dashboard" && <StatsDashboard stats={stats} />}
+
+      {tab === "orders" && (
+        <OrdersManagementPanel initial={orders} accessToken={accessToken} />
+      )}
+
+      {tab === "reports" && <ReportsPanel stats={stats} />}
+
+      {tab === "ads" && (
+        <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-sm">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-neutral-200 text-sm">
               <thead className="bg-neutral-50">
                 <tr>
-                  {["Titre", "Type / Région", "Prix", "Statut", "Épinglé ?", "Actions"].map(
-                    (h) => (
-                      <th
-                        key={h}
-                        className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-neutral-500"
-                      >
-                        {h}
-                      </th>
-                    ),
-                  )}
+                  {[
+                    "Titre",
+                    "Type / Région",
+                    "Prix",
+                    "Statut",
+                    "Épinglé ?",
+                    "Actions",
+                  ].map((h) => (
+                    <th
+                      key={h}
+                      className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-neutral-500"
+                    >
+                      {h}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100">
                 {ads.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-neutral-400">
+                    <td
+                      colSpan={6}
+                      className="px-4 py-8 text-center text-neutral-400"
+                    >
                       Aucune annonce.
                     </td>
                   </tr>
@@ -118,7 +189,9 @@ export function FarMarketAdminView({
                 {ads.map((ad) => (
                   <tr
                     key={ad.id}
-                    className={ad.is_featured ? "bg-amber-50" : "hover:bg-neutral-50"}
+                    className={
+                      ad.is_featured ? "bg-amber-50" : "hover:bg-neutral-50"
+                    }
                   >
                     <td className="px-4 py-3">
                       <div className="flex flex-col gap-1">
@@ -143,7 +216,9 @@ export function FarMarketAdminView({
                     </td>
                     <td className="px-4 py-3">
                       {ad.is_featured ? (
-                        <span className="text-xs font-semibold text-amber-700">Oui ★</span>
+                        <span className="text-xs font-semibold text-amber-700">
+                          Oui ★
+                        </span>
                       ) : (
                         <span className="text-xs text-neutral-400">Non</span>
                       )}
@@ -161,8 +236,8 @@ export function FarMarketAdminView({
                         {toggling === ad.id
                           ? "…"
                           : ad.is_featured
-                          ? "Désépingler"
-                          : "Épingler"}
+                            ? "Désépingler"
+                            : "Épingler"}
                       </button>
                     </td>
                   </tr>
@@ -171,6 +246,53 @@ export function FarMarketAdminView({
             </table>
           </div>
         </div>
+      )}
+
+      {tab === "cod" && (
+        <CodReconciliationPanel
+          initial={outstandingCod}
+          accessToken={accessToken}
+        />
+      )}
     </div>
+  );
+}
+
+function TabButton({
+  active,
+  onClick,
+  label,
+  count,
+  highlight,
+}: {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+  count: number;
+  highlight?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex items-center gap-2 border-b-2 px-4 py-2 text-sm transition ${
+        active
+          ? "border-leaf-600 font-medium text-leaf-700"
+          : "border-transparent text-neutral-500 hover:text-neutral-800"
+      }`}
+    >
+      {label}
+      <span
+        className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+          highlight && !active
+            ? "bg-amber-100 text-amber-800"
+            : active
+              ? "bg-leaf-100 text-leaf-800"
+              : "bg-neutral-100 text-neutral-600"
+        }`}
+      >
+        {count}
+      </span>
+    </button>
   );
 }

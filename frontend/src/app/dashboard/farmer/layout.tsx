@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { createSupabaseServerClient } from "@/lib/supabase/server";
-import type { ProfileRow } from "@/lib/supabase/types";
+import { getServerProfile, getServerSession } from "@/lib/auth/session";
 
 import { Sidebar } from "./_ui/Sidebar";
 import { Topbar } from "./_ui/Topbar";
@@ -9,10 +8,10 @@ import { Topbar } from "./_ui/Topbar";
 /**
  * Shared shell for every /dashboard/farmer/* route.
  *
- * Single auth + role check at the layout level — child pages still call
- * supabase.auth.getUser() for type-narrowing and defence-in-depth, but the
- * redirect logic is centralised here so a new sub-route picks it up
- * automatically.
+ * Single auth + role check at the layout level — child pages read the session
+ * (local cookie decode, no network) for type-narrowing, but the redirect logic
+ * is centralised here so a new sub-route picks it up automatically. The actual
+ * token revalidation happens once per request in the middleware via getUser().
  */
 
 export const dynamic = "force-dynamic";
@@ -36,25 +35,19 @@ export default async function FarmerLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  const session = await getServerSession();
+  if (!session) redirect("/login");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role, full_name, email")
-    .eq("id", user.id)
-    .single<Pick<ProfileRow, "role" | "full_name" | "email">>();
-
+  // cache()-memoised: the child page's getServerProfile() reuses this result,
+  // so only one public.profiles query runs for the whole request.
+  const profile = await getServerProfile();
   if (profile?.role !== "FARMER") redirect("/dashboard");
 
-  const displayName = profile?.full_name ?? profile?.email ?? user.email ?? null;
-  const initials = initialsOf(profile?.full_name, profile?.email ?? user.email);
+  const displayName = profile.full_name ?? profile.email;
+  const initials = initialsOf(profile.full_name, profile.email);
 
   return (
-    <div className="min-h-screen">
+    <div className="theme-katara min-h-screen">
       <Sidebar />
 
       {/* lg:pl-64 so content clears the fixed sidebar rail. */}

@@ -2,9 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { createSupabaseServerClient } from "@/lib/supabase/server";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+import { authedApiFetch } from "@/lib/api/authed-fetch";
 
 export type IncomingItem = {
   id: string;
@@ -27,24 +25,11 @@ export type IncomingItem = {
   updated_at: string;
 };
 
-async function _session() {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  return session;
-}
-
 export async function fetchIncomingItems(): Promise<IncomingItem[]> {
-  const session = await _session();
-  if (!session) return [];
-
   let r: Response;
   try {
-    r = await fetch(`${API_BASE}/api/v1/farmarket/orders/incoming`, {
-      headers: { Authorization: `Bearer ${session.access_token}` },
-      cache: "no-store",
-      signal: AbortSignal.timeout(10_000),
+    r = await authedApiFetch("/farmarket/orders/incoming", {
+      timeoutMs: 10_000,
     });
   } catch {
     return [];
@@ -62,29 +47,28 @@ export async function updateItemStatus(
   itemId: string,
   input: ItemStatusInput,
 ): Promise<{ ok: boolean; error?: string }> {
-  const session = await _session();
-  if (!session) return { ok: false, error: "not_authenticated" };
-
   let r: Response;
   try {
-    r = await fetch(
-      `${API_BASE}/api/v1/farmarket/orders/items/${itemId}/status`,
+    r = await authedApiFetch(
+      `/farmarket/orders/items/${itemId}/status`,
       {
         method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           new_status: input.new_status,
           producer_note: input.producer_note ?? null,
         }),
-        cache: "no-store",
-        signal: AbortSignal.timeout(10_000),
+        timeoutMs: 10_000,
       },
     );
-  } catch {
-    return { ok: false, error: "network_error" };
+  } catch (e) {
+    return {
+      ok: false,
+      error:
+        e instanceof Error && e.message === "not_authenticated"
+          ? "not_authenticated"
+          : "network_error",
+    };
   }
 
   if (!r.ok) {

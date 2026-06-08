@@ -1,4 +1,4 @@
-"""KAT-08 — Sentinel NDVI client cache + API-key auth (BR-K7)."""
+"""KAT-08 — Sentinel NDVI client cache + OAuth2 client-credentials auth (BR-K7)."""
 from __future__ import annotations
 
 import os
@@ -89,7 +89,7 @@ def test_cache_miss_fetches_and_upserts() -> None:
     )
 
     with db_patch, \
-         patch.dict(os.environ, {"SENTINEL_HUB_API_KEY": "test-api-key"}, clear=False), \
+         patch.object(sentinel_client, "_get_access_token", return_value="tok-abc"), \
          patch.object(sentinel_client.httpx, "post", return_value=process_resp), \
          patch.object(sentinel_client, "_mean_ndvi_from_tiff", return_value=0.512):
         parcel_id = uuid4()
@@ -103,8 +103,8 @@ def test_cache_miss_fetches_and_upserts() -> None:
     assert "acquisition_date" in upserted
 
 
-def test_api_key_sent_in_auth_header() -> None:
-    """ApiKey is forwarded in the Authorization header to the Process API."""
+def test_bearer_token_sent_in_auth_header() -> None:
+    """The OAuth2 access token is forwarded as Bearer to the Process API."""
     from app.workers.katara_diagnostic import sentinel_client
 
     fake, db_patch = _patch_db([])
@@ -115,13 +115,54 @@ def test_api_key_sent_in_auth_header() -> None:
         return SimpleNamespace(raise_for_status=lambda: None, content=b"fake")
 
     with db_patch, \
-         patch.dict(os.environ, {"SENTINEL_HUB_API_KEY": "my-plak-key"}, clear=False), \
+         patch.object(sentinel_client, "_get_access_token", return_value="access-xyz"), \
          patch.object(sentinel_client.httpx, "post", side_effect=_post), \
          patch.object(sentinel_client, "_mean_ndvi_from_tiff", return_value=0.3):
         sentinel_client.fetch_ndvi(uuid4(), _polygon())
 
     assert captured, "httpx.post was never called"
-    assert captured[0]["headers"].get("Authorization") == "ApiKey my-plak-key"
+    assert captured[0]["headers"].get("Authorization") == "Bearer access-xyz"
+
+
+def test_access_token_minted_and_cached() -> None:
+    """client_credentials are exchanged once, then the token is reused."""
+    from app.workers.katara_diagnostic import sentinel_client
+
+    sentinel_client._token_cache.update({"access_token": None, "expires_at": 0.0})
+    calls: list[dict] = []
+
+    def _post(url, *a, data=None, **k):
+        calls.append({"url": url, "data": data or {}})
+        return SimpleNamespace(
+            raise_for_status=lambda: None,
+            json=lambda: {"access_token": "minted-tok", "expires_in": 3600},
+        )
+
+    with patch.dict(
+            os.environ,
+            {"SENTINEL_HUB_CLIENT_ID": "cid", "SENTINEL_HUB_CLIENT_SECRET": "secret"},
+            clear=False), \
+         patch.object(sentinel_client.httpx, "post", side_effect=_post):
+        first = sentinel_client._get_access_token()
+        second = sentinel_client._get_access_token()  # served from cache
+
+    assert first == second == "minted-tok"
+    assert len(calls) == 1, "token must be minted once and cached"
+    assert calls[0]["url"] == sentinel_client._TOKEN_URL
+    assert calls[0]["data"]["grant_type"] == "client_credentials"
+    assert calls[0]["data"]["client_id"] == "cid"
+
+
+def test_missing_oauth_credentials_raises_runtimeerror() -> None:
+    """Absent client_id/secret → catchable RuntimeError (maps to 502)."""
+    import pytest
+
+    from app.workers.katara_diagnostic import sentinel_client
+
+    sentinel_client._token_cache.update({"access_token": None, "expires_at": 0.0})
+    with patch.dict(os.environ, {}, clear=True), \
+         pytest.raises(RuntimeError, match="SENTINEL_HUB_CLIENT_ID"):
+        sentinel_client._get_access_token()
 
 
 def test_polygon_for_sentinel_unwraps_feature() -> None:

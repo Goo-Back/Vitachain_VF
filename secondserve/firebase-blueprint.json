@@ -1,0 +1,149 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile with roles (consumer, restaurant, admin) and contact info",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "role": { "type": "string", "enum": ["consumer", "restaurant", "admin"] },
+        "email": { "type": "string", "format": "email" },
+        "name": { "type": "string" },
+        "city": { "type": "string" },
+        "approved": { "type": "boolean" },
+        "banned": { "type": "boolean" },
+        "commerceType": { "type": "string", "enum": ["Patisserie", "Superette", "Buffet à volonté"] },
+        "address": { "type": "string" },
+        "phone": { "type": "string" },
+        "coordinates": { "type": "object" },
+        "mapLink": { "type": "string" }
+      },
+      "required": ["id", "role", "email", "name"]
+    },
+    "Offer": {
+      "title": "Offer",
+      "description": "Product or meal surplus offer created by partner",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "restaurantId": { "type": "string" },
+        "restaurantName": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "originalPrice": { "type": "number" },
+        "reducedPrice": { "type": "number" },
+        "quantity": { "type": "number" },
+        "image": { "type": "string" },
+        "timeLimit": { "type": "string" },
+        "city": { "type": "string" },
+        "commerceType": { "type": "string", "enum": ["Patisserie", "Superette", "Buffet à volonté"] },
+        "mealCategory": { "type": "string" },
+        "rating": { "type": "number" },
+        "isSurpriseBox": { "type": "boolean" },
+        "address": { "type": "string" },
+        "coordinates": { "type": "object" },
+        "mapLink": { "type": "string" }
+      },
+      "required": ["id", "restaurantId", "restaurantName", "name", "originalPrice", "reducedPrice", "quantity", "timeLimit", "city", "commerceType"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Order reservation made by consumer for an offer",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "offerId": { "type": "string" },
+        "consumerId": { "type": "string" },
+        "consumerName": { "type": "string" },
+        "consumerPhone": { "type": "string" },
+        "restaurantId": { "type": "string" },
+        "quantity": { "type": "number" },
+        "totalPrice": { "type": "number" },
+        "status": { "type": "string", "enum": ["active", "cancelled", "completed"] },
+        "createdAt": { "type": "string" },
+        "offerSnapshot": { "type": "object" },
+        "paymentMethod": { "type": "string", "enum": ["online", "delivery"] },
+        "paymentStatus": { "type": "string", "enum": ["pending", "successful", "failed", "released"] },
+        "customerMessage": { "type": "string" }
+      },
+      "required": ["id", "offerId", "consumerId", "restaurantId", "quantity", "totalPrice", "status", "createdAt", "offerSnapshot"]
+    },
+    "Review": {
+      "title": "Review",
+      "description": "Customer review for an offer or experience",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "offerId": { "type": "string" },
+        "consumerId": { "type": "string" },
+        "consumerName": { "type": "string" },
+        "restaurantId": { "type": "string" },
+        "rating": { "type": "number" },
+        "comment": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "offerId", "consumerId", "consumerName", "restaurantId", "rating", "comment", "createdAt"]
+    },
+    "SupportTicket": {
+      "title": "SupportTicket",
+      "description": "Customer support request ticket",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "userName": { "type": "string" },
+        "userRole": { "type": "string", "enum": ["consumer", "restaurant", "admin"] },
+        "subject": { "type": "string" },
+        "message": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "resolved"] },
+        "response": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "userId", "userEmail", "userName", "userRole", "subject", "message", "status", "createdAt"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "Real-time notification for partners when users place orders",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "orderId": { "type": "string" },
+        "customerName": { "type": "string" },
+        "offerName": { "type": "string" },
+        "totalPrice": { "type": "number" },
+        "paymentMethod": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "read": { "type": "boolean" },
+        "recipientId": { "type": "string" }
+      },
+      "required": ["id", "orderId", "customerName", "offerName", "totalPrice", "paymentMethod", "createdAt", "read", "recipientId"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles store"
+    },
+    "/offers/{offerId}": {
+      "schema": "Offer",
+      "description": "Restaurant offers store"
+    },
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Consumer reservations store"
+    },
+    "/reviews/{reviewId}": {
+      "schema": "Review",
+      "description": "Customer reviews store"
+    },
+    "/supportTickets/{ticketId}": {
+      "schema": "SupportTicket",
+      "description": "Support tickets store"
+    },
+    "/notifications/{notificationId}": {
+      "schema": "Notification",
+      "description": "Real-time notifications store"
+    }
+  }
+}

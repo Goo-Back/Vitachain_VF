@@ -4,7 +4,7 @@
 --
 -- Root entity of the FarMarket module.  Subsequent stories attach here:
 --   FAR-02 — SELECT with region / product_type / price filters
---   FAR-03 — m2_farmarket_order_items.ad_id FK (cart-based order flow)
+--   FAR-03 — m2_farmarket_leads.ad_id FK
 --   FAR-05 — UPDATE / soft-DELETE by owner
 --   FAR-06 — CRON sets status = 'EXPIRED' where now() > expires_at
 --   FAR-08 — admin read-all

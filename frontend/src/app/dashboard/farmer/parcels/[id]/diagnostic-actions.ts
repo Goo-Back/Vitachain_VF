@@ -10,6 +10,7 @@
  * ThresholdsSection.tsx.
  */
 
+import { authedApiFetch } from "@/lib/api/authed-fetch";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -83,25 +84,21 @@ export type RequestDiagnosticResult =
 export async function requestDiagnostic(
   parcelId: string,
 ): Promise<RequestDiagnosticResult> {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (!session) {
-    return { ok: false, error: "not_authenticated" };
+  let r: Response;
+  try {
+    r = await authedApiFetch(
+      `/katara/parcels/${parcelId}/diagnostics`,
+      { method: "POST", headers: { "Content-Type": "application/json" } },
+    );
+  } catch (e) {
+    return {
+      ok: false,
+      error:
+        e instanceof Error && e.message === "not_authenticated"
+          ? "not_authenticated"
+          : "network_error",
+    };
   }
-
-  const r = await fetch(
-    `${API_BASE}/api/v1/katara/parcels/${parcelId}/diagnostics`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${session.access_token}`,
-        "Content-Type": "application/json",
-      },
-      cache: "no-store",
-    },
-  );
 
   if (r.ok) {
     return { ok: true, data: (await r.json()) as DiagnosticOut };

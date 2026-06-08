@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import logging
 import os
+import time
 from datetime import datetime, timedelta, timezone
 from typing import Any
 from uuid import UUID
@@ -31,10 +32,32 @@ from app.db import service_client
 
 log = logging.getLogger("katara_diagnostic.sentinel")
 
-_PROCESS_URL = "https://services.sentinel-hub.com/api/v1/process"
+# Endpoints are configurable so the same client works against either Sentinel
+# Hub deployment. Defaults target the standalone Sentinel Hub; set the two env
+# vars below to switch to the free Copernicus Data Space Ecosystem (CDSE):
+#   SENTINEL_HUB_BASE_URL=https://sh.dataspace.copernicus.eu
+#   SENTINEL_HUB_TOKEN_URL=https://identity.dataspace.copernicus.eu/auth/realms/CDSE/protocol/openid-connect/token
+# (CDSE's token endpoint lives on a different host than its Process base, which
+# is why the token URL is its own var rather than derived from the base.)
+_SH_BASE_URL = os.environ.get(
+    "SENTINEL_HUB_BASE_URL", "https://services.sentinel-hub.com"
+).rstrip("/")
+_PROCESS_URL = f"{_SH_BASE_URL}/api/v1/process"
+_TOKEN_URL   = os.environ.get(
+    "SENTINEL_HUB_TOKEN_URL", f"{_SH_BASE_URL}/oauth/token"
+)
 
 _CACHE_TTL          = timedelta(hours=12)
 _PROCESS_TIMEOUT_S  = 20.0
+_TOKEN_TIMEOUT_S    = 15.0
+# Sentinel Hub access tokens live ~1 h; refresh a minute early so we never
+# fire a Process call with a token that expires mid-flight.
+_TOKEN_REFRESH_MARGIN_S = 60.0
+
+# In-process OAuth token cache (access_token + monotonic-ish expiry epoch).
+# Shared across fetch_ndvi / fetch_ndvi_image so one token covers both. A
+# worker restart simply re-mints on first use — no persistence needed.
+_token_cache: dict[str, Any] = {"access_token": None, "expires_at": 0.0}
 # Widen the granule search window so we don't return zero on a single cloudy day.
 _GRANULE_LOOKBACK_DAYS = 14
 
@@ -75,8 +98,55 @@ function evaluatePixel(s) {
 }
 """
 
-def _get_api_key() -> str:
-    return os.environ["SENTINEL_HUB_API_KEY"]
+def _get_oauth_credentials() -> tuple[str, str]:
+    client_id     = os.environ.get("SENTINEL_HUB_CLIENT_ID")
+    client_secret = os.environ.get("SENTINEL_HUB_CLIENT_SECRET")
+    if not client_id or not client_secret:
+        # Clear, catchable config error → the /ndvi endpoint already maps
+        # RuntimeError to 502 (ndvi_upstream_unavailable); a bare KeyError
+        # would slip past that and surface as an opaque 500.
+        #
+        # NOTE: Sentinel Hub's Process API authenticates with an OAuth2
+        # *client_credentials* pair (created under Dashboard → User settings →
+        # OAuth clients), NOT a raw "API key" — a bare PLAK Planet key is
+        # rejected with 401. See _get_access_token below.
+        raise RuntimeError(
+            "SENTINEL_HUB_CLIENT_ID / SENTINEL_HUB_CLIENT_SECRET are not configured"
+        )
+    return client_id, client_secret
+
+
+def _get_access_token() -> str:
+    """Return a valid Sentinel Hub OAuth2 bearer token, minting on demand.
+
+    Tokens are cached in-process until ~1 min before their advertised
+    ``expires_in``. Raises ``RuntimeError`` (missing creds) or
+    ``httpx.HTTPError`` (auth endpoint down / bad creds) — both already map
+    to 502 ``ndvi_upstream_unavailable`` upstream.
+    """
+    now = time.time()
+    cached = _token_cache.get("access_token")
+    if cached and now < _token_cache.get("expires_at", 0.0):
+        return cached
+
+    client_id, client_secret = _get_oauth_credentials()
+    resp = httpx.post(
+        _TOKEN_URL,
+        data={
+            "grant_type":    "client_credentials",
+            "client_id":     client_id,
+            "client_secret": client_secret,
+        },
+        timeout=_TOKEN_TIMEOUT_S,
+    )
+    resp.raise_for_status()
+    payload = resp.json()
+    token = payload["access_token"]
+    expires_in = float(payload.get("expires_in", 3600))
+    _token_cache["access_token"] = token
+    _token_cache["expires_at"]   = now + max(expires_in - _TOKEN_REFRESH_MARGIN_S, 0.0)
+    log.info("sentinel_oauth_token_minted ttl_s=%s", expires_in)
+    return token
 
 
 def _polygon_for_sentinel(geojson: dict[str, Any]) -> dict[str, Any]:
@@ -155,7 +225,7 @@ def fetch_ndvi(parcel_id: UUID, polygon_geojson: dict[str, Any]) -> dict[str, An
         _PROCESS_URL,
         json=body,
         headers={
-            "Authorization": f"ApiKey {_get_api_key()}",
+            "Authorization": f"Bearer {_get_access_token()}",
             "Accept":        "image/tiff",
         },
         timeout=_PROCESS_TIMEOUT_S,
@@ -233,7 +303,7 @@ def fetch_ndvi_image(polygon_geojson: dict[str, Any]) -> bytes:
     the Satellite page (and vice-versa — both fail together on a fully
     clouded fortnight).
     """
-    api_key = _get_api_key()
+    token = _get_access_token()
     today = datetime.now(timezone.utc).date()
     window_from = today - timedelta(days=_GRANULE_LOOKBACK_DAYS)
     geometry = _polygon_for_sentinel(polygon_geojson)
@@ -272,7 +342,7 @@ def fetch_ndvi_image(polygon_geojson: dict[str, Any]) -> bytes:
         _PROCESS_URL,
         json=body,
         headers={
-            "Authorization": f"ApiKey {api_key}",
+            "Authorization": f"Bearer {token}",
             "Accept":        "image/png",
         },
         timeout=_PROCESS_TIMEOUT_S,

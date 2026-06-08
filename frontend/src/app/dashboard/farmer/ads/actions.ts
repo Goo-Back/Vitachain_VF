@@ -3,9 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { createSupabaseServerClient } from "@/lib/supabase/server";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+import { authedApiFetch } from "@/lib/api/authed-fetch";
 
 export type Ad = {
   id: string;
@@ -27,29 +25,10 @@ export type Ad = {
 
 export type AdFormState = { error: string | null };
 
-async function _authedFetch(
-  path: string,
-  init: RequestInit = {},
-): Promise<Response> {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (!session) throw new Error("not_authenticated");
-  const headers = new Headers(init.headers);
-  headers.set("Authorization", `Bearer ${session.access_token}`);
-  return fetch(`${API_BASE}/api/v1${path}`, {
-    ...init,
-    headers,
-    cache: "no-store",
-    signal: AbortSignal.timeout(15_000),
-  });
-}
-
 export async function fetchMyAds(): Promise<Ad[]> {
   let r: Response;
   try {
-    r = await _authedFetch("/farmarket/ads");
+    r = await authedApiFetch("/farmarket/ads");
   } catch {
     return [];
   }
@@ -76,24 +55,21 @@ export async function submitAdForm(
   if (!region) return { error: "region_required" };
 
   // Re-use the original FormData for multipart (photos included).
-  // We must NOT set Content-Type — the browser sets the boundary automatically.
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (!session) return { error: "not_authenticated" };
-
+  // We must NOT set Content-Type — the boundary is set from the FormData body.
   let r: Response;
   try {
-    r = await fetch(`${API_BASE}/api/v1/farmarket/ads`, {
+    r = await authedApiFetch("/farmarket/ads", {
       method: "POST",
-      headers: { Authorization: `Bearer ${session.access_token}` },
       body: formData,
-      cache: "no-store",
-      signal: AbortSignal.timeout(30_000),
+      timeoutMs: 30_000,
     });
-  } catch {
-    return { error: "network_error" };
+  } catch (e) {
+    return {
+      error:
+        e instanceof Error && e.message === "not_authenticated"
+          ? "not_authenticated"
+          : "network_error",
+    };
   }
 
   if (!r.ok) {
@@ -114,12 +90,6 @@ export async function updateAd(
   _prev: AdUpdateFormState,
   formData: FormData,
 ): Promise<AdUpdateFormState> {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (!session) return { error: "not_authenticated" };
-
   const hasText =
     formData.get("title") ||
     formData.get("description") ||
@@ -133,15 +103,18 @@ export async function updateAd(
 
   let r: Response;
   try {
-    r = await fetch(`${API_BASE}/api/v1/farmarket/ads/${adId}`, {
+    r = await authedApiFetch(`/farmarket/ads/${adId}`, {
       method: "PATCH",
-      headers: { Authorization: `Bearer ${session.access_token}` },
       body: formData,
-      cache: "no-store",
-      signal: AbortSignal.timeout(30_000),
+      timeoutMs: 30_000,
     });
-  } catch {
-    return { error: "network_error" };
+  } catch (e) {
+    return {
+      error:
+        e instanceof Error && e.message === "not_authenticated"
+          ? "not_authenticated"
+          : "network_error",
+    };
   }
 
   if (!r.ok) {
@@ -156,22 +129,16 @@ export async function updateAd(
 }
 
 export async function deleteAd(adId: string): Promise<{ error: string | null }> {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (!session) return { error: "not_authenticated" };
-
   let r: Response;
   try {
-    r = await fetch(`${API_BASE}/api/v1/farmarket/ads/${adId}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${session.access_token}` },
-      cache: "no-store",
-      signal: AbortSignal.timeout(15_000),
-    });
-  } catch {
-    return { error: "network_error" };
+    r = await authedApiFetch(`/farmarket/ads/${adId}`, { method: "DELETE" });
+  } catch (e) {
+    return {
+      error:
+        e instanceof Error && e.message === "not_authenticated"
+          ? "not_authenticated"
+          : "network_error",
+    };
   }
 
   if (!r.ok && r.status !== 204) {
@@ -188,7 +155,7 @@ export async function deleteAd(adId: string): Promise<{ error: string | null }> 
 export async function fetchAdById(adId: string): Promise<Ad | null> {
   let r: Response;
   try {
-    r = await _authedFetch("/farmarket/ads");
+    r = await authedApiFetch("/farmarket/ads");
   } catch {
     return null;
   }

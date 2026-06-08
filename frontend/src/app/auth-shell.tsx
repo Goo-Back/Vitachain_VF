@@ -1,126 +1,203 @@
 import Link from "next/link";
-
 import {
-  CheckCircleIcon,
-  DropletIcon,
-  SparkleIcon,
-  SproutIcon,
-} from "./dashboard/farmer/_ui/Icon";
+  Leaf,
+  Recycle,
+  ShieldCheck,
+  Snowflake,
+  Sparkles,
+  Sprout,
+  Store,
+  type LucideIcon,
+} from "lucide-react";
+
 import { Logo } from "./dashboard/farmer/_ui/Logo";
+import {
+  AnimatedGradientText,
+  BlurFade,
+  FloatIn,
+  GridPattern,
+} from "@/components/landing/effects";
 
 /**
  * Split-screen shell used by /login and /register.
  *
- * Left column: form (passed as children).
- * Right column: decorative panel — gradient + abstract field illustration +
- * 3 bullet points of value prop. Hidden on small screens to keep the form
- * vertically centred on phones.
+ * Left column: the form (passed as children), centred and animated in.
+ * Right column: a decorative panel for the VitaChain *ecosystem* — not a
+ * single module. It surfaces the four modules (Katara, FarMarket,
+ * BotaBa9a, SecondServe) and the platform's anti-waste mission, so the
+ * auth pages frame VitaChain as the whole food chain "du champ à
+ * l'assiette" rather than just the Katara soil-IoT product. Hidden below
+ * lg so the form stays vertically centred on phones.
  */
+
+const MODULES: {
+  icon: LucideIcon;
+  name: string;
+  tag: string;
+  soon?: boolean;
+}[] = [
+  { icon: Sprout, name: "Katara", tag: "Suivi IoT du sol" },
+  { icon: Store, name: "FarMarket", tag: "Place de marché" },
+  { icon: Snowflake, name: "Botaba9a", tag: "Chaîne du froid", soon: true },
+  { icon: Recycle, name: "SecondServe", tag: "Anti-gaspillage" },
+];
 
 export function AuthShell({
   children,
   title,
   subtitle,
+  badge = "Suite VitaChain",
 }: {
   children: React.ReactNode;
   title: string;
   subtitle?: string;
+  badge?: string;
 }) {
   return (
-    <div className="grid min-h-screen lg:grid-cols-2">
+    <div className="grid min-h-screen lg:grid-cols-[1.05fr_1fr]">
       {/* LEFT — form column */}
-      <div className="flex flex-col px-6 py-10 sm:px-10 lg:px-16">
-        <Link href="/" className="inline-flex">
+      <div className="relative flex flex-col px-6 py-8 sm:px-10 lg:px-16">
+        {/* Soft brand wash behind the form on mobile. */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(60%_50%_at_50%_0%,var(--color-leaf-50),transparent_70%)] lg:hidden"
+        />
+
+        <Link href="/" className="inline-flex w-fit">
           <Logo size="sm" />
         </Link>
-        <div className="mx-auto my-auto w-full max-w-md py-12">
-          <h1 className="text-3xl font-semibold tracking-tight text-neutral-900">
-            {title}
-          </h1>
+
+        <div className="mx-auto my-auto w-full max-w-md py-10">
+          <FloatIn delay={0.04}>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-leaf-50 px-3 py-1 text-xs font-medium text-leaf-700 ring-1 ring-leaf-100">
+              <Sparkles size={12} />
+              {badge}
+            </span>
+          </FloatIn>
+
+          <FloatIn delay={0.1}>
+            <h1 className="mt-4 text-3xl font-semibold tracking-tight text-neutral-900 sm:text-[2rem]">
+              {title}
+            </h1>
+          </FloatIn>
+
           {subtitle ? (
-            <p className="mt-2 text-sm text-neutral-600">{subtitle}</p>
+            <FloatIn delay={0.16}>
+              <p className="mt-2 text-sm leading-relaxed text-neutral-600">
+                {subtitle}
+              </p>
+            </FloatIn>
           ) : null}
-          <div className="mt-8">{children}</div>
+
+          <FloatIn delay={0.22}>
+            <div className="mt-8">{children}</div>
+          </FloatIn>
         </div>
+
         <p className="text-center text-xs text-neutral-400">
-          © {new Date().getFullYear()} VitaChain · Katara
+          © {new Date().getFullYear()} VitaChain · Écosystème anti-gaspillage
         </p>
       </div>
 
-      {/* RIGHT — decorative panel */}
+      {/* RIGHT — decorative ecosystem panel */}
       <aside className="relative hidden overflow-hidden bg-gradient-to-br from-leaf-700 via-leaf-600 to-leaf-800 lg:block">
-        <div className="absolute -right-32 -top-32 h-96 w-96 rounded-full bg-white/10 blur-3xl" />
-        <div className="absolute -bottom-24 -left-16 h-72 w-72 rounded-full bg-sun-500/20 blur-3xl" />
-        <DecorativeArtwork />
+        <div aria-hidden className="vc-aurora absolute inset-0 opacity-40" />
+        <div
+          aria-hidden
+          className="absolute -right-32 -top-32 h-96 w-96 rounded-full bg-white/10 blur-3xl"
+        />
+        <div
+          aria-hidden
+          className="absolute -bottom-24 -left-16 h-72 w-72 rounded-full bg-sun-500/20 blur-3xl"
+        />
+        <GridPattern size={44} className="text-white/[0.06]" />
+
         <div className="relative z-10 flex h-full flex-col justify-between p-12 text-white">
-          <span className="inline-flex w-fit items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs ring-1 ring-white/20">
-            <SparkleIcon size={12} /> Suite Katara · IoT agricole
+          <span className="inline-flex w-fit items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs ring-1 ring-white/20 backdrop-blur">
+            <Leaf size={12} /> Écosystème anti-gaspillage agro-alimentaire
           </span>
+
           <div>
-            <h2 className="text-3xl font-semibold leading-tight">
-              Votre sol parle.
-              <br /> Nous le traduisons en décisions.
-            </h2>
-            <ul className="mt-8 space-y-4 text-sm text-white/85">
-              <Bullet icon={<DropletIcon size={16} />}>
-                Suivi en direct de l&apos;humidité, du pH et de la conductivité.
-              </Bullet>
-              <Bullet icon={<SproutIcon size={16} />}>
-                Alertes par parcelle, avant que la culture ne souffre.
-              </Bullet>
-              <Bullet icon={<CheckCircleIcon size={16} />}>
-                Recommandations IA contextuelles & traçabilité complète.
-              </Bullet>
-            </ul>
+            <BlurFade delay={0.1}>
+              <h2 className="max-w-md text-[2rem] font-semibold leading-tight">
+                Du champ à l&apos;assiette,{" "}
+                <AnimatedGradientText
+                  from="oklch(0.95 0.06 152)"
+                  via="white"
+                  to="oklch(0.9 0.1 152)"
+                >
+                  zéro maillon perdu
+                </AnimatedGradientText>
+                .
+              </h2>
+            </BlurFade>
+
+            <BlurFade delay={0.18}>
+              <p className="mt-3 max-w-md text-sm leading-relaxed text-white/80">
+                Une seule plateforme relie chaque maillon de la chaîne
+                agro-alimentaire — du suivi des cultures à la redistribution des
+                surplus.
+              </p>
+            </BlurFade>
+
+            {/* The four modules — VitaChain is the ecosystem, not one product. */}
+            <div className="mt-7 grid max-w-md grid-cols-2 gap-3">
+              {MODULES.map((m, i) => (
+                <ModuleCard key={m.name} {...m} delay={0.24 + i * 0.07} />
+              ))}
+            </div>
           </div>
-          <blockquote className="rounded-xl bg-white/10 p-5 text-sm text-white/90 ring-1 ring-white/15">
-            <p>
-              « En une saison, j&apos;ai économisé 30 % d&apos;eau sur mes serres
-              et perdu zéro plant à cause d&apos;un stress hydrique. »
-            </p>
-            <footer className="mt-3 text-xs text-white/70">
-              — Karim B., maraîcher, Meknès
-            </footer>
-          </blockquote>
+
+          <BlurFade delay={0.3}>
+            <div className="max-w-md rounded-2xl bg-white/10 p-5 ring-1 ring-white/15 backdrop-blur">
+              <p className="text-sm leading-relaxed text-white/90">
+                Près d&apos;<span className="font-semibold">un tiers</span> de la
+                nourriture produite est perdue. VitaChain reconnecte la filière
+                pour en perdre moins, à chaque étape.
+              </p>
+              <p className="mt-3 inline-flex items-center gap-2 text-xs text-white/70">
+                <ShieldCheck size={13} className="text-leaf-200" />
+                Comptes vérifiés · chaîne tracée de bout en bout
+              </p>
+            </div>
+          </BlurFade>
         </div>
       </aside>
     </div>
   );
 }
 
-function Bullet({
-  icon,
-  children,
+function ModuleCard({
+  icon: Icon,
+  name,
+  tag,
+  soon,
+  delay,
 }: {
-  icon: React.ReactNode;
-  children: React.ReactNode;
+  icon: LucideIcon;
+  name: string;
+  tag: string;
+  soon?: boolean;
+  delay: number;
 }) {
   return (
-    <li className="flex items-start gap-3">
-      <span className="mt-0.5 grid h-7 w-7 place-items-center rounded-full bg-white/15 ring-1 ring-white/20">
-        {icon}
-      </span>
-      <span>{children}</span>
-    </li>
-  );
-}
-
-function DecorativeArtwork() {
-  // Subtle, repeating "fields seen from above" pattern.
-  return (
-    <svg
-      aria-hidden
-      className="absolute inset-0 h-full w-full opacity-[0.06]"
-      viewBox="0 0 200 200"
-      preserveAspectRatio="xMidYMid slice"
-    >
-      <defs>
-        <pattern id="rows" width="20" height="20" patternUnits="userSpaceOnUse" patternTransform="rotate(20)">
-          <path d="M0 10 H20" stroke="white" strokeWidth="0.6" fill="none" />
-          <path d="M0 14 H20" stroke="white" strokeWidth="0.4" fill="none" />
-        </pattern>
-      </defs>
-      <rect width="200" height="200" fill="url(#rows)" />
-    </svg>
+    <FloatIn delay={delay}>
+      <div className="flex h-full items-start gap-3 rounded-2xl bg-white/10 p-3.5 ring-1 ring-white/15 backdrop-blur transition-colors hover:bg-white/15">
+        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-white/15 text-white ring-1 ring-white/20">
+          <Icon size={18} />
+        </span>
+        <div className="min-w-0">
+          <div className="flex items-center gap-1.5">
+            <p className="text-sm font-semibold leading-none">{name}</p>
+            {soon ? (
+              <span className="rounded-full bg-sun-500/30 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-sun-50 ring-1 ring-sun-500/30">
+                Bientôt
+              </span>
+            ) : null}
+          </div>
+          <p className="mt-1 text-[11px] leading-tight text-white/70">{tag}</p>
+        </div>
+      </div>
+    </FloatIn>
   );
 }

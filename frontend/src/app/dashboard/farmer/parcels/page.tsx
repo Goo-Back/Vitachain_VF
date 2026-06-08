@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { createSupabaseServerClient } from "@/lib/supabase/server";
-import type { ProfileRow } from "@/lib/supabase/types";
+import { getServerProfile } from "@/lib/auth/session";
 
 import {
   ArrowRightIcon,
@@ -14,31 +13,21 @@ import {
 } from "../_ui/Icon";
 
 import { PageHeader } from "../_ui/PageHeader";
+import { MotionCard, Stagger } from "../_ui/motion";
 
 import { fetchMyParcels, type Parcel } from "./actions";
 
 export const dynamic = "force-dynamic";
 
 export default async function ParcelsPage() {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role, verification_status")
-    .eq("id", user.id)
-    .single<Pick<ProfileRow, "role" | "verification_status">>();
-
+  const profile = await getServerProfile();
   if (profile?.role !== "FARMER") redirect("/dashboard");
 
   const isUnverified = profile.verification_status !== "VERIFIED";
   const parcels = isUnverified ? [] : await fetchMyParcels();
 
   return (
-    <div className="mx-auto max-w-5xl vc-fade-in">
+    <div className="mx-auto max-w-6xl vc-fade-in">
       <PageHeader
         crumbs={[{ label: "Mon exploitation", href: "/dashboard/farmer" }, { label: "Mes parcelles" }]}
         eyebrow="Mes parcelles"
@@ -48,6 +37,13 @@ export default async function ParcelsPage() {
             ? undefined
             : "Cliquez sur une parcelle pour voir sa télémétrie, ses seuils et son diagnostic."
         }
+        actions={
+          isUnverified ? undefined : (
+            <Link href="/dashboard/farmer/parcels/new" className="vc-btn-primary">
+              <PlusIcon size={14} /> Nouvelle parcelle
+            </Link>
+          )
+        }
       />
 
       {isUnverified ? (
@@ -55,11 +51,11 @@ export default async function ParcelsPage() {
       ) : parcels.length === 0 ? (
         <EmptyState />
       ) : (
-        <ul className="grid gap-3 sm:grid-cols-2">
+        <Stagger as="ul" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {parcels.map((p) => (
             <ParcelListItem key={p.id} parcel={p} />
           ))}
-        </ul>
+        </Stagger>
       )}
     </div>
   );
@@ -113,32 +109,35 @@ function EmptyState() {
 
 function ParcelListItem({ parcel }: { parcel: Parcel }) {
   return (
-    <li>
+    <MotionCard as="li" className="h-full">
       <Link
         href={`/dashboard/farmer/parcels/${parcel.id}`}
-        className="vc-card vc-card-interactive group block p-5"
+        className="katara-card group relative flex h-full flex-col overflow-hidden p-5 focus:outline-none"
       >
-        <div className="flex items-start justify-between">
-          <span className="grid h-10 w-10 place-items-center rounded-lg bg-leaf-50">
-            <MapPinIcon size={20} className="text-leaf-700" />
+        <span aria-hidden="true" className="katara-glow" />
+        <div className="relative flex items-start justify-between">
+          <span className="grid h-10 w-10 place-items-center rounded-xl bg-sky-tint-50 ring-1 ring-inset ring-sky-tint-500/10">
+            <MapPinIcon size={20} className="text-sky-tint-700" />
           </span>
-          <ArrowRightIcon
-            size={16}
-            className="text-neutral-300 transition group-hover:text-leaf-700"
-          />
+          <span className="grid h-8 w-8 place-items-center rounded-full bg-neutral-50 text-neutral-300 transition-all duration-300 group-hover:bg-sky-tint-50 group-hover:text-sky-tint-700">
+            <ArrowRightIcon
+              size={16}
+              className="transition-transform duration-300 group-hover:translate-x-0.5"
+            />
+          </span>
         </div>
-        <p className="mt-4 truncate text-lg font-semibold text-neutral-900">
+        <p className="relative mt-4 truncate text-lg font-semibold text-neutral-900">
           {parcel.name}
         </p>
-        <p className="mt-1 flex items-center gap-1.5 text-xs text-neutral-600">
+        <p className="relative mt-1 flex items-center gap-1.5 text-xs text-neutral-600">
           <SproutIcon size={12} className="text-leaf-600" />
           {parcel.crop_type} · {Number(parcel.surface_area_ha).toFixed(2)} ha
         </p>
-        <p className="mt-1 flex items-center gap-1.5 text-xs text-neutral-400">
+        <p className="relative mt-1 flex items-center gap-1.5 text-xs text-neutral-400">
           <CalendarIcon size={12} />
           Créée le {new Date(parcel.created_at).toLocaleDateString("fr-FR")}
         </p>
       </Link>
-    </li>
+    </MotionCard>
   );
 }

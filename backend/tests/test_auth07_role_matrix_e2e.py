@@ -24,7 +24,11 @@ from typing import Any, Literal
 import pytest
 
 pytestmark = pytest.mark.skipif(
-    not os.environ.get("SUPABASE_URL"),
+    not os.environ.get("SUPABASE_URL")
+    # The conftest seeds a dummy https://example.supabase.co so get_settings()
+    # caches harmless values; that must NOT count as a live project, otherwise
+    # these cells fire against localhost:8000 with synthetic JWTs and fail.
+    or os.environ.get("SUPABASE_URL", "").startswith("https://example"),
     reason="AUTH-07 e2e matrix requires a live staging Supabase project",
 )
 

@@ -1,9 +1,9 @@
 import Link from "next/link";
+import { AlertCircle, ArrowRight, Globe } from "lucide-react";
 
 import { AuthShell } from "../auth-shell";
-import { ArrowRightIcon } from "../dashboard/farmer/_ui/Icon";
+import { PasswordField, TextField } from "../_auth/fields";
 import { registerAction } from "./actions";
-import PasswordHint from "./password-hint";
 import RolePicker from "./role-picker";
 import type { AuthErrorKey } from "@/lib/auth/errors";
 
@@ -43,75 +43,73 @@ export default async function RegisterPage({
 
   return (
     <AuthShell
-      title="Bienvenue dans Katara."
-      subtitle="Quelques informations et vous serez prêt à connecter votre première parcelle."
+      title="Bienvenue dans VitaChain."
+      subtitle="Choisissez votre rôle et accédez à toute la chaîne — du suivi des cultures à la lutte contre le gaspillage."
+      badge="Créer un compte"
     >
       {errorMessage ? (
         <div
           role="alert"
-          className="mb-4 rounded-lg border border-danger-500/30 bg-danger-50 p-3 text-sm text-danger-700"
+          className="mb-5 flex items-start gap-2 rounded-xl border border-danger-500/30 bg-danger-50 p-3 text-sm text-danger-700"
         >
-          {errorMessage}
+          <AlertCircle size={16} className="mt-0.5 shrink-0" />
+          <span>{errorMessage}</span>
         </div>
       ) : null}
 
       <form action={registerAction} className="flex flex-col gap-4">
-        <div>
-          <label htmlFor="full_name" className="text-xs font-medium text-neutral-600">
-            Nom complet
-          </label>
-          <input
-            id="full_name"
-            name="full_name"
-            type="text"
-            required
-            minLength={2}
-            maxLength={120}
-            autoComplete="name"
-            className="vc-input mt-1"
-          />
-        </div>
+        <TextField
+          id="full_name"
+          label="Nom complet"
+          icon="user"
+          autoComplete="name"
+          placeholder="Karim Benali"
+          required
+          minLength={2}
+          maxLength={120}
+        />
+
+        <TextField
+          id="email"
+          label="Email"
+          type="email"
+          icon="mail"
+          autoComplete="email"
+          placeholder="vous@exemple.com"
+          required
+        />
+
+        <PasswordField
+          id="password"
+          label="Mot de passe"
+          icon="lock"
+          autoComplete="new-password"
+          placeholder="Au moins 10 caractères"
+          strength
+          minLength={10}
+          maxLength={72}
+        />
 
         <div>
-          <label htmlFor="email" className="text-xs font-medium text-neutral-600">
-            Email
-          </label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            required
-            autoComplete="email"
-            className="vc-input mt-1"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="password" className="text-xs font-medium text-neutral-600">
-            Mot de passe
-          </label>
-          <PasswordHint name="password" />
-        </div>
-
-        <div>
-          <p className="text-xs font-medium text-neutral-600">Rôle</p>
+          <p className="mb-1.5 text-xs font-medium text-neutral-600">Je suis…</p>
           <RolePicker name="role" defaultRole="CITIZEN" />
         </div>
 
         <div>
-          <label htmlFor="locale" className="text-xs font-medium text-neutral-600">
+          <label htmlFor="locale" className="mb-1.5 block text-xs font-medium text-neutral-600">
             Langue
           </label>
-          <select
-            id="locale"
-            name="locale"
-            defaultValue="fr"
-            className="vc-input mt-1"
-          >
-            <option value="fr">Français</option>
-            <option value="ar">العربية</option>
-            <option value="en">English</option>
-          </select>
+          <div className="group relative">
+            <Globe
+              size={16}
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 transition-colors group-focus-within:text-leaf-600"
+            />
+            <select id="locale" name="locale" defaultValue="fr" className="vc-input pl-9">
+              <option value="fr">Français</option>
+              <option value="ar">العربية</option>
+              <option value="en">English</option>
+            </select>
+          </div>
         </div>
 
         <label className="flex items-start gap-2 text-xs text-neutral-600">
@@ -129,9 +127,9 @@ export default async function RegisterPage({
           </span>
         </label>
 
-        <button type="submit" className="vc-btn-primary mt-2 w-full">
+        <button type="submit" className="vc-btn-primary mt-2 w-full py-2.5">
           Créer mon compte
-          <ArrowRightIcon size={14} />
+          <ArrowRight size={15} />
         </button>
       </form>
 

@@ -4,6 +4,7 @@ import {
   DropletIcon,
   MapPinIcon,
 } from "./_ui/Icon";
+import { MotionCard, Stagger } from "./_ui/motion";
 import type { FarmKpiRollup } from "./overview-types";
 
 /**
@@ -19,54 +20,63 @@ import type { FarmKpiRollup } from "./overview-types";
 export function KpiStrip({ kpi }: { kpi: FarmKpiRollup }) {
   const breachTone = kpi.parcels_with_open_breach > 0 ? "warn" : "neutral";
   return (
-    <section
-      aria-label="Indicateurs de l'exploitation"
+    <Stagger
+      as="section"
+      ariaLabel="Indicateurs de l'exploitation"
       className="grid grid-cols-2 gap-3 sm:grid-cols-4"
     >
-      <Tile
-        icon={<MapPinIcon size={18} />}
-        tint="leaf"
-        label="Parcelles"
-        value={kpi.parcel_count}
-        sub={`${Number(kpi.total_surface_ha).toFixed(2)} ha au total`}
-      />
-      <Tile
-        icon={<ChartIcon size={18} />}
-        tint="soil"
-        label="Surface"
-        value={`${Number(kpi.total_surface_ha).toFixed(2)} ha`}
-        sub={kpi.parcel_count > 0 ? `~${(Number(kpi.total_surface_ha) / kpi.parcel_count).toFixed(2)} ha / parcelle` : "—"}
-      />
-      <Tile
-        icon={<DropletIcon size={18} />}
-        tint="info"
-        label="Capteurs actifs"
-        value={kpi.device_active_count}
-        sub={
-          kpi.device_offline_count + kpi.device_pending_count + kpi.device_unlinked_count > 0
-            ? [
-                kpi.device_offline_count > 0 ? `${kpi.device_offline_count} hors-ligne` : null,
-                kpi.device_pending_count > 0 ? `${kpi.device_pending_count} en attente` : null,
-                kpi.device_unlinked_count > 0 ? `${kpi.device_unlinked_count} détaché${kpi.device_unlinked_count > 1 ? "s" : ""}` : null,
-              ]
-                .filter(Boolean)
-                .join(" · ")
-            : "Tous opérationnels"
-        }
-      />
-      <Tile
-        icon={<AlertIcon size={18} />}
-        tint={breachTone === "warn" ? "warn" : "leaf"}
-        label="Alertes ouvertes"
-        value={kpi.parcels_with_open_breach}
-        sub={
-          kpi.parcels_with_open_breach > 0
-            ? "Parcelles à vérifier"
-            : "Aucun seuil dépassé"
-        }
-        emphasise={breachTone === "warn"}
-      />
-    </section>
+      <MotionCard as="div" interactive={false}>
+        <Tile
+          icon={<MapPinIcon size={18} />}
+          tint="info"
+          label="Parcelles"
+          value={kpi.parcel_count}
+          sub={`${Number(kpi.total_surface_ha).toFixed(2)} ha au total`}
+        />
+      </MotionCard>
+      <MotionCard as="div" interactive={false}>
+        <Tile
+          icon={<ChartIcon size={18} />}
+          tint="soil"
+          label="Surface"
+          value={`${Number(kpi.total_surface_ha).toFixed(2)} ha`}
+          sub={kpi.parcel_count > 0 ? `~${(Number(kpi.total_surface_ha) / kpi.parcel_count).toFixed(2)} ha / parcelle` : "—"}
+        />
+      </MotionCard>
+      <MotionCard as="div" interactive={false}>
+        <Tile
+          icon={<DropletIcon size={18} />}
+          tint="info"
+          label="Capteurs actifs"
+          value={kpi.device_active_count}
+          sub={
+            kpi.device_offline_count + kpi.device_pending_count + kpi.device_unlinked_count > 0
+              ? [
+                  kpi.device_offline_count > 0 ? `${kpi.device_offline_count} hors-ligne` : null,
+                  kpi.device_pending_count > 0 ? `${kpi.device_pending_count} en attente` : null,
+                  kpi.device_unlinked_count > 0 ? `${kpi.device_unlinked_count} détaché${kpi.device_unlinked_count > 1 ? "s" : ""}` : null,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")
+              : "Tous opérationnels"
+          }
+        />
+      </MotionCard>
+      <MotionCard as="div" interactive={false}>
+        <Tile
+          icon={<AlertIcon size={18} />}
+          tint={breachTone === "warn" ? "warn" : "leaf"}
+          label="Alertes ouvertes"
+          value={kpi.parcels_with_open_breach}
+          sub={
+            kpi.parcels_with_open_breach > 0
+              ? "Parcelles à vérifier"
+              : "Aucun seuil dépassé"
+          }
+          emphasise={breachTone === "warn"}
+        />
+      </MotionCard>
+    </Stagger>
   );
 }
 
@@ -94,13 +104,14 @@ function Tile({
 
   return (
     <div
-      className={`vc-card relative overflow-hidden p-4 ${
+      className={`katara-card group h-full overflow-hidden p-4 ${
         emphasise ? "ring-1 ring-warn-500/30" : ""
       }`}
     >
+      <span aria-hidden="true" className="katara-glow" />
       <div className="flex items-start justify-between">
         <span
-          className={`grid h-9 w-9 place-items-center rounded-lg ${tintMap.bg} ${tintMap.fg}`}
+          className={`grid h-9 w-9 place-items-center rounded-xl ${tintMap.bg} ${tintMap.fg} ring-1 ring-inset ring-black/[0.03] transition-transform duration-300 group-hover:scale-105`}
         >
           {icon}
         </span>

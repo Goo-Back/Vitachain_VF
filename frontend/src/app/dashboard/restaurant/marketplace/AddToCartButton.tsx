@@ -25,6 +25,7 @@ export function AddToCartButton({ ad }: Props) {
   const [feedback, setFeedback] = useState<string | null>(null);
 
   const stock = Number(ad.quantity_kg);
+  const soldOut = stock <= 0;
 
   function handleAdd() {
     if (qty <= 0) return;
@@ -35,6 +36,16 @@ export function AddToCartButton({ ad }: Props) {
     addToCart(ad, qty);
     setFeedback(`✓ ${qty} kg ajouté au panier`);
     window.setTimeout(() => setFeedback(null), 2500);
+  }
+
+  if (soldOut) {
+    return (
+      <div className="mt-4">
+        <span className="inline-flex w-full items-center justify-center rounded bg-neutral-100 px-3 py-1.5 text-sm font-medium text-neutral-500">
+          Épuisé
+        </span>
+      </div>
+    );
   }
 
   return (

@@ -1,7 +1,8 @@
 import Link from "next/link";
+import { AlertCircle, ArrowRight } from "lucide-react";
 
 import { AuthShell } from "../auth-shell";
-import { ArrowRightIcon } from "../dashboard/farmer/_ui/Icon";
+import { PasswordField, TextField } from "../_auth/fields";
 import { loginAction } from "./actions";
 
 export default async function LoginPage({
@@ -13,36 +14,39 @@ export default async function LoginPage({
   const next = sp.next ?? "/dashboard";
 
   return (
-    <AuthShell title="Bon retour." subtitle="Connectez-vous à votre exploitation.">
+    <AuthShell
+      title="Bon retour."
+      subtitle="Connectez-vous pour reprendre la main sur votre filière."
+      badge="Connexion"
+    >
       {sp.error ? (
         <div
           role="alert"
-          className="mb-4 rounded-lg border border-danger-500/30 bg-danger-50 p-3 text-sm text-danger-700"
+          className="mb-5 flex items-start gap-2 rounded-xl border border-danger-500/30 bg-danger-50 p-3 text-sm text-danger-700"
         >
-          {decodeURIComponent(sp.error)}
+          <AlertCircle size={16} className="mt-0.5 shrink-0" />
+          <span>{decodeURIComponent(sp.error)}</span>
         </div>
       ) : null}
 
       <form action={loginAction} className="flex flex-col gap-4">
-        <Field id="email" label="Email" type="email" autoComplete="email" required />
-        <div>
-          <div className="flex items-center justify-between">
-            <label htmlFor="password" className="text-xs font-medium text-neutral-600">
-              Mot de passe
-            </label>
-            <a href="#" className="text-xs text-leaf-700 hover:underline">
-              Oublié ?
-            </a>
-          </div>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            required
-            autoComplete="current-password"
-            className="vc-input mt-1"
-          />
-        </div>
+        <TextField
+          id="email"
+          label="Email"
+          type="email"
+          icon="mail"
+          autoComplete="email"
+          placeholder="vous@exemple.com"
+          required
+        />
+
+        <PasswordField
+          id="password"
+          label="Mot de passe"
+          icon="lock"
+          autoComplete="current-password"
+          forgotHref="#"
+        />
 
         <label className="flex items-center gap-2 text-xs text-neutral-600">
           <input
@@ -56,9 +60,9 @@ export default async function LoginPage({
 
         <input type="hidden" name="next" value={next} />
 
-        <button type="submit" className="vc-btn-primary mt-2 w-full">
+        <button type="submit" className="vc-btn-primary mt-2 w-full py-2.5">
           Se connecter
-          <ArrowRightIcon size={14} />
+          <ArrowRight size={15} />
         </button>
       </form>
 
@@ -76,39 +80,9 @@ export default async function LoginPage({
       <p className="text-center text-sm text-neutral-600">
         Pas encore de compte ?{" "}
         <Link href="/register" className="font-medium text-leaf-700 hover:underline">
-          Créer mon exploitation
+          Créer mon compte
         </Link>
       </p>
     </AuthShell>
-  );
-}
-
-function Field({
-  id,
-  label,
-  type,
-  autoComplete,
-  required,
-}: {
-  id: string;
-  label: string;
-  type: string;
-  autoComplete?: string;
-  required?: boolean;
-}) {
-  return (
-    <div>
-      <label htmlFor={id} className="text-xs font-medium text-neutral-600">
-        {label}
-      </label>
-      <input
-        id={id}
-        name={id}
-        type={type}
-        autoComplete={autoComplete}
-        required={required}
-        className="vc-input mt-1"
-      />
-    </div>
   );
 }

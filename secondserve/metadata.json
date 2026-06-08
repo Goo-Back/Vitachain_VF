@@ -1,0 +1,5 @@
+{
+  "name": "SecondeServe - Anti Food Waste",
+  "description": "Save delicious unsold food from your favorite restaurants, cafes, and supermarkets in Casablanca and Mohammedia.",
+  "requestFramePermissions": ["geolocation"]
+}

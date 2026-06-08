@@ -1,9 +1,54 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
+
+import { authedApiFetch } from "@/lib/api/authed-fetch";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { Ad } from "@/app/dashboard/farmer/ads/actions";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
+// ─── FAR-11 / FAR-12 — farmer public profile + ratings ──────────────────────
+
+export type FarmerPublicProfile = {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  full_name: string | null;
+  display_name: string;
+  region: string | null;
+  member_since: string;
+  rating_avg: number | null;
+  rating_count: number;
+  active_ad_count: number;
+};
+
+export type FarmerRating = {
+  id: string;
+  farmer_id: string;
+  reviewer_name: string;
+  rating: number;
+  review: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type MyRating = {
+  can_rate: boolean;
+  my_rating: FarmerRating | null;
+};
+
+export type SubmitRatingResult = { error: string | null };
+
+async function _authed(path: string, init: RequestInit = {}): Promise<Response | null> {
+  const { signal: _signal, ...rest } = init;
+  try {
+    return await authedApiFetch(path, { ...rest, timeoutMs: 10_000 });
+  } catch {
+    // Includes the "not_authenticated" throw — callers treat null as "no data".
+    return null;
+  }
+}
 
 export type CatalogPage = {
   items: Ad[];
@@ -61,4 +106,64 @@ export async function fetchCatalog(
 
   if (!r.ok) return EMPTY_PAGE;
   return (await r.json()) as CatalogPage;
+}
+
+/** Single-ad lookup via the dedicated GET /farmarket/ads/{id} endpoint. */
+export async function fetchAdById(adId: string): Promise<Ad | null> {
+  const r = await _authed(`/farmarket/ads/${adId}`);
+  if (!r || !r.ok) return null;
+  return (await r.json()) as Ad;
+}
+
+export async function fetchFarmerProfile(
+  farmerId: string,
+): Promise<FarmerPublicProfile | null> {
+  const r = await _authed(`/farmarket/farmers/${farmerId}`);
+  if (!r || !r.ok) return null;
+  return (await r.json()) as FarmerPublicProfile;
+}
+
+export async function fetchFarmerAds(farmerId: string): Promise<Ad[]> {
+  const r = await _authed(`/farmarket/farmers/${farmerId}/ads`);
+  if (!r || !r.ok) return [];
+  return (await r.json()) as Ad[];
+}
+
+export async function fetchFarmerRatings(
+  farmerId: string,
+): Promise<FarmerRating[]> {
+  const r = await _authed(`/farmarket/farmers/${farmerId}/ratings`);
+  if (!r || !r.ok) return [];
+  return (await r.json()) as FarmerRating[];
+}
+
+export async function fetchMyRating(farmerId: string): Promise<MyRating> {
+  const r = await _authed(`/farmarket/farmers/${farmerId}/ratings/me`);
+  if (!r || !r.ok) return { can_rate: false, my_rating: null };
+  return (await r.json()) as MyRating;
+}
+
+export async function submitRating(
+  farmerId: string,
+  input: { rating: number; review: string | null },
+): Promise<SubmitRatingResult> {
+  if (input.rating < 1 || input.rating > 5) {
+    return { error: "Veuillez choisir une note entre 1 et 5 étoiles." };
+  }
+  const r = await _authed(`/farmarket/farmers/${farmerId}/ratings`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ rating: input.rating, review: input.review }),
+  });
+  if (!r) return { error: "Connexion impossible. Réessayez." };
+  if (r.status === 403) {
+    return {
+      error:
+        "Vous devez avoir reçu une commande livrée de ce producteur pour le noter.",
+    };
+  }
+  if (!r.ok) return { error: "L'envoi de votre avis a échoué. Réessayez." };
+
+  revalidatePath(`/dashboard/restaurant/marketplace/farmer/${farmerId}`);
+  return { error: null };
 }

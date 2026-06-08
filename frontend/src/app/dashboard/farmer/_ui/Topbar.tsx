@@ -38,9 +38,9 @@ export function Topbar({
 
         <Link
           href="/dashboard/farmer/settings"
-          className="inline-flex items-center gap-2 rounded-lg border border-neutral-200 bg-white py-1.5 pl-1.5 pr-3 text-sm transition hover:border-leaf-300"
+          className="inline-flex items-center gap-2 rounded-lg border border-neutral-200 bg-white py-1.5 pl-1.5 pr-3 text-sm transition hover:border-sky-tint-500/50"
         >
-          <span className="grid h-7 w-7 place-items-center rounded-md bg-gradient-to-br from-leaf-500 to-leaf-700 text-xs font-semibold text-white">
+          <span className="katara-gradient-strong grid h-7 w-7 place-items-center rounded-md text-xs font-semibold text-white">
             {userInitials ?? "·"}
           </span>
           <span className="hidden max-w-[8rem] truncate text-neutral-700 sm:inline">
