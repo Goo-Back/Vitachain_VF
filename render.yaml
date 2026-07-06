@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: vitachain-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    healthCheckPath: /api/v1/healthz
+    envVars:
+      - key: ENVIRONMENT
+        value: prod
+      - key: LOG_LEVEL
+        value: INFO
+      - key: WEB_CONCURRENCY
+        value: "1"
+      - key: CORS_ALLOW_ORIGINS
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_JWT_SECRET
+        sync: false
