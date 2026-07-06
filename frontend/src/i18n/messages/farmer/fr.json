@@ -1,0 +1,737 @@
+{
+  "farmer": {
+    "common": {
+      "breadcrumbHome": "Mon exploitation",
+      "breadcrumbAriaLabel": "Fil d'Ariane",
+      "weather": {
+        "unavailableTitle": "Météo indisponible",
+        "unavailableShort": "—",
+        "sunTitle": "Météo : Optimale",
+        "sunShort": "Ensoleillé",
+        "rainTitle": "Météo : Pluvieuse",
+        "rainShort": "Pluvieux",
+        "stormTitle": "Météo : Orageuse",
+        "stormShort": "Orageux",
+        "snowTitle": "Météo : Neigeuse",
+        "snowShort": "Neigeux",
+        "fogTitle": "Météo : Brumeuse",
+        "fogShort": "Brumeux",
+        "cloudTitle": "Météo : Nuageuse",
+        "cloudShort": "Nuageux"
+      },
+      "relativeTime": {
+        "justNow": "à l'instant",
+        "minutesAgo": "il y a {count} min",
+        "hoursAgo": "il y a {count} h",
+        "daysAgo": "il y a {count} j"
+      },
+      "ndviBands": {
+        "veryDense": {
+          "label": "Très dense",
+          "advice": "Couvert végétal vigoureux — surveillance routine."
+        },
+        "dense": {
+          "label": "Dense",
+          "advice": "Vigueur correcte pour la saison."
+        },
+        "moderate": {
+          "label": "Modéré",
+          "advice": "Couvert plus faible que prévu — vérifier l'irrigation et la fertilisation."
+        },
+        "low": {
+          "label": "Faible / stressé",
+          "advice": "Stress hydrique ou levée tardive probable — croiser avec les capteurs."
+        },
+        "bare": {
+          "label": "Sol nu / eau",
+          "advice": "Aucune végétation détectée sur la parcelle."
+        }
+      }
+    },
+    "overview": {
+      "eyebrow": "Vue d'ensemble",
+      "greetingMorning": "Bonjour",
+      "greetingAfternoon": "Bon après-midi",
+      "greetingEvening": "Bonsoir",
+      "subtitle": "Un aperçu en direct de votre exploitation : capteurs, humidité du sol et état des parcelles.",
+      "myParcelsTitle": "Mes parcelles",
+      "parcelsCount": "{count, plural, one {# parcelle enregistrée} other {# parcelles enregistrées}}",
+      "addParcel": "+ Ajouter",
+      "empty": {
+        "firstStep": "Première étape",
+        "welcomeTitle": "Bienvenue sur <katara>Katara</katara>.",
+        "welcomeBody": "Vous n'avez pas encore enregistré de parcelle. Créez-en une pour associer un capteur ESP32 et démarrer la surveillance de votre sol en direct.",
+        "ctaCreateFirst": "Créer ma première parcelle",
+        "featureParcelTitle": "Renseignez la parcelle",
+        "featureParcelDesc": "Nom, culture et surface. 30 secondes.",
+        "featureSensorTitle": "Branchez le capteur",
+        "featureSensorDesc": "Pairing par code à 6 chiffres.",
+        "featureAdviceTitle": "Recevez vos premiers conseils",
+        "featureAdviceDesc": "Diagnostic IA dès la première mesure.",
+        "freeTrial": "Gratuit pendant 30 jours",
+        "noCommitment": "Sans engagement",
+        "verificationRequired": "La vérification d'identité est nécessaire pour appairer un capteur.",
+        "previewBadge": "Aperçu — disponible après votre première parcelle",
+        "previewLiveMonitoring": "Surveillance en direct",
+        "previewYourParcels": "Vos parcelles",
+        "previewSoilMoisture": "Humidité du sol",
+        "previewCropHealth": "Santé des cultures",
+        "previewSatelliteImagery": "Imagerie satellite"
+      },
+      "kpi": {
+        "ariaLabel": "Indicateurs de l'exploitation",
+        "parcelsTile": "Parcelles",
+        "totalSurfaceSub": "{value} ha au total",
+        "activeSensorsTile": "Capteurs actifs",
+        "offlineCount": "{count} hors-ligne",
+        "pendingCount": "{count} en attente",
+        "unlinkedCount": "{count, plural, one {# détaché} other {# détachés}}",
+        "allOperational": "Tous opérationnels",
+        "forecastTile": "Prévisions",
+        "weatherUnavailable": "Météo indisponible",
+        "alertsTile": "Alertes ouvertes",
+        "parcelsToVerify": "{count, plural, one {# parcelle à vérifier} other {# parcelles à vérifier}}",
+        "noThresholdExceeded": "Aucun seuil dépassé",
+        "toVerifyBadge": "À vérifier",
+        "surfaceTile": "Surface",
+        "surfacePerParcel": "~{value} ha / parcelle",
+        "surfaceNoParcel": "—"
+      },
+      "quickActions": {
+        "ariaLabel": "Actions rapides",
+        "parcelsLabel": "Mes parcelles",
+        "parcelsSub": "Capteurs & suivi IoT",
+        "adsLabel": "Mes annonces",
+        "adsSub": "FarMarket · vente en ligne",
+        "satelliteLabel": "Vue satellite",
+        "satelliteSub": "NDVI · Sentinel Hub"
+      },
+      "status": {
+        "ariaLabel": "Statut de l'exploitation",
+        "weatherUnavailableDetail": "Aucune parcelle géolocalisée ou service météo indisponible.",
+        "sensorsOk": "Capteurs : Opérationnels",
+        "noSensors": "Aucun capteur appairé",
+        "sensorsAlert": "Capteurs : Alerte",
+        "noSensorsDetail": "Ajoutez un capteur IoT à vos parcelles pour commencer le suivi.",
+        "troubledDetail": "{troubled, plural, one {# capteur} other {# capteurs}} hors-ligne ou en attente — {parcelCount, plural, one {# parcelle surveillée} other {# parcelles surveillées}}.",
+        "okDetail": "{active, plural, one {# capteur actif} other {# capteurs actifs}} sur {parcelCount, plural, one {# parcelle} other {# parcelles}}.",
+        "favorable": "FAVORABLE",
+        "ok": "OK",
+        "critical": "CRITIQUE",
+        "dash": "—"
+      },
+      "trend": {
+        "title": "Tendance",
+        "moisture": "Humidité du sol",
+        "temperature": "Température",
+        "precip": "Précipitations",
+        "forecast5d": "Prévisions 5 j",
+        "tabsAriaLabel": "Choix de la métrique",
+        "noPrecipData": "Prévisions de précipitations indisponibles.",
+        "noSensorData": "Pas encore assez de données capteur pour tracer une tendance."
+      },
+      "satelliteCard": {
+        "title": "Cartographie · Satellite en direct",
+        "viewAll": "Voir tout",
+        "altText": "Tuile NDVI Sentinel-2 — {name}",
+        "unavailable": "Indisponible"
+      },
+      "parcelCard": {
+        "statusHealthy": "Sain",
+        "statusSensorOffline": "Capteur hors-ligne",
+        "statusThresholdExceeded": "Seuil dépassé",
+        "openAriaLabel": "Ouvrir la parcelle {name}",
+        "soilMoisture": "Humidité du sol",
+        "optimal": "Optimal",
+        "tooLow": "Trop bas",
+        "tooHigh": "Trop élevé",
+        "sparklineDays": "7 j",
+        "noMeasurement": "Aucune mesure",
+        "active": "Actifs",
+        "offline": "Hors-ligne",
+        "pending": "Attente",
+        "vigor": "Vigueur",
+        "sensorHealth": "Santé des capteurs"
+      },
+      "parcelGrid": {
+        "ariaLabel": "Mes parcelles"
+      },
+      "error": {
+        "title": "Un problème est survenu sur cette page",
+        "body": "Une donnée n'a pas pu être chargée. Vous pouvez réessayer, ou revenir plus tard si le problème persiste.",
+        "retry": "Réessayer"
+      },
+      "loading": {
+        "srLoading": "Chargement…"
+      }
+    },
+    "parcels": {
+      "common": {
+        "breadcrumb": "Mes parcelles"
+      },
+      "list": {
+        "parcelsCount": "{count, plural, one {# parcelle enregistrée} other {# parcelles enregistrées}}",
+        "subtitle": "Cliquez sur une parcelle pour voir sa télémétrie, ses seuils et son diagnostic.",
+        "newParcel": "Nouvelle parcelle",
+        "unverifiedTitle": "Vérification professionnelle requise.",
+        "unverifiedBody": "Vous devez d'abord faire valider vos documents pour enregistrer une parcelle.",
+        "submitDocuments": "Soumettre mes documents",
+        "emptyTitle": "Aucune parcelle pour l'instant.",
+        "emptyBody": "Créez votre première parcelle pour activer l'ingestion IoT.",
+        "createParcel": "Créer une parcelle",
+        "openAriaLabel": "Ouvrir la parcelle {name}",
+        "activeBadge": "Parcelle active",
+        "createdOn": "Créée le {date}",
+        "clickToView": "Cliquez pour voir la télémétrie, les capteurs et le diagnostic IA."
+      },
+      "new": {
+        "backToParcels": "← Mes parcelles",
+        "title": "Nouvelle parcelle",
+        "subtitle": "Renseignez les caractéristiques de la parcelle. Le polygone GeoJSON servira aux modules d'irrigation et d'alerte.",
+        "form": {
+          "errors": {
+            "name_required": "Le nom de la parcelle est obligatoire.",
+            "crop_type_required": "Le type de culture est obligatoire.",
+            "surface_area_invalid": "La surface doit être un nombre strictement positif.",
+            "geojson_syntax": "Polygone invalide — tracez au moins 3 points sur la carte.",
+            "verification_required": "Votre compte n'est pas encore vérifié. Soumettez vos documents pour continuer.",
+            "role_not_allowed": "Seuls les comptes FARMER peuvent enregistrer une parcelle.",
+            "parcel_create_failed": "L'enregistrement a échoué côté serveur. Réessayez dans quelques instants.",
+            "unexpected": "Erreur inattendue ({code}). Réessayez."
+          },
+          "nameLabel": "Nom de la parcelle",
+          "namePlaceholder": "Parcelle Nord",
+          "cropTypeLabel": "Type de culture",
+          "cropTypePlaceholder": "— Choisir un type de culture —",
+          "cropTypeOther": "Autre (préciser)",
+          "cropTypeOtherPlaceholder": "Précisez le type de culture…",
+          "surfaceLabel": "Surface (hectares)",
+          "computeFromPolygon": "⟳ Calculer depuis le polygone (~{value} ha)",
+          "delimitLabel": "Délimitez votre parcelle",
+          "delimitHelp": "Cliquez sur la carte pour placer les sommets du polygone. Minimum 3 points.",
+          "undoPoint": "↩ Annuler le dernier point",
+          "reset": "Réinitialiser",
+          "pointsCount": "{count, plural, one {# point} other {# points}}",
+          "clickMap": " — cliquez sur la carte",
+          "morePointsNeeded": " — encore {count} pour tracer",
+          "polygonReady": " ✓ polygone prêt",
+          "submitting": "Enregistrement…",
+          "submit": "Enregistrer la parcelle"
+        }
+      },
+      "detail": {
+        "page": {
+          "eyebrow": "Parcelle",
+          "modify": "Modifier",
+          "thresholdExceeded": "Seuil dépassé",
+          "sensorOffline": "Capteur hors-ligne",
+          "allGood": "Tout va bien",
+          "createdOn": "Créée le {date}"
+        },
+        "switcher": {
+          "ariaLabel": "Naviguer entre mes parcelles",
+          "thresholdExceeded": "Seuil dépassé"
+        },
+        "tabs": {
+          "navAriaLabel": "Navigation parcelle",
+          "data": "Données",
+          "sensors": "Capteurs",
+          "diagnostic": "Diagnostic IA",
+          "satellite": "Satellite",
+          "telemetryUnavailable": "Données de télémétrie indisponibles.",
+          "viewAllOnSatellite": "Voir toutes les parcelles sur la page Satellite →"
+        },
+        "devices": {
+          "title": "Capteurs ESP32",
+          "associate": "+ Associer un capteur",
+          "unverifiedTitle": "Vérification professionnelle requise.",
+          "unverifiedBody": "Vous devez d'abord faire valider vos documents avant d'associer un capteur à une parcelle.",
+          "emptyTitle": "Aucun capteur associé à cette parcelle.",
+          "emptyBody": "Associez votre ESP32 pour activer l'ingestion télémétrique (KAT-03).",
+          "keyLabel": "clé : vk_…{last4}",
+          "addedOn": "Ajouté le {date} · {lastSeen}",
+          "lastPing": "dernier ping {date}",
+          "noTelemetry": "aucune télémétrie reçue",
+          "regenerateKey": "Régénérer la clé",
+          "deleting": "Suppression…",
+          "delete": "Supprimer",
+          "deleteTitle": "Suppression définitive — possible uniquement avant la première mesure.",
+          "detach": "Détacher",
+          "detachTitle": "Détacher le capteur de cette parcelle. L'historique reste conservé.",
+          "unlinkedNotice": "Ce capteur a été détaché de la parcelle. L'historique reste consultable. Associez-le à une autre parcelle depuis sa page pour le réactiver.",
+          "confirmHardUnpair": "Supprimer le capteur {deviceId} ? Cette action est définitive (aucune mesure n'a encore été envoyée).",
+          "status": {
+            "pending": "En attente",
+            "active": "En ligne",
+            "offline": "Hors ligne",
+            "unlinked": "Détaché"
+          },
+          "errors": {
+            "pair": {
+              "device_already_paired": "Un capteur est déjà associé à cette parcelle. Détachez-le avant d'en ajouter un autre.",
+              "parcel_not_found": "Parcelle introuvable.",
+              "verification_required": "Votre compte professionnel doit être vérifié pour associer un capteur.",
+              "role_not_allowed": "Seul un agriculteur vérifié peut associer un capteur.",
+              "generic": "Erreur : {detail}"
+            },
+            "unpair": {
+              "device_has_telemetry": "Ce capteur a déjà envoyé des mesures. La suppression de l'historique sera disponible dans une prochaine version (KAT-12).",
+              "device_not_found": "Capteur introuvable (déjà détaché ?).",
+              "generic": "Erreur : {detail}"
+            },
+            "unlink": {
+              "device_not_found": "Capteur introuvable.",
+              "device_already_unlinked": "Ce capteur est déjà détaché.",
+              "role_not_allowed": "Action réservée aux agriculteurs.",
+              "generic": "Erreur : {detail}"
+            }
+          },
+          "pairDialog": {
+            "title": "Associer un capteur ESP32",
+            "idLabel": "Identifiant du capteur",
+            "idPlaceholder": "ESP-KAT-001",
+            "idHelp": "L'identifiant est imprimé sur le boîtier du capteur (format {format}).",
+            "cancel": "Annuler",
+            "submitting": "Association…",
+            "submit": "Associer"
+          },
+          "reveal": {
+            "title": "Clé API du capteur {deviceId}",
+            "body": "Copiez cette clé maintenant et flashez-la dans le firmware de votre ESP32.",
+            "warning": "Vous ne pourrez plus la consulter par la suite.",
+            "copy": "Copier dans le presse-papiers",
+            "copied": "✓ Copiée",
+            "confirmCheckbox": "Je confirme avoir sauvegardé la clé. Je comprends qu'elle ne sera plus affichée.",
+            "finish": "Terminer"
+          },
+          "rotateDialog": {
+            "title": "Régénérer la clé API",
+            "body": "Une nouvelle clé sera générée pour le capteur {deviceId}.",
+            "warning": "L'ancienne clé cessera immédiatement de fonctionner.",
+            "note": "Vous devrez reflasher le firmware avec la nouvelle valeur.",
+            "ack": "Je comprends que l'ancienne clé sera révoquée.",
+            "cancel": "Annuler",
+            "submitting": "Régénération…",
+            "submit": "Régénérer"
+          },
+          "unlinkDialog": {
+            "title": "Détacher le capteur {deviceId}",
+            "body": "Le capteur sera détaché de la parcelle {parcelName}. Concrètement :",
+            "bullet1": "<strong>L'ancienne clé API cesse de fonctionner</strong> dès la prochaine transmission de l'ESP32.",
+            "bullet2": "L'historique des mesures reste conservé sous cette parcelle.",
+            "bullet3": "Pour réutiliser ce capteur sur une autre parcelle, ouvrez sa page et cliquez « Associer un capteur » en saisissant le même identifiant {deviceId} — une nouvelle clé sera générée.",
+            "ack": "Je comprends que la clé API du capteur sera invalidée.",
+            "cancel": "Annuler",
+            "submitting": "Détachement…",
+            "submit": "Détacher le capteur"
+          }
+        },
+        "diagnostic": {
+          "title": "Diagnostic IA",
+          "subtitle": "Analyse de vos données capteurs, météo et satellite par l'IA agronomique.",
+          "requesting": "Envoi…",
+          "request": "Demander un diagnostic IA",
+          "disabledUnverified": "Compte non vérifié",
+          "disabledNoData": "Aucune donnée capteur disponible",
+          "disabledInFlight": "Un diagnostic est déjà en cours",
+          "status": {
+            "pending": "En attente",
+            "processing": "En cours…",
+            "completed": "Complété",
+            "failed": "Échec"
+          },
+          "errors": {
+            "diagnostic_already_in_progress": "Un diagnostic est déjà en cours pour cette parcelle.",
+            "diagnostic_rate_limit_exceeded": "Limite journalière atteinte (3 diagnostics / 24h).",
+            "verification_required": "Votre compte doit être vérifié pour demander un diagnostic.",
+            "role_not_allowed": "Seuls les agriculteurs peuvent demander un diagnostic.",
+            "not_authenticated": "Session expirée — veuillez vous reconnecter.",
+            "generic": "Une erreur est survenue. Veuillez réessayer."
+          },
+          "viewResult": "Voir le résultat",
+          "failedRetry": "Le diagnostic a échoué. Vous pouvez en demander un nouveau."
+        },
+        "telemetry": {
+          "title": "Capteurs — Mesures",
+          "requestDiagnosticDisabledTitle": "Disponible bientôt (KAT-07)",
+          "requestDiagnostic": "Demander un diagnostic IA",
+          "windows": {
+            "24h": "24 h",
+            "7d": "7 jours",
+            "30d": "30 jours"
+          },
+          "history": "Historique",
+          "filteredOneSensor": " · filtré sur 1 capteur",
+          "windowAriaLabel": "Fenêtre temporelle",
+          "pointsCount": "{count} points · bucket {granularity}",
+          "loadingSuffix": " · chargement…",
+          "metrics": {
+            "soilMoisture": "Humidité du sol (%)",
+            "soilTemperature": "Température du sol (°C)",
+            "soilPh": "pH du sol",
+            "conductivity": "Conductivité (µS/cm)"
+          },
+          "noData": "Aucune donnée.",
+          "ptsSuffix": "{count} pts",
+          "chartAriaLabel": "{title}, dernière valeur {value}{unit}",
+          "latestTile": {
+            "soilMoisture": "Humidité du sol",
+            "soilTemperature": "Température du sol",
+            "soilPh": "pH du sol",
+            "conductivity": "Conductivité"
+          },
+          "unlinkedBadge": "Capteur détaché",
+          "unlinkedDetail": "Dernière lecture du capteur{deviceLabel}",
+          "unlinkedAtSuffix": ", détaché {relative}.",
+          "unlinkedNoSuffix": ".",
+          "battery": "Batterie {level} %",
+          "lastReading": "Dernière lecture {relative}",
+          "emptyHasHistoryTitle": "Capteur détaché — aucune donnée récente.",
+          "emptyHasHistoryBody": "L'historique des mesures reste consultable via la carte « Historique des capteurs » ci-dessous. Pour reprendre la collecte, associez un nouveau capteur ESP32 à cette parcelle.",
+          "emptyNoHistoryTitle": "Aucune donnée de capteur pour le moment.",
+          "emptyNoHistoryBody": "Si vous venez d'associer un ESP32, la première mesure arrive dans les 15 minutes. Vérifiez l'association du capteur ci-dessus.",
+          "relative": {
+            "seconds": "il y a {count} s",
+            "minutes": "il y a {count} min",
+            "hours": "il y a {count} h",
+            "days": "il y a {count} j",
+            "dash": "—"
+          },
+          "deviceHistory": {
+            "title": "Historique des capteurs",
+            "viewAll": "Voir tous les capteurs",
+            "paired": "Associé",
+            "readingsCount": "{count} lectures",
+            "detached": "Détaché {relative}",
+            "filterActive": "Filtre actif",
+            "filterGraph": "Filtrer le graphe",
+            "status": {
+              "pending": "En attente",
+              "active": "Actif",
+              "offline": "Hors-ligne",
+              "unlinked": "Détaché"
+            },
+            "dash": "—",
+            "recently": "récemment"
+          }
+        },
+        "thresholds": {
+          "title": "Seuils d'alerte",
+          "unverifiedNotice": "Vous devez être vérifié pour enregistrer des seuils. La consultation reste possible.",
+          "metricHeader": "Métrique",
+          "minHeader": "Min",
+          "maxHeader": "Max",
+          "enabledHeader": "Activé",
+          "metrics": {
+            "soil_moisture": "Humidité du sol",
+            "soil_temperature": "Température du sol",
+            "soil_ph": "pH du sol",
+            "soil_conductivity": "Conductivité",
+            "battery_level": "Batterie"
+          },
+          "minAriaLabel": "{label} minimum",
+          "maxAriaLabel": "{label} maximum",
+          "enableAriaLabel": "{label} activer",
+          "helpText": "Laissez Min ou Max vide pour désactiver ce côté. Les alertes sont envoyées au maximum une fois toutes les 24 h par métrique.",
+          "saving": "Enregistrement…",
+          "save": "Enregistrer",
+          "errorVerificationRequired": "Vous devez être vérifié pour enregistrer des seuils.",
+          "errorGeneric": "Une erreur est survenue ({error}).",
+          "saved": "Seuils enregistrés."
+        },
+        "deleteButton": {
+          "delete": "Supprimer",
+          "confirmPrompt": "Supprimer définitivement ?",
+          "cancel": "Annuler",
+          "deleting": "Suppression…",
+          "confirm": "Confirmer",
+          "failed": "Suppression échouée. Réessayez."
+        }
+      },
+      "edit": {
+        "eyebrow": "Parcelle",
+        "breadcrumbModify": "Modifier",
+        "modifyTitle": "Modifier \"{name}\"",
+        "form": {
+          "errors": {
+            "name_required": "Le nom de la parcelle est obligatoire.",
+            "crop_type_required": "Le type de culture est obligatoire.",
+            "surface_area_invalid": "La surface doit être un nombre strictement positif.",
+            "geojson_syntax": "Polygone invalide — tracez au moins 3 points sur la carte.",
+            "network_error": "Erreur réseau. Vérifiez votre connexion et réessayez.",
+            "parcel_create_failed": "Mise à jour échouée côté serveur. Réessayez.",
+            "unexpected": "Erreur inattendue ({code}). Réessayez."
+          },
+          "nameLabel": "Nom de la parcelle",
+          "namePlaceholder": "Parcelle Nord",
+          "cropTypeLabel": "Type de culture",
+          "cropTypePlaceholder": "— Choisir un type de culture —",
+          "cropTypeOther": "Autre (préciser)",
+          "cropTypeOtherPlaceholder": "Précisez le type de culture…",
+          "surfaceLabel": "Surface (hectares)",
+          "computeFromPolygon": "⟳ Calculer depuis le polygone (~{value} ha)",
+          "delimitLabel": "Délimitez votre parcelle",
+          "delimitHelp": "Cliquez sur la carte pour repositionner les sommets. Minimum 3 points.",
+          "undoPoint": "↩ Annuler le dernier point",
+          "reset": "Réinitialiser",
+          "pointsCount": "{count, plural, one {# point} other {# points}}",
+          "clickMap": " — cliquez sur la carte",
+          "morePointsNeeded": " — encore {count} pour tracer",
+          "polygonReady": " ✓ polygone prêt",
+          "submitting": "Enregistrement…",
+          "submit": "Enregistrer les modifications"
+        }
+      }
+    },
+    "ads": {
+      "list": {
+        "breadcrumb": "Mes annonces",
+        "eyebrow": "FarMarket",
+        "adsCount": "{count, plural, one {# annonce} other {# annonces}}",
+        "subtitle": "Gérez vos annonces de vente sur le marché agricole B2B.",
+        "newAd": "Nouvelle annonce",
+        "unverifiedTitle": "Vérification professionnelle requise.",
+        "unverifiedBody": "Vous devez d'abord faire valider vos documents pour publier une annonce.",
+        "submitDocuments": "Soumettre mes documents",
+        "emptyTitle": "Aucune annonce pour l'instant.",
+        "emptyBody": "Publiez votre première annonce pour être visible des restaurateurs.",
+        "createAd": "Créer une annonce",
+        "status": {
+          "ACTIVE": "Active",
+          "EXPIRED": "Expirée",
+          "DELETED": "Supprimée"
+        },
+        "available": "Disponible",
+        "expiresIn": "{count, plural, one {Expire dans # jour} other {Expire dans # jours}}",
+        "expiresToday": "Expire aujourd'hui",
+        "edit": "Modifier",
+        "delete": "Supprimer"
+      },
+      "new": {
+        "backToAds": "← Mes annonces",
+        "title": "Nouvelle annonce",
+        "subtitle": "Publiez votre produit sur FarMarket. L'annonce expire automatiquement après 7 jours et peut être renouvelée.",
+        "form": {
+          "errors": {
+            "title_required": "Le titre est obligatoire.",
+            "description_required": "La description est obligatoire.",
+            "product_type_required": "Le type de produit est obligatoire.",
+            "price_invalid": "Le prix doit être supérieur à 0.",
+            "quantity_invalid": "La quantité doit être supérieure à 0.",
+            "region_required": "La région est obligatoire.",
+            "not_authenticated": "Session expirée. Veuillez vous reconnecter.",
+            "network_error": "Erreur réseau. Vérifiez votre connexion et réessayez.",
+            "verification_required": "Votre compte n'est pas encore vérifié. Soumettez vos documents pour continuer.",
+            "role_not_allowed": "Seuls les comptes FARMER peuvent publier une annonce.",
+            "too_many_photos": "Maximum {max} photos autorisées.",
+            "photo_too_large": "Une photo dépasse la limite de 2 Mo.",
+            "invalid_photo_type": "Seules les images sont acceptées (JPEG, PNG, WebP…).",
+            "unexpected": "Erreur inattendue ({code}). Réessayez."
+          },
+          "titleLabel": "Titre de l'annonce",
+          "titlePlaceholder": "Ex : Tomates BIO Souss — calibre A",
+          "descriptionLabel": "Description",
+          "descriptionPlaceholder": "Décrivez votre produit : variété, conditions de culture, conditionnement…",
+          "productTypeLabel": "Type de produit",
+          "productTypePlaceholder": "Ex : Tomates, Olives, Blé dur…",
+          "regionLabel": "Région",
+          "regionPlaceholder": "— Choisir une région —",
+          "priceLabel": "Prix (MAD / kg)",
+          "quantityLabel": "Quantité disponible (kg)",
+          "photosLabel": "Photos",
+          "photosOptional": "(optionnel — max {max}, {size} Mo chacune)",
+          "photoAlt": "Photo {index}",
+          "removePhotoAriaLabel": "Supprimer la photo {index}",
+          "addPhotos": "Ajouter des photos",
+          "submitting": "Publication en cours…",
+          "submit": "Publier l'annonce",
+          "tooManyPhotos": "Maximum {max} photos autorisées.",
+          "photoTooLarge": "\"{name}\" dépasse {size} Mo.",
+          "notAnImage": "\"{name}\" n'est pas une image."
+        }
+      },
+      "edit": {
+        "breadcrumbEdit": "Modifier",
+        "eyebrow": "FarMarket",
+        "title": "Modifier l'annonce",
+        "form": {
+          "errors": {
+            "no_fields_to_update": "Modifiez au moins un champ avant de sauvegarder.",
+            "ad_not_found": "Annonce introuvable.",
+            "not_ad_owner": "Vous n'êtes pas propriétaire de cette annonce.",
+            "not_editable": "Seules les annonces actives peuvent être modifiées.",
+            "too_many_photos": "Maximum 5 photos autorisées.",
+            "photo_too_large": "Chaque photo ne doit pas dépasser 2 Mo.",
+            "invalid_photo_type": "Seules les images sont acceptées.",
+            "network_error": "Erreur réseau. Vérifiez votre connexion et réessayez.",
+            "not_authenticated": "Session expirée. Reconnectez-vous.",
+            "generic": "Erreur : {error}"
+          },
+          "titleLabel": "Titre de l'annonce",
+          "descriptionLabel": "Description",
+          "productTypeLabel": "Type de produit",
+          "priceLabel": "Prix (MAD/kg)",
+          "quantityLabel": "Quantité (kg)",
+          "regionLabel": "Région",
+          "photosLabel": "Photos (laisser vide pour conserver les photos actuelles)",
+          "photoAlt": "Photo {index}",
+          "newPhotosNotice": "{count, plural, one {# nouvelle photo} other {# nouvelles photos}} — remplacera toutes les photos existantes.",
+          "photosHelp": "Max 5 photos · 2 Mo par photo · formats image uniquement",
+          "cancel": "Annuler",
+          "saving": "Enregistrement…",
+          "save": "Enregistrer les modifications"
+        }
+      }
+    },
+    "orders": {
+      "list": {
+        "breadcrumb": "Commandes",
+        "eyebrow": "FarMarket",
+        "title": "Commandes entrantes",
+        "subtitle": "Les restaurateurs sont anonymisés — vous ne voyez qu'un identifiant opaque et la région de livraison. VitaChain gère la coordination logistique.",
+        "pendingBadge": "{count} en attente",
+        "ordersCountBadge": "{count, plural, one {# commande} other {# commandes}}",
+        "columns": {
+          "resto": "Resto (anonyme)",
+          "ad": "Annonce",
+          "quantity": "Quantité",
+          "total": "Total",
+          "region": "Région",
+          "status": "Statut",
+          "actions": "Actions"
+        },
+        "kpi": {
+          "revenueDelivered": "CA livré",
+          "revenueSub": "lignes à statut Livré",
+          "activeLines": "Lignes actives",
+          "activeSub": "en cours de traitement",
+          "kgDelivered": "Kg livrés",
+          "kgSub": "volume total expédié",
+          "pending": "En attente",
+          "pendingSubAction": "décisions requises",
+          "pendingSubNone": "aucune action requise"
+        },
+        "emptyTitle": "Aucune commande pour le moment.",
+        "emptyBody": "Quand un restaurateur passera une commande sur vos annonces, elle apparaîtra ici.",
+        "manageAds": "Gérer mes annonces",
+        "scrollHint": "Faites défiler horizontalement sur mobile pour voir toutes les colonnes."
+      },
+      "row": {
+        "status": {
+          "PENDING": "En attente",
+          "ACCEPTED": "Acceptée",
+          "REJECTED": "Refusée",
+          "PICKED_UP": "Récupérée",
+          "IN_TRANSIT": "En transit",
+          "DELIVERED": "Livrée"
+        },
+        "rejectReasonPlaceholder": "Motif (facultatif, ne pas inclure de coordonnées)",
+        "confirmReject": "Confirmer le refus",
+        "cancel": "Annuler",
+        "accept": "Accepter",
+        "reject": "Refuser",
+        "markPickedUp": "Marquer récupérée",
+        "markInTransit": "En transit",
+        "markDelivered": "Marquer livrée",
+        "dash": "—"
+      }
+    },
+    "weather": {
+      "breadcrumb": "Météo",
+      "eyebrow": "Météo locale",
+      "title": "Conditions actuelles & prévisions.",
+      "subtitle": "Données OpenWeatherMap, calculées au centroïde du polygone de la parcelle sélectionnée. Cache backend 3 h.",
+      "parcelPickerAriaLabel": "Choix de la parcelle",
+      "parcelLabel": "Parcelle",
+      "now": "Maintenant · {city}",
+      "feelsLike": "ressenti {value}°",
+      "updatedAt": "Mis à jour à {time}",
+      "minMax": "Min / Max",
+      "airHumidity": "Humidité air",
+      "wind": "Vent",
+      "rain3h": "Pluie 3 h",
+      "next24h": "24 prochaines heures",
+      "nowShort": "Maint.",
+      "today": "Aujourd'hui",
+      "weekdaysShort": ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"],
+      "daysForecastTitle": "{count} prochains jours",
+      "source": "Source : OpenWeatherMap · mise à jour automatique",
+      "noParcelsTitle": "Aucune parcelle à afficher",
+      "noParcelsBody": "Créez une parcelle avec son polygone GeoJSON pour activer la météo locale.",
+      "createParcel": "Créer une parcelle",
+      "unavailableTitle": "Données météo indisponibles",
+      "unavailableBody": "Le backend n'est pas joignable, OpenWeatherMap renvoie une erreur, ou la clé API n'est pas configurée côté serveur (variable d'env <code>OPENWEATHERMAP_API_KEY</code>)."
+    },
+    "satellite": {
+      "page": {
+        "breadcrumb": "Satellite",
+        "eyebrow": "Imagerie satellite",
+        "title": "Vue Sentinel-2 & vigueur végétative.",
+        "subtitle": "Indice NDVI calculé sur l'image Sentinel-2 la plus récente sans nuages, clippé au polygone de la parcelle. Cache backend 12 h.",
+        "parcelPickerAriaLabel": "Choix de la parcelle",
+        "parcelLabel": "Parcelle",
+        "noParcelsTitle": "Aucune parcelle à afficher",
+        "noParcelsBody": "Créez une parcelle avec son polygone GeoJSON pour activer l'imagerie satellite.",
+        "createParcel": "Créer une parcelle"
+      },
+      "panel": {
+        "scaleTitle": "Échelle de vigueur végétative",
+        "scaleBare": "Sol nu / eau",
+        "scaleModerate": "Modéré",
+        "scaleDense": "Très dense",
+        "vigorTitle": "Vigueur végétative",
+        "acquisition": "Acquisition · {date}",
+        "sentinel2L2A": "Sentinel-2 L2A",
+        "imageAlt": "Tuile NDVI Sentinel-2 clippée à la parcelle",
+        "expand": "Agrandir ↗",
+        "imageUnavailable": "Image NDVI indisponible pour cette période. La moyenne reste calculée à partir du dernier composite cloud-free.",
+        "copernicus": "Copernicus / Sentinel Hub",
+        "resolution": "Résolution 512×512 · cache 12 h",
+        "cropLabel": "Culture",
+        "surfaceLabel": "Surface",
+        "revisitLabel": "Revisite Sentinel-2",
+        "revisitValue": "~5 jours",
+        "unavailableTitle": "Données satellite indisponibles",
+        "unavailableBody": "Aucune image Sentinel-2 cloud-free n'a été trouvée sur la période, le backend n'est pas joignable, ou les identifiants OAuth Sentinel Hub ne sont pas configurés côté serveur (variables d'env <code1>SENTINEL_HUB_CLIENT_ID</code1> / <code2>SENTINEL_HUB_CLIENT_SECRET</code2>). Les données Sentinel-2 sont mises à jour environ tous les 5 jours."
+      }
+    },
+    "settings": {
+      "page": {
+        "breadcrumb": "Paramètres",
+        "eyebrow": "Paramètres",
+        "title": "Votre compte.",
+        "subtitle": "Informations de profil et statut de vérification.",
+        "profileSection": "Profil",
+        "email": "Email",
+        "role": "Rôle",
+        "language": "Langue",
+        "verificationSection": "Vérification d'identité",
+        "verified": "Compte vérifié",
+        "verificationPending": "Vérification en cours",
+        "verificationNeeded": "Vérification requise",
+        "verifiedBody": "Vous pouvez appairer des capteurs et enregistrer des parcelles.",
+        "unverifiedBody": "L'appairage d'un capteur et la création d'une parcelle nécessitent la vérification de votre identité.",
+        "submitDocuments": "Soumettre mes documents",
+        "sessionSection": "Session",
+        "signOut": "Se déconnecter",
+        "dash": "—"
+      },
+      "profileForm": {
+        "firstName": "Prénom",
+        "lastName": "Nom",
+        "region": "Région de l'exploitation",
+        "regionNotSet": "— Non renseignée —",
+        "regionHelp": "Ces informations sont visibles par les restaurants sur vos annonces.",
+        "saved": "Profil enregistré",
+        "saving": "Enregistrement…",
+        "save": "Enregistrer"
+      },
+      "actions": {
+        "sessionExpired": "Session expirée. Reconnectez-vous.",
+        "nameTooLong": "Le nom et le prénom doivent faire moins de 80 caractères.",
+        "invalidRegion": "Région invalide.",
+        "saveFailed": "L'enregistrement a échoué. Réessayez."
+      }
+    }
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "onboarding": {
+    "verification": {
+      "heading": "Vérification professionnelle",
+      "intro": "Pour publier sur la marketplace, nous devons confirmer votre identité professionnelle. Téléversez un document parmi : registre de commerce, CIN, ou carte d’agriculteur.",
+      "noKycRequired": "Aucune vérification KYC requise pour votre rôle ({role}).",
+      "roleAdmin": "administrateur",
+      "roleCitizen": "citoyen",
+      "status": {
+        "pending": "Votre document est en cours de vérification. Vous recevrez un email dès qu’un administrateur l’aura validé.",
+        "approved": "Votre profil est vérifié — vous pouvez désormais publier sur la marketplace.",
+        "rejected": "Votre document n’a pas été accepté. Vous pouvez en soumettre un nouveau ci-dessous."
+      },
+      "docType": {
+        "rc": "Registre de commerce",
+        "cin": "Carte d’identité nationale",
+        "agriCard": "Carte d’agriculteur",
+        "other": "Autre"
+      },
+      "fields": {
+        "document": "Document :",
+        "submittedOn": "Soumis le :",
+        "decisionOn": "Décision le :",
+        "reason": "Motif :"
+      },
+      "previewLink": "Aperçu du document (lien temporaire)",
+      "publishAd": "Publier une annonce",
+      "publishSurplusBox": "Publier une surprise box"
+    },
+    "uploadForm": {
+      "errors": {
+        "fileRequired": "Veuillez sélectionner un fichier.",
+        "fileTooLarge": "Fichier trop volumineux — 5 Mo maximum.",
+        "invalidFormat": "Format non accepté. Utilisez PDF, JPG, PNG ou WebP.",
+        "submitFailed": "Échec : {message}"
+      },
+      "success": {
+        "title": "Document soumis avec succès",
+        "body": "Votre document est en cours de vérification. Un administrateur l'examinera sous 24 à 48 heures. Vous recevrez un email dès que la décision est rendue.",
+        "viewStatus": "Voir le statut de ma demande"
+      },
+      "docTypeLabel": "Type de document",
+      "docTypeOptions": {
+        "cin": "Carte d’identité nationale (CIN)",
+        "rc": "Registre de commerce (RC)",
+        "agriCard": "Carte d’agriculteur",
+        "other": "Autre"
+      },
+      "fileLabel": "Fichier (PDF, JPG, PNG, WebP — 5 Mo max)",
+      "submitting": "Téléversement…",
+      "submit": "Soumettre pour vérification"
+    }
+  }
+}

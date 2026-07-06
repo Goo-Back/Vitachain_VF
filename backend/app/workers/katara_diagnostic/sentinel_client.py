@@ -39,13 +39,20 @@ log = logging.getLogger("katara_diagnostic.sentinel")
 #   SENTINEL_HUB_TOKEN_URL=https://identity.dataspace.copernicus.eu/auth/realms/CDSE/protocol/openid-connect/token
 # (CDSE's token endpoint lives on a different host than its Process base, which
 # is why the token URL is its own var rather than derived from the base.)
-_SH_BASE_URL = os.environ.get(
-    "SENTINEL_HUB_BASE_URL", "https://services.sentinel-hub.com"
-).rstrip("/")
-_PROCESS_URL = f"{_SH_BASE_URL}/api/v1/process"
-_TOKEN_URL   = os.environ.get(
-    "SENTINEL_HUB_TOKEN_URL", f"{_SH_BASE_URL}/oauth/token"
-)
+#
+# Read lazily (not at import time): app.main loads backend/.env into
+# os.environ *after* importing the katara routers, which import this module
+# transitively — a module-level os.environ.get() here would freeze on the
+# hardcoded default before .env ever applies, silently ignoring a configured
+# CDSE endpoint.
+def _process_url() -> str:
+    base = os.environ.get("SENTINEL_HUB_BASE_URL", "https://services.sentinel-hub.com").rstrip("/")
+    return f"{base}/api/v1/process"
+
+
+def _token_url() -> str:
+    base = os.environ.get("SENTINEL_HUB_BASE_URL", "https://services.sentinel-hub.com").rstrip("/")
+    return os.environ.get("SENTINEL_HUB_TOKEN_URL", f"{base}/oauth/token")
 
 _CACHE_TTL          = timedelta(hours=12)
 _PROCESS_TIMEOUT_S  = 20.0
@@ -131,7 +138,7 @@ def _get_access_token() -> str:
 
     client_id, client_secret = _get_oauth_credentials()
     resp = httpx.post(
-        _TOKEN_URL,
+        _token_url(),
         data={
             "grant_type":    "client_credentials",
             "client_id":     client_id,
@@ -222,7 +229,7 @@ def fetch_ndvi(parcel_id: UUID, polygon_geojson: dict[str, Any]) -> dict[str, An
         },
     }
     resp = httpx.post(
-        _PROCESS_URL,
+        _process_url(),
         json=body,
         headers={
             "Authorization": f"Bearer {_get_access_token()}",
@@ -339,7 +346,7 @@ def fetch_ndvi_image(polygon_geojson: dict[str, Any]) -> bytes:
         },
     }
     resp = httpx.post(
-        _PROCESS_URL,
+        _process_url(),
         json=body,
         headers={
             "Authorization": f"Bearer {token}",

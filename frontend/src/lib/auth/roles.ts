@@ -33,11 +33,11 @@ export const ROLE_DESCRIPTIONS_FR: Record<
   RESTAURANT: {
     label: "Restaurateur",
     blurb:
-      "Je gère un restaurant et souhaite acheter des produits frais ou publier des invendus. Vérification requise.",
+      "Je gère un restaurant et souhaite acheter des produits frais (FarMarket) ou publier des invendus (SecondServe). Vérification requise.",
   },
   CITIZEN: {
     label: "Citoyen",
     blurb:
-      "Je cherche des paniers à prix réduits près de chez moi. Aucune vérification nécessaire.",
+      "Je cherche des paniers anti-gaspi près de chez moi. Vous serez redirigé vers SecondServe après l'inscription.",
   },
 };

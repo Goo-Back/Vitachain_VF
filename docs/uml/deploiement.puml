@@ -1,0 +1,192 @@
+@startuml Diagramme_Deploiement_VitaChain
+!theme plain
+skinparam node {
+  BackgroundColor #F8FAFC
+  BorderColor     #475569
+  FontSize 12
+}
+skinparam artifact {
+  BackgroundColor #EFF6FF
+  BorderColor     #2563EB
+  FontSize 11
+}
+skinparam component {
+  BackgroundColor #EFF6FF
+  BorderColor     #2563EB
+  FontSize 11
+}
+skinparam database {
+  BackgroundColor #F5F3FF
+  BorderColor     #7C3AED
+}
+skinparam storage {
+  BackgroundColor #FFF7ED
+  BorderColor     #EA580C
+}
+skinparam cloud {
+  BackgroundColor #F0FDF4
+  BorderColor     #16A34A
+}
+skinparam note {
+  BackgroundColor #FFFDE7
+  BorderColor     #F9A825
+  FontSize 10
+}
+skinparam ArrowColor #64748B
+
+title Diagramme de Deploiement — VitaChain v3
+
+' ══════════════════════════════════════════════════════════
+' NŒUD 1 : Navigateur (Client)
+' ══════════════════════════════════════════════════════════
+node "Navigateur Web\n(Chrome / Firefox / Safari)" as BROWSER <<device>> #DBEAFE {
+  artifact "Application Next.js\n(HTML + JS + CSS)\nhydratee cote client" as SPA
+  artifact "Application SecondServe\n(Vite SPA)\nhydratee cote client" as SPA_SS
+}
+
+' ══════════════════════════════════════════════════════════
+' NŒUD 2 : Dispositif IoT
+' ══════════════════════════════════════════════════════════
+node "Terrain Agricole" as FIELD <<device>> #F1F5F9 {
+  node "ESP32 + Capteurs" <<embedded device>> {
+    artifact "Firmware MicroPython\n(HTTP POST / 15 min)" as FIRMWARE
+    component "Capteur sol\n(humidite, temp,\npH, conductivite)" as SENSORS
+    SENSORS --> FIRMWARE : lecture analogique
+  }
+}
+
+' ══════════════════════════════════════════════════════════
+' NŒUD 3 : VPS de Production
+' ══════════════════════════════════════════════════════════
+node "VPS Linux — Ubuntu 24.04\n(2 vCPU / 4 Go RAM)" as VPS {
+
+  node "Reverse Proxy" <<execution environment>> {
+    component "NGINX 1.27\nTLS 1.3 · Let's Encrypt\nRate-limiting" as NGINX
+  }
+
+  node "Frontend Server" <<execution environment>> {
+    artifact "Next.js 15 SSR\n(Node 22 · Port 3000)\nApp Router / RSC" as NEXTJS
+  }
+
+  node "Backend API" <<execution environment>> {
+    artifact "FastAPI\n(Python 3.12 · Gunicorn)\nPort 8000 · Pydantic v2" as FASTAPI
+  }
+
+  node "Workers Asynchrones" <<execution environment>> {
+    artifact "threshold_worker\n(alertes seuils)" as W1
+    artifact "diagnostic_worker\n(Gemini AI)" as W2
+    artifact "offline_detector\n(cron 5 min)" as W3
+    artifact "expiry_worker\n(annonces FarMarket)" as W4
+    artifact "email_worker\n(outbox Brevo)" as W5
+  }
+
+  node "Frontend SecondServe" <<execution environment>> {
+    artifact "Vite 6 SPA\n(React 19 · Port 4173)" as VITE
+  }
+
+  node "Monitoring" <<execution environment>> {
+    artifact "Uptime Kuma\n(Port 3001)" as KUMA
+  }
+
+  ' Relations internes VPS
+  NGINX --> NEXTJS  : proxy / (Port 3000)
+  NGINX --> FASTAPI : proxy /api/v1/ (Port 8000)
+  NGINX --> VITE    : proxy /secondserve/
+  NGINX --> KUMA    : proxy /status/
+}
+
+' ══════════════════════════════════════════════════════════
+' NŒUD 4 : Supabase Cloud
+' ══════════════════════════════════════════════════════════
+cloud "Supabase Cloud\n(ap-southeast-1)" as SUPABASE {
+
+  database "PostgreSQL 17\n50 migrations\nRLS + SECURITY DEFINER" as PG
+
+  component "Supabase Auth\nJWT (1h) · OTP\nCustom Access Token Hook" as SUPA_AUTH
+
+  storage "Object Storage\n(S3-compatible)\nkyc-documents · farmarket-photos" as SUPA_STORE
+
+  PG -- SUPA_AUTH : auth.users FK
+}
+
+' ══════════════════════════════════════════════════════════
+' NŒUD 5 : APIs Externes
+' ══════════════════════════════════════════════════════════
+cloud "OpenWeatherMap API" as OWM <<external>> {
+  artifact "Meteo 7j\n(JSON REST)" as OWM_API
+}
+
+cloud "Copernicus / Sentinel Hub" as SENTINEL <<external>> {
+  artifact "NDVI Satellite\n(OAuth2 client_credentials)" as SEN_API
+}
+
+cloud "Google AI Studio" as GOOGLE_AI <<external>> {
+  artifact "Gemini Flash 1.5\n(diagnostic agro)" as GEMINI_API
+}
+
+cloud "Brevo (ex-Sendinblue)" as BREVO_CLOUD <<external>> {
+  artifact "SMTP transactionnel\n(alertes · KYC · commandes)" as BREVO_API
+}
+
+cloud "GitHub" as GH <<external>> {
+  artifact "CI/CD\nGitHub Actions\n(5 jobs)" as GH_ACTIONS
+}
+
+cloud "Backblaze B2" as B2 <<external>> {
+  storage "Sauvegardes\npg_dump + rclone\n(retention 30j)" as B2_STORE
+}
+
+' ══════════════════════════════════════════════════════════
+' CONNEXIONS EXTERNES
+' ══════════════════════════════════════════════════════════
+
+' Navigateur → VPS
+BROWSER --> NGINX : HTTPS (TLS 1.3)\n(port 443)
+
+' ESP32 → VPS
+FIRMWARE --> NGINX : HTTP POST /api/v1/katara/ingest\nX-Device-Id + X-Device-Api-Key
+
+' VPS → Supabase
+FASTAPI     --> PG         : SQL + RPC (supabase-py)\nRLS anon / service_role
+FASTAPI     --> SUPA_AUTH  : Verification JWT\nService Role Admin
+FASTAPI     --> SUPA_STORE : Upload KYC + photos
+NEXTJS      --> SUPA_AUTH  : Auth SSR (@supabase/ssr)
+W1          --> PG         : LISTEN katara_telemetry
+W2          --> PG         : LISTEN katara_diagnostic
+W3          --> PG         : UPDATE last_seen / notify
+W4          --> PG         : UPDATE ads expired
+W5          --> PG         : SELECT outbox → mark processed
+
+' Workers → APIs externes
+W2 --> GEMINI_API : Diagnostic IA\n(HTTPS REST)
+W5 --> BREVO_API  : SMTP transactionnel
+FASTAPI --> OWM_API   : GET /forecast (meteo)
+FASTAPI --> SEN_API   : GET /evalscript (NDVI)
+
+' CI/CD
+GH_ACTIONS --> VPS : SSH deploy\n(docker compose up)
+
+' Backup
+W3 --> B2_STORE : pg_dump nocturn\nrclone sync
+
+note right of FIRMWARE
+  Frequence : 1 mesure / 15 min
+  Auth : bcrypt(api_key)
+  Pas de JWT, pas de TLS cote ESP32
+end note
+
+note right of PG
+  22 politiques RLS actives
+  FORCE RLS sur m1_katara_telemetry
+  LISTEN/NOTIFY = bus evenements interne
+  (workers sans polling)
+end note
+
+note bottom of SUPA_AUTH
+  Custom Hook : injecte user_role
+  et verification_status dans JWT.
+  Magic Link OTP pour handoff
+  VitaChain → SecondServe.
+end note
+
+@enduml

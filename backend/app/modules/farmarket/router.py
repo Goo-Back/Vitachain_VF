@@ -1245,8 +1245,8 @@ async def get_my_rating(
 ) -> MyRatingOut:
     """GET /api/v1/farmarket/farmers/{farmer_id}/ratings/me (RESTAURANT).
 
-    Returns whether the caller may rate (a DELIVERED item from this farmer)
-    and their existing review, if any.
+    Any authenticated restaurant may rate any farmer — returns their existing
+    review, if any.
     """
     existing = (
         db.table(_RATINGS_TABLE)
@@ -1257,8 +1257,7 @@ async def get_my_rating(
         .execute()
     )
     my_rating = _row_to_rating_out(existing.data) if existing.data else None
-    can_rate = my_rating is not None or _has_delivered_item(db, farmer_id) is not None
-    return MyRatingOut(can_rate=can_rate, my_rating=my_rating)
+    return MyRatingOut(can_rate=True, my_rating=my_rating)
 
 
 @router.post(
@@ -1274,9 +1273,10 @@ async def upsert_rating(
 ) -> FarmerRatingOut:
     """POST /api/v1/farmarket/farmers/{farmer_id}/ratings (RESTAURANT).
 
-    Create or update the caller's 1–5★ rating + review for a farmer. The
-    verified-buyer gate (a DELIVERED order item from this farmer) is enforced
-    here AND by the RLS ``farmarket_ratings_insert_verified_buyer`` policy.
+    Create or update the caller's 1–5★ rating + review for a farmer. Any
+    authenticated restaurant may rate any verified farmer — no prior order is
+    required (enforced by the RLS ``farmarket_ratings_insert_any_restaurant``
+    policy).
     """
     # Farmer must be a real VERIFIED FARMER (else there is nothing to rate).
     farmer = (
@@ -1337,14 +1337,9 @@ async def upsert_rating(
             )
         return _row_to_rating_out(update_result.data[0])
 
-    # New rating — verify the buyer relationship for a clean 403 (RLS is the
-    # hard gate; this just surfaces a precise error instead of a generic one).
+    # New rating — attach a DELIVERED order for audit if one exists, but it's
+    # no longer required to leave a review.
     order_id = _has_delivered_item(db, farmer_id)
-    if order_id is None:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="not_eligible_to_rate: no delivered order from this farmer",
-        )
 
     try:
         insert_result = (
@@ -1362,7 +1357,7 @@ async def upsert_rating(
             .execute()
         )
     except Exception as exc:  # noqa: BLE001
-        # RLS WITH CHECK violation (eligibility) surfaces as a generic error.
+        # RLS WITH CHECK violation (role / ownership) surfaces as a generic error.
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="not_eligible_to_rate",

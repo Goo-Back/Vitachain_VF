@@ -1,18 +1,28 @@
 // @vitest-environment jsdom
 
+import { NextIntlClientProvider } from "next-intl";
 import { act, cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { DiagnosticSection } from "@/app/dashboard/farmer/parcels/[id]/DiagnosticSection";
-import type { DiagnosticOut } from "@/app/dashboard/farmer/parcels/[id]/diagnostic-actions";
+import { DiagnosticSection } from "@/app/[locale]/dashboard/farmer/parcels/[id]/DiagnosticSection";
+import type { DiagnosticOut } from "@/app/[locale]/dashboard/farmer/parcels/[id]/diagnostic-actions";
+import farmerMessages from "@/i18n/messages/farmer/fr.json";
 
-vi.mock("@/app/dashboard/farmer/parcels/[id]/diagnostic-actions", () => ({
+function renderWithIntl(ui: React.ReactElement) {
+  return render(
+    <NextIntlClientProvider locale="fr" messages={farmerMessages}>
+      {ui}
+    </NextIntlClientProvider>,
+  );
+}
+
+vi.mock("@/app/[locale]/dashboard/farmer/parcels/[id]/diagnostic-actions", () => ({
   fetchLatestDiagnostic: vi.fn(),
   requestDiagnostic: vi.fn(),
 }));
 
 const { fetchLatestDiagnostic } = await import(
-  "@/app/dashboard/farmer/parcels/[id]/diagnostic-actions"
+  "@/app/[locale]/dashboard/farmer/parcels/[id]/diagnostic-actions"
 );
 const fetchLatestMock = vi.mocked(fetchLatestDiagnostic);
 
@@ -72,7 +82,7 @@ describe("DiagnosticSection — KAT-10 polling", () => {
         }),
       );
 
-    render(
+    renderWithIntl(
       <DiagnosticSection
         parcelId={PARCEL_ID}
         isVerified
@@ -102,7 +112,7 @@ describe("DiagnosticSection — KAT-10 polling", () => {
   });
 
   it("S2 — does not poll when initial status is COMPLETED", async () => {
-    render(
+    renderWithIntl(
       <DiagnosticSection
         parcelId={PARCEL_ID}
         isVerified
@@ -118,7 +128,7 @@ describe("DiagnosticSection — KAT-10 polling", () => {
   });
 
   it("S3 — does not poll when initial diagnostic is null", async () => {
-    render(
+    renderWithIntl(
       <DiagnosticSection
         parcelId={PARCEL_ID}
         isVerified
@@ -136,7 +146,7 @@ describe("DiagnosticSection — KAT-10 polling", () => {
   it("S4 — pauses while tab is hidden, catches up on visible", async () => {
     fetchLatestMock.mockResolvedValue(diag({ status: "PROCESSING" }));
 
-    render(
+    renderWithIntl(
       <DiagnosticSection
         parcelId={PARCEL_ID}
         isVerified
@@ -164,7 +174,7 @@ describe("DiagnosticSection — KAT-10 polling", () => {
       diag({ status: "COMPLETED", parcel_id: "other-parcel" }),
     );
 
-    render(
+    renderWithIntl(
       <DiagnosticSection
         parcelId={PARCEL_ID}
         isVerified

@@ -1,0 +1,384 @@
+{
+  "admin": {
+    "shell": {
+      "signOut": "Déconnexion",
+      "badge": "ADMIN"
+    },
+    "overview": {
+      "title": "Console d'administration",
+      "subtitle": "Vue d'ensemble des outils de gestion de la plateforme.",
+      "open": "Ouvrir →",
+      "cards": {
+        "kyc": {
+          "title": "Vérifications KYC",
+          "description": "Examiner les documents soumis et approuver ou rejeter.",
+          "metricLabel": "en attente"
+        },
+        "users": {
+          "title": "Utilisateurs",
+          "description": "Rechercher, changer les rôles, bannir ou réactiver.",
+          "metricLabel": "comptes"
+        },
+        "farmarket": {
+          "title": "FarMarket",
+          "description": "Annonces, commandes, réconciliation des paiements COD.",
+          "metricLabel": "commandes"
+        },
+        "secondserve": {
+          "title": "SecondServe",
+          "description": "Partenaires, utilisateurs, commandes et support anti-gaspillage.",
+          "metricLabel": "comptes"
+        }
+      }
+    },
+    "verifications": {
+      "docType": {
+        "RC": "Registre de commerce",
+        "CIN": "Carte d'identité nationale",
+        "AGRI_CARD": "Carte d'agriculteur",
+        "OTHER": "Autre"
+      },
+      "unknownError": "Erreur inconnue",
+      "title": "Vérifications KYC",
+      "subtitle": "Documents en attente de vérification",
+      "pendingCount": "{count} en attente",
+      "fetchError": "Impossible de charger les soumissions : {error}",
+      "empty": "Aucun document en attente. Tout est à jour !",
+      "statusBadge": "PENDING",
+      "fields": {
+        "type": "Type",
+        "format": "Format",
+        "size": "Taille",
+        "submittedAt": "Soumis le"
+      },
+      "viewDocument": "Voir le document",
+      "review": {
+        "pending": "En cours…",
+        "approve": "Approuver",
+        "reject": "Rejeter",
+        "rejectPlaceholder": "Motif du rejet (optionnel)",
+        "confirmReject": "Confirmer le rejet",
+        "cancel": "Annuler"
+      },
+      "actions": {
+        "missingId": "Identifiant manquant.",
+        "genericError": "Erreur {status}{detail}"
+      }
+    },
+    "users": {
+      "roleOptions": {
+        "all": "Tous les rôles",
+        "FARMER": "Agriculteur",
+        "RESTAURANT": "Restaurant",
+        "CITIZEN": "Citoyen",
+        "ADMIN": "Admin"
+      },
+      "statusOptions": {
+        "all": "Tous les statuts",
+        "active": "Actifs",
+        "banned": "Bannis"
+      },
+      "unknownError": "Erreur inconnue",
+      "title": "Utilisateurs",
+      "subtitle": "Gérer les comptes, rôles et accès de la plateforme.",
+      "accountCount": "{count, plural, one {# compte} other {# comptes}}",
+      "form": {
+        "searchLabel": "Recherche",
+        "searchPlaceholder": "Nom ou e-mail…",
+        "roleLabel": "Rôle",
+        "statusLabel": "Statut",
+        "submit": "Filtrer"
+      },
+      "fetchError": "Impossible de charger les utilisateurs : {error}",
+      "empty": "Aucun utilisateur ne correspond à ces critères.",
+      "table": {
+        "user": "Utilisateur",
+        "kyc": "KYC",
+        "role": "Rôle",
+        "joined": "Inscrit",
+        "status": "Statut",
+        "action": "Action"
+      },
+      "pagination": {
+        "page": "Page {page} / {totalPages}",
+        "previous": "Précédent",
+        "next": "Suivant"
+      },
+      "row": {
+        "you": "vous",
+        "verif": {
+          "VERIFIED": "Vérifié",
+          "PENDING": "En attente",
+          "UNVERIFIED": "Non vérifié",
+          "REJECTED": "Rejeté"
+        },
+        "confirmPending": "…",
+        "confirm": "OK",
+        "banned": "Banni",
+        "active": "Actif",
+        "banPending": "En cours…",
+        "reactivate": "Réactiver",
+        "ban": "Bannir"
+      },
+      "actions": {
+        "missingData": "Données manquantes.",
+        "cannotChangeSelfRole": "Vous ne pouvez pas modifier votre propre rôle.",
+        "genericError": "Erreur {status}{detail}",
+        "missingId": "Identifiant manquant.",
+        "cannotBanSelf": "Vous ne pouvez pas vous bannir vous-même."
+      }
+    },
+    "farmarket": {
+      "adminView": {
+        "title": "FarMarket",
+        "subtitle": "Vue opérateur — annonces du marché B2B agricole + réconciliation paiements.",
+        "tabs": {
+          "dashboard": "Tableau de bord",
+          "orders": "Commandes",
+          "ads": "Annonces",
+          "cod": "Réconciliation COD",
+          "reports": "Rapports"
+        },
+        "featured": "★ Mis en avant",
+        "table": {
+          "title": "Titre",
+          "typeRegion": "Type / Région",
+          "price": "Prix",
+          "status": "Statut",
+          "pinned": "Épinglé ?",
+          "actions": "Actions"
+        },
+        "empty": "Aucune annonce.",
+        "pinnedYes": "Oui ★",
+        "pinnedNo": "Non",
+        "togglePending": "…",
+        "unpin": "Désépingler",
+        "pin": "Épingler"
+      },
+      "codReconciliation": {
+        "stats": {
+          "pendingOrders": "Commandes COD en attente",
+          "cashToReconcile": "Cash à réconcilier",
+          "oldestDays": "Plus ancienne (jours)"
+        },
+        "bestPractices": {
+          "label": "Bonnes pratiques :",
+          "before": "ne marquez",
+          "after": "qu'après dépôt physique du cash en caisse. Tout override doit porter une raison explicite (réf. dépôt, n° d'incident, etc.) — chaque transition est tracée dans le journal d'audit."
+        },
+        "table": {
+          "reference": "Référence",
+          "restaurant": "Restaurant",
+          "region": "Région",
+          "amount": "Montant",
+          "age": "Âge",
+          "orderStatus": "Statut commande",
+          "actions": "Actions"
+        },
+        "ageUnit": "j",
+        "empty": "Aucune commande COD en attente — caisse réconciliée.",
+        "markPaid": "Marquer PAID",
+        "markFailed": "FAILED",
+        "audit": "Audit",
+        "override": {
+          "reasonTooShort": "La raison doit faire au moins 3 caractères.",
+          "titlePaid": "Marquer la commande comme PAID",
+          "titleFailed": "Marquer le paiement FAILED",
+          "titleReopen": "Réouvrir le paiement (DUE)",
+          "reference": "Référence :",
+          "amount": "Montant :",
+          "reasonLabel": "Raison (obligatoire — sera tracée dans le journal d'audit)",
+          "placeholderPaid": "Ex. Cash déposé en caisse le 28/05/2026 — bordereau #BD-2026-152.",
+          "placeholderFailed": "Ex. Chargeback PSP, ref TXN-9921. Commande remboursée.",
+          "placeholderReopen": "Ex. Annulation paiement suite à demande restaurant — ticket #438.",
+          "cancel": "Annuler",
+          "saving": "Enregistrement…",
+          "confirm": "Confirmer",
+          "networkError": "Erreur réseau. Réessayez."
+        },
+        "auditDialog": {
+          "httpError": "Erreur HTTP {status}",
+          "networkError": "Erreur réseau",
+          "title": "Journal d'audit · {ref}",
+          "subtitle": "Toutes les transitions de payment_status sur cette commande.",
+          "empty": "Aucune transition tracée pour cette commande.",
+          "actor": "acteur",
+          "reasonQuote": "« {reason} »",
+          "close": "Fermer"
+        },
+        "errors": {
+          "alreadyStatus": "Le statut demandé est déjà le statut actuel.",
+          "orderNotFound": "Commande introuvable.",
+          "overrideFailed": "L'override a échoué côté base. Vérifiez les permissions.",
+          "auditInsertFailed": "Audit non écrit — l'override a été annulé. Réessayez.",
+          "fallback": "Erreur ({code})."
+        }
+      },
+      "ordersManagement": {
+        "filters": {
+          "all": "Toutes",
+          "PENDING": "En attente",
+          "ACCEPTED": "Confirmées",
+          "IN_PROGRESS": "Expédiées",
+          "DELIVERED": "Livrées",
+          "CANCELLED": "Annulées",
+          "RETURNED": "Retournées"
+        },
+        "table": {
+          "reference": "Référence",
+          "client": "Client",
+          "phone": "Téléphone",
+          "cityRegion": "Ville / Région",
+          "amount": "Montant",
+          "payment": "Paiement",
+          "status": "Statut",
+          "actions": "Actions"
+        },
+        "empty": "Aucune commande dans ce filtre.",
+        "paymentBankTransfer": "Virement",
+        "expanded": {
+          "address": "Adresse :",
+          "restaurantId": "Restaurant (UUID) :",
+          "subtotalLogistics": "Sous-total / logistique :",
+          "deliveryNotes": "Notes de livraison :"
+        },
+        "busy": "…",
+        "networkError": "Erreur réseau. Réessayez.",
+        "errors": {
+          "invalidTransition": "Transition de statut non autorisée pour cette commande.",
+          "alreadyStatus": "La commande est déjà dans ce statut.",
+          "orderNotFound": "Commande introuvable.",
+          "updateFailed": "La mise à jour a échoué côté base. Réessayez.",
+          "fallback": "Erreur ({code})."
+        }
+      },
+      "reports": {
+        "unavailable": "Rapports indisponibles pour le moment.",
+        "cards": {
+          "sales": "Ventes (CA réservé)",
+          "delivered": "Commandes livrées",
+          "cancelled": "Commandes annulées",
+          "returnRate": "Taux de retour"
+        },
+        "cancelledSub": "{pct} du total",
+        "returnedSub": "{count} retournée(s)",
+        "distributionTitle": "Répartition des commandes par statut",
+        "footer": "Total : {count} commande(s). Taux d'annulation {cancelRate} · taux de retour {returnRate}."
+      },
+      "stats": {
+        "unavailable": "Statistiques indisponibles pour le moment.",
+        "kpis": {
+          "ordersTotal": "Commandes (total)",
+          "revenueBooked": "Chiffre d'affaires réservé",
+          "revenueCollected": "Encaissé (payé)",
+          "codOutstanding": "COD à encaisser",
+          "productsSold": "Produits vendus (livrés)",
+          "delivered": "Commandes livrées"
+        },
+        "revenueBookedHint": "Hors annulées / refusées / retournées"
+      },
+      "orderStatus": {
+        "status": {
+          "PENDING": "En attente",
+          "PARTIALLY_ACCEPTED": "Partiellement acceptée",
+          "ACCEPTED": "Confirmée",
+          "REJECTED": "Refusée",
+          "IN_PROGRESS": "Expédiée",
+          "DELIVERED": "Livrée",
+          "CANCELLED": "Annulée",
+          "RETURNED": "Retournée"
+        },
+        "transitionAction": {
+          "ACCEPTED": "Confirmer",
+          "IN_PROGRESS": "Marquer expédiée",
+          "DELIVERED": "Marquer livrée",
+          "CANCELLED": "Annuler",
+          "RETURNED": "Marquer retournée",
+          "PENDING": "Remettre en attente",
+          "PARTIALLY_ACCEPTED": "Partiellement acceptée",
+          "REJECTED": "Refuser"
+        }
+      }
+    },
+    "secondserve": {
+      "confirmDeleteUser": "Supprimer définitivement ce compte SecondServe ? Action irréversible.",
+      "confirmCancelOrder": "Annuler cette commande ?",
+      "errorStatus": "Erreur {status}",
+      "networkError": "Erreur réseau",
+      "resolveNeedsResponse": "Saisissez une réponse avant de résoudre.",
+      "title": "SecondServe",
+      "subtitle": "Gestion centralisée du marché anti-gaspillage SecondServe.",
+      "kpis": {
+        "accounts": "Comptes",
+        "partners": "Partenaires",
+        "orders": "Commandes",
+        "revenue": "Revenu (MAD)"
+      },
+      "tabs": {
+        "dashboard": "Tableau de bord",
+        "partners": "Partenaires",
+        "users": "Utilisateurs",
+        "orders": "Commandes",
+        "support": "Support"
+      },
+      "dashboard": {
+        "active": "Actives",
+        "completed": "Complétées",
+        "cancelled": "Annulées",
+        "cancellationRate": "Taux d'annulation",
+        "topProducts": "Produits les plus sauvés",
+        "mealsRescued": "{count} repas sauvés au total.",
+        "noSales": "Aucune vente enregistrée pour le moment.",
+        "units": "{count} unités"
+      },
+      "partners": {
+        "pendingApproval": "En attente d'approbation",
+        "noPending": "Aucune demande en attente.",
+        "approved": "Partenaires approuvés",
+        "noApproved": "Aucun partenaire approuvé.",
+        "busy": "…",
+        "approve": "Approuver",
+        "suspend": "Suspendre"
+      },
+      "users": {
+        "table": {
+          "user": "Utilisateur",
+          "role": "Rôle",
+          "city": "Ville",
+          "status": "Statut",
+          "actions": "Actions"
+        },
+        "empty": "Aucun utilisateur.",
+        "banned": "Banni",
+        "active": "Actif",
+        "busy": "…",
+        "unban": "Débannir",
+        "ban": "Bannir",
+        "delete": "Supprimer"
+      },
+      "orders": {
+        "table": {
+          "refDate": "Réf / Date",
+          "client": "Client",
+          "partner": "Partenaire",
+          "meal": "Repas",
+          "amount": "Montant",
+          "status": "Statut",
+          "action": "Action"
+        },
+        "empty": "Aucune commande.",
+        "busy": "…",
+        "cancel": "Annuler"
+      },
+      "support": {
+        "empty": "Aucun ticket de support.",
+        "resolved": "Résolu",
+        "pending": "En attente",
+        "responseLabel": "Réponse : ",
+        "replyPlaceholder": "Réponse de l'administration…",
+        "busy": "…",
+        "resolve": "Répondre & résoudre"
+      }
+    }
+  }
+}

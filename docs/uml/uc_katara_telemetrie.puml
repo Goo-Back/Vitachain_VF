@@ -1,0 +1,93 @@
+@startuml UC_Katara_Gestion_Telemetrie
+!theme plain
+skinparam actorStyle awesome
+skinparam usecase {
+  BackgroundColor #FFF3E0
+  BorderColor #E65100
+  FontSize 13
+}
+skinparam actor {
+  BackgroundColor #FFE0B2
+  BorderColor #E65100
+}
+skinparam rectangle {
+  BackgroundColor #FFFAF5
+  BorderColor #E65100
+}
+skinparam note {
+  BackgroundColor #FFFDE7
+  BorderColor #F9A825
+}
+
+title Diagramme de Cas d'Utilisation — Gestion de la Télémétrie (Module Katara)
+
+actor "Agriculteur" as Farmer
+actor "Appareil ESP32" as Device <<device>>
+actor "Administrateur" as Admin
+
+rectangle "Module Katara — Gestion de la Télémétrie" {
+
+  ' Ingestion (côté appareil)
+  usecase "Envoyer une mesure\nde sol (toutes 15 min)" as UC_INGEST
+  usecase "S'authentifier avec\nla clé API" as UC_DEV_AUTH
+
+  ' Lecture (côté utilisateur)
+  usecase "Consulter la dernière\nmesure en temps réel" as UC_LATEST
+  usecase "Consulter l'historique\n(24h / 7j / 30j)" as UC_HISTORY
+  usecase "Filtrer par appareil" as UC_FILTER_DEV
+  usecase "Consulter la contribution\ndes appareils" as UC_DEV_CONTRIB
+  usecase "Configurer les seuils\nd'alerte" as UC_THRESHOLDS
+  usecase "Consulter les données\nmétéo (24h + 7j)" as UC_WEATHER
+  usecase "Consulter l'image\nNDVI Sentinel-2" as UC_NDVI
+
+  ' Inclusions
+  usecase "Validation de l'horodatage\n(≤ 60s dans le futur)" as UC_TS_VALID <<include>>
+  usecase "Vérification du\nstatut agriculteur" as UC_FARMER_AUTH <<include>>
+
+  note right of UC_INGEST
+    Métriques envoyées :
+    - Humidité sol (0-100 %)
+    - Température sol (°C)
+    - pH sol (0-14)
+    - Conductivité (µS/cm)
+    - Niveau batterie (%)
+  end note
+
+  note right of UC_HISTORY
+    Fenêtres disponibles :
+    - 24h → granularité 15 min
+    - 7j  → granularité 1h
+    - 30j → granularité 1j
+    Max 500 points retournés
+  end note
+
+  note right of UC_THRESHOLDS
+    5 métriques configurables
+    min/max + activation
+    Statut vérifié obligatoire
+    pour la modification
+  end note
+}
+
+' Appareil ESP32
+Device --> UC_INGEST
+UC_INGEST ..> UC_DEV_AUTH  : <<include>>
+UC_INGEST ..> UC_TS_VALID  : <<include>>
+
+' Agriculteur
+Farmer --> UC_LATEST
+Farmer --> UC_HISTORY
+Farmer --> UC_DEV_CONTRIB
+Farmer --> UC_THRESHOLDS
+Farmer --> UC_WEATHER
+Farmer --> UC_NDVI
+UC_HISTORY ..> UC_FILTER_DEV : <<extend>>
+
+' Admin
+Admin --> UC_LATEST
+Admin --> UC_HISTORY
+
+' Dépendances sur vérification pour modifier les seuils
+UC_THRESHOLDS ..> UC_FARMER_AUTH : <<include>>
+
+@enduml

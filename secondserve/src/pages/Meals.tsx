@@ -51,12 +51,12 @@ export function Meals() {
   };
 
   const categories = [
-    { value: 'All', label: language === 'ar' ? 'الكل' : 'All' },
+    { value: 'All', label: t('categoryAll') },
     { value: 'Baked Goods', label: t('bakedGoods') },
     { value: 'Groceries', label: t('supermarket') },
     { value: 'Produce', label: t('produce') },
     { value: 'Box', label: t('surpriseBox') },
-    { value: 'Other', label: language === 'ar' ? 'أخرى' : 'Other' }
+    { value: 'Other', label: t('categoryOther') }
   ];
 
   const targetCity = user?.city || selectedCity;
@@ -206,7 +206,7 @@ export function Meals() {
                   {isLoadingLocation ? (
                     <>
                       <Loader2 className="h-4.5 w-4.5 animate-spin" />
-                      <span>{language === 'ar' ? 'جاري الرصد والمسح...' : 'Acquiring GPS Signal...'}</span>
+                      <span>{t('gpsAcquiringSignal')}</span>
                     </>
                   ) : (
                     <>

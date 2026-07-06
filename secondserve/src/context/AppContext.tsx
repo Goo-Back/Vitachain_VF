@@ -52,11 +52,12 @@ interface AppContextType {
     }
   ) => Promise<string | null>;
   cancelOrder: (orderId: string) => Promise<void>;
+  confirmCodPayment: (orderId: string) => Promise<void>;
   updateOrderStatus: (orderId: string, status: Order['status']) => Promise<void>;
   userLocation: Coordinates | null;
   setUserLocation: (coords: Coordinates | null) => void;
-  language: 'en' | 'ar';
-  setLanguage: (lang: 'en' | 'ar') => void;
+  language: 'en' | 'ar' | 'fr';
+  setLanguage: (lang: 'en' | 'ar' | 'fr') => void;
   t: (key: keyof TranslationKeys) => string;
   notifications: PartnerNotification[];
   setNotifications: React.Dispatch<React.SetStateAction<PartnerNotification[]>>;
@@ -136,10 +137,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const saved = localStorage.getItem('ss_favorites');
     return saved ? JSON.parse(saved) : [];
   });
-  const [language, setLanguageState] = useState<'en' | 'ar'>(() => {
+  const [language, setLanguageState] = useState<'en' | 'ar' | 'fr'>(() => {
     const saved = localStorage.getItem('ss_language');
-    if (saved === 'en' || saved === 'ar') return saved;
-    return navigator.language?.startsWith('ar') ? 'ar' : 'en';
+    if (saved === 'en' || saved === 'ar' || saved === 'fr') return saved;
+    if (navigator.language?.startsWith('ar')) return 'ar';
+    if (navigator.language?.startsWith('fr')) return 'fr';
+    return 'en';
   });
   const [notifications, setNotifications] = useState<PartnerNotification[]>([]);
   const notifiedIDsRef = useRef<Set<string>>(new Set());
@@ -153,9 +156,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     document.documentElement.classList.toggle('rtl', language === 'ar');
   }, [language]);
 
-  const setLanguage = (lang: 'en' | 'ar') => {
+  const setLanguage = (lang: 'en' | 'ar' | 'fr') => {
     setLanguageState(lang);
     localStorage.setItem('ss_language', lang);
+    // Logged-in users: persist the choice to their account so it follows them
+    // to any device/browser, not just this one (profiles.locale is the source
+    // of truth once authenticated — see loadProfile below).
+    if (user) {
+      void supabase.from('ss_profiles').update({ locale: lang }).eq('id', user.id);
+    }
   };
 
   const t = (key: keyof TranslationKeys): string => {
@@ -192,16 +201,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (profile.banned) {
           await supabase.auth.signOut();
           setUser(null);
-          toast.error('🚨 Your account has been suspended.');
+          toast.error(t('suspendedAccountToast'));
           return;
         }
         setUser(profile);
+        // Account locale is the source of truth once logged in — overrides
+        // whatever this browser had in localStorage (see setLanguage above
+        // for the write-back path when the user switches language in-app).
+        if (profile.locale && profile.locale !== language) {
+          setLanguageState(profile.locale);
+          localStorage.setItem('ss_language', profile.locale);
+        }
       } catch (err) {
         if (err instanceof SsFarmerBlockedError) {
           // VitaChain farmer with a live session in this tab — not allowed here.
           await supabase.auth.signOut();
           setUser(null);
-          toast.error('🚜 Farmer accounts are managed in VitaChain, not SecondServe.');
+          toast.error(t('farmerBlockedToast'));
           return;
         }
         console.error('Auth profile load error:', err);
@@ -363,7 +379,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const toggleFavorite = (offerId: string) => {
-    if (!user) { toast.error('Please login to save favorites'); return; }
+    if (!user) { toast.error(t('loginToFavoriteToast')); return; }
     setFavorites(prev => prev.includes(offerId) ? prev.filter(id => id !== offerId) : [...prev, offerId]);
   };
 
@@ -381,7 +397,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       paymentStatus?: 'pending' | 'successful' | 'failed' | 'released';
     }
   ): Promise<string | null> => {
-    if (!user) { toast.error('Please login to place an order'); return null; }
+    if (!user) { toast.error(t('loginToOrderToast')); return null; }
 
     const { data, error } = await supabase.rpc('ss_place_order', {
       p_offer_id: offer.id,
@@ -396,9 +412,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (error) {
       console.error('placeOrder error:', error);
       const msg = (error.message || '').toLowerCase();
-      if (msg.includes('not available')) toast.error('Requested quantity not available');
-      else if (msg.includes('no longer exists')) toast.error('This offer no longer exists.');
-      else toast.error('Could not place the order. Please try again.');
+      if (msg.includes('not available')) toast.error(t('qtyNotAvailableToast'));
+      else if (msg.includes('no longer exists')) toast.error(t('offerGoneToast'));
+      else toast.error(t('placeOrderGenericErrToast'));
       return null;
     }
 
@@ -408,8 +424,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const cancelOrder = async (orderId: string) => {
     const { error } = await supabase.rpc('ss_cancel_order', { p_order_id: orderId });
-    if (error) { console.error('cancelOrder error:', error); toast.error('Could not cancel order.'); return; }
-    toast.success('Order cancelled');
+    if (error) { console.error('cancelOrder error:', error); toast.error(t('cancelOrderErrToast')); return; }
+    toast.success(t('orderCancelledToast'));
+  };
+
+  const confirmCodPayment = async (orderId: string) => {
+    const { error } = await supabase.rpc('ss_confirm_cod_payment', { p_order_id: orderId });
+    if (error) {
+      console.error('confirmCodPayment error:', error);
+      const msg = (error.message || '').toLowerCase();
+      if (msg.includes('payment_already_settled')) toast.error(t('paymentAlreadyConfirmedToast'));
+      else if (msg.includes('not_a_cod_order')) toast.error(t('notCodOrderToast'));
+      else toast.error(t('confirmPaymentGenericErrToast'));
+      return;
+    }
+    toast.success(t('cashConfirmedToast'));
   };
 
   const updateOrderStatus = async (orderId: string, status: Order['status']) => {
@@ -417,11 +446,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const patch: Record<string, any> = { status };
     if (order && status === 'completed' && order.paymentMethod === 'online' && order.paymentStatus === 'successful') {
       patch.payment_status = 'released';
-      toast.success(`💳 Payment of ${order.totalPrice} MAD released to Partner!`);
+      toast.success(t('paymentReleasedToast').replace('{amount}', String(order.totalPrice)));
     }
     const { error } = await supabase.from('ss_orders').update(patch).eq('id', orderId);
-    if (error) { console.error('updateOrderStatus error:', error); toast.error('Could not update order.'); return; }
-    toast.success(`Order marked as ${status}`);
+    if (error) { console.error('updateOrderStatus error:', error); toast.error(t('updateOrderErrToast')); return; }
+    toast.success(t('orderMarkedAsToast').replace('{status}', status));
   };
 
   const addReview = async (reviewData: Omit<Review, 'id' | 'createdAt'>) => {
@@ -433,8 +462,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       rating: reviewData.rating,
       comment: reviewData.comment,
     });
-    if (error) { console.error('addReview error:', error); toast.error('Could not submit review.'); return; }
-    toast.success('Review submitted!');
+    if (error) { console.error('addReview error:', error); toast.error(t('reviewSubmitErrToast')); return; }
+    toast.success(t('reviewSubmittedToast'));
   };
 
   const markNotificationAsRead = async (id: string) => {
@@ -447,37 +476,37 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const { error } = await supabase.from('ss_notifications').delete().eq('recipient_id', user.id);
     if (error) { console.error('clearAllNotifications error:', error); return; }
     setNotifications([]);
-    toast.success('Notifications cleared!');
+    toast.success(t('notificationsClearedBangToast'));
   };
 
   const banUser = async (userId: string) => {
     const { error } = await supabase.from('ss_profiles').update({ banned: true }).eq('id', userId);
-    if (error) { console.error('banUser error:', error); toast.error('Could not ban user.'); return; }
-    toast.success('User banned.');
+    if (error) { console.error('banUser error:', error); toast.error(t('banUserErrToast')); return; }
+    toast.success(t('userBannedToast'));
   };
 
   const unbanUser = async (userId: string) => {
     const { error } = await supabase.from('ss_profiles').update({ banned: false }).eq('id', userId);
-    if (error) { console.error('unbanUser error:', error); toast.error('Could not unban user.'); return; }
-    toast.success('User unbanned.');
+    if (error) { console.error('unbanUser error:', error); toast.error(t('unbanUserErrToast')); return; }
+    toast.success(t('userUnbannedToast'));
   };
 
   const deleteUser = async (userId: string) => {
     const { error } = await supabase.from('ss_profiles').delete().eq('id', userId);
-    if (error) { console.error('deleteUser error:', error); toast.error('Could not delete user.'); return; }
-    toast.success('User deleted.');
+    if (error) { console.error('deleteUser error:', error); toast.error(t('deleteUserErrToast')); return; }
+    toast.success(t('userDeletedToast'));
   };
 
   const approvePartner = async (partnerId: string) => {
     const { error } = await supabase.from('ss_profiles').update({ approved: true }).eq('id', partnerId);
-    if (error) { console.error('approvePartner error:', error); toast.error('Could not approve partner.'); return; }
-    toast.success('Partner approved.');
+    if (error) { console.error('approvePartner error:', error); toast.error(t('approvePartnerErrToast')); return; }
+    toast.success(t('partnerApprovedToast'));
   };
 
   const rejectPartner = async (partnerId: string) => {
     const { error } = await supabase.from('ss_profiles').update({ approved: false }).eq('id', partnerId);
-    if (error) { console.error('rejectPartner error:', error); toast.error('Could not reject partner.'); return; }
-    toast.success('Partner rejected.');
+    if (error) { console.error('rejectPartner error:', error); toast.error(t('rejectPartnerErrToast')); return; }
+    toast.success(t('partnerRejectedToast'));
   };
 
   const addSupportTicket = async (subject: string, message: string) => {
@@ -490,8 +519,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       subject,
       message,
     });
-    if (error) { console.error('addSupportTicket error:', error); toast.error('Could not submit ticket.'); return; }
-    toast.success('Support ticket submitted!');
+    if (error) { console.error('addSupportTicket error:', error); toast.error(t('addTicketErrToast')); return; }
+    toast.success(t('ticketSubmittedToast'));
   };
 
   const resolveSupportTicket = async (ticketId: string, response: string) => {
@@ -499,8 +528,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       .from('ss_support_tickets')
       .update({ status: 'resolved', response })
       .eq('id', ticketId);
-    if (error) { console.error('resolveSupportTicket error:', error); toast.error('Could not resolve ticket.'); return; }
-    toast.success('Ticket resolved.');
+    if (error) { console.error('resolveSupportTicket error:', error); toast.error(t('resolveTicketErrToast')); return; }
+    toast.success(t('ticketResolvedToast'));
   };
 
   return (
@@ -508,7 +537,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       user, setUser, selectedCity, setSelectedCity,
       offers, setOffers, orders, setOrders, reviews, setReviews,
       addReview, favorites, toggleFavorite,
-      placeOrder, cancelOrder, updateOrderStatus,
+      placeOrder, cancelOrder, confirmCodPayment, updateOrderStatus,
       userLocation, setUserLocation,
       language, setLanguage, t,
       notifications, setNotifications, markNotificationAsRead, clearAllNotifications,

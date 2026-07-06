@@ -1,0 +1,152 @@
+@startuml Architecture_Cloud_VitaChain
+!theme plain
+skinparam component {
+  BackgroundColor #EFF6FF
+  BorderColor     #2563EB
+  FontSize 12
+}
+skinparam node {
+  BackgroundColor #F8FAFC
+  BorderColor     #CBD5E1
+  FontSize 13
+}
+skinparam cloud {
+  BackgroundColor #F0FDF4
+  BorderColor     #16A34A
+}
+skinparam database {
+  BackgroundColor #F5F3FF
+  BorderColor     #7C3AED
+}
+skinparam storage {
+  BackgroundColor #FFF7ED
+  BorderColor     #EA580C
+}
+skinparam note {
+  BackgroundColor #FFFDE7
+  BorderColor     #F9A825
+}
+skinparam ArrowColor #475569
+
+title Architecture Cloud — VitaChain v3 (Infrastructure de production)
+
+' ══════════════════════════════════════════════════════════
+' VPS Linux
+' ══════════════════════════════════════════════════════════
+node "VPS Linux\n(Ubuntu 24.04)" as VPS {
+
+  component "NGINX 1.27\n(Reverse Proxy)\nTLS 1.3 · Let's Encrypt\nRate-limiting · Gzip" as NGINX #DBEAFE
+
+  component "Next.js 15\n(Frontend SSR)\nReact 19 · RSC\nPort 3000" as FE #DCFCE7
+
+  component "FastAPI\n(Backend REST)\nPython 3.12\nGunicorn · Port 8000" as BE #DBEAFE
+
+  component "Workers\nasynchrones\n(LISTEN/NOTIFY)\nDiagnostics · Emails\nOffline detection" as WORKERS #FEF9C3
+
+  component "SecondServe\n(Vite 6 / React 19)\nSPA anti-gaspillage\nPort 4173" as SS #FFEDD5
+
+  component "Uptime Kuma\n(Monitoring)\nPort 3001" as KUMA #F5F5F5
+
+  component "Certbot\n(Let's Encrypt)\nRenouvellement auto" as CERTBOT #F5F5F5
+
+  NGINX -down-> FE      : proxy /
+  NGINX -down-> BE      : proxy /api/v1/
+  NGINX -down-> SS      : proxy /secondserve/
+  NGINX -down-> KUMA    : proxy /status/
+}
+
+' ══════════════════════════════════════════════════════════
+' Supabase Cloud
+' ══════════════════════════════════════════════════════════
+cloud "Supabase Cloud\n(Backend-as-a-Service)" as SUPABASE {
+
+  database "PostgreSQL 17\n12 tables · 5 vues\n50 migrations\nRLS + SECURITY DEFINER\nLISTEN/NOTIFY" as PG #F5F3FF
+
+  component "Supabase Auth\n(JWT · Magic Link)\nCustom Hook (claims)\nService Role" as AUTH #DBEAFE
+
+  storage "Storage\n(S3-compatible)\nkyc-documents\nfarmarket-photos" as STORE #FFF7ED
+
+  PG -right-> AUTH : FK auth.users
+}
+
+' ══════════════════════════════════════════════════════════
+' APIs externes
+' ══════════════════════════════════════════════════════════
+cloud "APIs Externes" as EXT_APIS {
+  component "OpenWeatherMap\n(Météo 7j)" as OWM   #E8F5E9
+  component "Sentinel-2 Hub\n(NDVI OAuth2)" as SEN  #E8F5E9
+  component "Google Gemini\n(Flash 1.5)\nDiagnostics IA" as GEM  #FCE4EC
+  component "Brevo\n(E-mails transac.)\nAlertes · KYC · Notifs" as BREVO #FFF3E0
+}
+
+' ══════════════════════════════════════════════════════════
+' Infrastructure backup / observabilité
+' ══════════════════════════════════════════════════════════
+cloud "Backblaze B2\n(Object Storage)" as B2 {
+  storage "Dumps nocturnels\n(pg_dump + rclone)\nRétention 30j" as DUMPS
+}
+
+cloud "Sentry\n(APM · Error tracking)" as SENTRY {
+  component "Frontend SDK" as SENTRY_FE
+  component "Backend SDK" as SENTRY_BE
+}
+
+' ══════════════════════════════════════════════════════════
+' Dispositifs IoT
+' ══════════════════════════════════════════════════════════
+node "Terrain Agricole" as FIELD {
+  component "Dispositif ESP32\n+ Capteurs de sol\n(HTTP POST toutes 15 min)" as ESP32
+}
+
+' ══════════════════════════════════════════════════════════
+' Connexions principales
+' ══════════════════════════════════════════════════════════
+
+' VPS → Supabase
+BE      -right-> PG    : CRUD (anon/service)\nSQL + RPC
+BE      -right-> AUTH  : Vérification JWT\nGestion utilisateurs
+BE      -right-> STORE : Upload KYC\nUpload photos
+
+' Workers → Supabase + APIs
+WORKERS -right-> PG    : LISTEN katara_telemetry\nReed notifications_outbox
+WORKERS -down->  GEM   : Diagnostics IA\n(telemetry + météo + NDVI)
+WORKERS -down->  BREVO : Envoi e-mails\nalerte · KYC · commande
+
+' Backend → APIs externes
+BE      -down->  OWM   : Météo parcelle
+BE      -down->  SEN   : NDVI Sentinel-2
+
+' ESP32 → Backend
+ESP32   -up->    NGINX : POST /api/v1/katara/ingest\n(X-Device-Id + X-Device-Api-Key)
+
+' Backup
+WORKERS -right-> DUMPS : pg_dump nocturn\n(rclone → B2)
+
+' Sentry
+FE      ..>  SENTRY_FE : erreurs JS
+BE      ..>  SENTRY_BE : exceptions Python
+
+note bottom of PG
+  FORCE ROW LEVEL SECURITY sur
+  m1_katara_telemetry_readings.
+  22 politiques RLS actives.
+  Hook Custom Access Token injecte
+  user_role + verification_status.
+end note
+
+note bottom of ESP32
+  Authentification : bcrypt(api_key)
+  Latence cible ingestion : < 50 ms (p50)
+  Fréquence : 1 mesure / 15 min / capteur
+end note
+
+note right of WORKERS
+  Processus Python dédiés :
+  - threshold_worker (alertes)
+  - diagnostic_worker (IA)
+  - offline_detector (CRON)
+  - expiry_worker (annonces)
+  - email_worker (outbox)
+end note
+
+@enduml

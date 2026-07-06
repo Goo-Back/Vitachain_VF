@@ -1,0 +1,128 @@
+@startuml Sequence_Appairage_ESP32
+!theme plain
+skinparam sequenceArrowThickness 1.5
+skinparam sequenceParticipantBackgroundColor #EFF6FF
+skinparam sequenceParticipantBorderColor #2563EB
+skinparam sequenceLifeLineBorderColor #94A3B8
+skinparam noteBorderColor #F9A825
+skinparam noteBackgroundColor #FFFDE7
+skinparam sequenceGroupBackgroundColor #F0FDF4
+skinparam sequenceGroupBorderColor #16A34A
+skinparam sequenceGroupBodyBackgroundColor #F8FFFA
+
+title Diagramme de Séquence — Appairage d'un Dispositif ESP32 (Module Katara)
+
+actor  "Agriculteur"               as Farmer
+participant "Frontend\n(Next.js)"  as FE
+participant "Backend\n(FastAPI)"   as BE  #DBEAFE
+participant "PostgreSQL\n(Supabase)" as DB #F3E5F5
+participant "Dispositif\nESP32"    as ESP #F1F5F9
+
+' ═══════════════════════════════════════════════════════════
+' Phase 1 : Création de la paire
+' ═══════════════════════════════════════════════════════════
+group Phase 1 — Enregistrement du dispositif (Interface VitaChain)
+
+Farmer -> FE : Clic « Associer un capteur »\nsur la parcelle P
+FE     -> BE : POST /api/v1/katara/devices\n{ device_id: "ESP-KAT-001",\n  parcel_id: "<uuid>" }
+activate BE
+
+BE     -> DB : Vérifie propriété parcelle\n(RLS : farmer_id = auth.uid())
+activate DB
+DB    --> BE : OK — parcelle appartient à l'agriculteur
+deactivate DB
+
+BE     -> BE : Génère api_key\n← « vk_» + 32 octets hex aléatoires\n(secrets.token_hex(32))
+BE     -> BE : api_key_hash ← bcrypt(api_key, rounds=12)
+
+BE     -> DB : INSERT m1_katara_devices\n{ device_id, parcel_id, farmer_id,\n  api_key_hash, status='PENDING' }
+activate DB
+DB    --> BE : device créé — id: <uuid>
+deactivate DB
+
+BE    --> FE : HTTP 201\n{ device_id, api_key (plaintext), parcel_id }
+deactivate BE
+
+FE    --> Farmer : Affiche api_key UNE SEULE FOIS\n(⚠ non récupérable après fermeture)
+
+note over Farmer, FE
+  L'agriculteur copie la clé dans
+  le fichier devices.json du firmware
+  ou flashe l'ESP32 via l'IDE Arduino.
+  La clé en clair n'est jamais stockée.
+end note
+
+end
+
+|||
+
+' ═══════════════════════════════════════════════════════════
+' Phase 2 : Premier envoi de télémétrie (activation)
+' ═══════════════════════════════════════════════════════════
+group Phase 2 — Première télémétrie (Activation PENDING → ACTIVE)
+
+ESP    -> BE : POST /api/v1/katara/ingest\nHeaders:\n  X-Device-Id: ESP-KAT-001\n  X-Device-Api-Key: vk_...
+activate BE
+
+BE     -> DB : CALL m1_katara_ingest(\n  p_device_id, p_api_key, ...)\n(Fonction SECURITY DEFINER)
+activate DB
+
+DB     -> DB : verify_device_api_key(device_id, api_key)\n→ bcrypt.checkpw() en temps constant
+
+alt Clé invalide
+  DB    --> BE : RAISE EXCEPTION 'invalid_device_credentials'
+  BE    --> ESP : HTTP 401 Unauthorized
+else Clé valide
+  DB     -> DB : INSERT m1_katara_telemetry_readings\n(soil_moisture, soil_temperature,\n soil_ph, soil_conductivity,\n battery_level, recorded_at)\nON CONFLICT DO NOTHING
+  DB     -> DB : UPDATE m1_katara_devices\n  SET last_seen = now(),\n      status = 'ACTIVE'  ← si PENDING
+  DB     -> DB : PERFORM pg_notify('katara_telemetry',\n  json_build_object(\n    'device_id', ...,\n    'parcel_id', ...,\n    'farmer_id', ...))
+  DB    --> BE : void (OK)
+  deactivate DB
+
+  BE    --> ESP : HTTP 200\n{ "status": "ok",\n  "recorded_at": "..." }
+end
+
+deactivate BE
+
+end
+
+|||
+
+' ═══════════════════════════════════════════════════════════
+' Phase 3 : Traitement asynchrone (worker)
+' ═══════════════════════════════════════════════════════════
+group Phase 3 — Traitement asynchrone (Worker Katara)
+
+activate DB
+DB  ->  BE : NOTIFY katara_telemetry\n(worker LISTEN/NOTIFY)
+deactivate DB
+activate BE
+
+BE  ->  DB : Récupère seuils d'alerte\npour parcel_id
+activate DB
+DB --> BE : AlertThreshold[]
+deactivate DB
+
+alt Seuil dépassé
+  BE -> BE : Insère dans notifications_outbox\n{ type: 'alert', farmer_id, metric, value }
+  note right of BE
+    Le worker email lit la table outbox
+    et envoie l'alerte via Brevo.
+  end note
+end
+
+deactivate BE
+
+end
+
+' ═══════════════════════════════════════════════════════════
+' Note finale
+' ═══════════════════════════════════════════════════════════
+note over FE, DB
+  Latence cible hot-path (Phase 2) : < 50 ms (p50)
+  Toutes les opérations Phase 2 sont dans une seule
+  transaction SQL via SECURITY DEFINER.
+  L'ESP32 envoie une mesure toutes les 15 minutes.
+end note
+
+@enduml

@@ -1,23 +1,24 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { ArrowRight, Menu, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
+import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 
-import { Logo } from "@/app/dashboard/farmer/_ui/Logo";
-
-const LINKS = [
-  { href: "#modules", label: "Modules" },
-  { href: "#flow", label: "Fonctionnement" },
-  { href: "#impact", label: "Impact" },
-];
+import { Logo } from "@/app/[locale]/dashboard/farmer/_ui/Logo";
 
 /**
  * Public landing navigation. Turns into a frosted, bordered bar once the
  * page scrolls; collapses to a sheet menu on small screens.
  */
 export function LandingNav() {
+  const t = useTranslations("landing.nav");
+  const LINKS = [
+    { href: "#modules", label: t("modules") },
+    { href: "#flow", label: t("howItWorks") },
+    { href: "#impact", label: t("impact") },
+  ];
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -66,16 +67,16 @@ export function LandingNav() {
                 : "text-white/90 hover:text-white"
             }`}
           >
-            Connexion
+            {t("login")}
           </Link>
           <Link href="/register" className="vc-btn-primary !rounded-xl">
-            Commencer
+            {t("start")}
             <ArrowRight size={15} />
           </Link>
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
-            aria-label="Menu"
+            aria-label={t("menu")}
             className={`grid h-10 w-10 place-items-center rounded-xl border transition-colors md:hidden ${
               scrolled
                 ? "border-neutral-200 bg-white text-neutral-700"
@@ -111,7 +112,7 @@ export function LandingNav() {
               onClick={() => setOpen(false)}
               className="block rounded-xl px-4 py-3 text-sm font-medium text-neutral-700 hover:bg-leaf-50 hover:text-leaf-700"
             >
-              Connexion
+              {t("login")}
             </Link>
           </motion.div>
         )}

@@ -1,0 +1,94 @@
+@startuml UC_Katara_Gestion_IoT
+!theme plain
+skinparam actorStyle awesome
+skinparam usecase {
+  BackgroundColor #E8F0FE
+  BorderColor #1A56A0
+  FontSize 13
+}
+skinparam actor {
+  BackgroundColor #D0E4FF
+  BorderColor #1A56A0
+}
+skinparam rectangle {
+  BackgroundColor #F5F9FF
+  BorderColor #1A56A0
+}
+skinparam note {
+  BackgroundColor #FFFDE7
+  BorderColor #F9A825
+}
+
+title Diagramme de Cas d'Utilisation — Gestion des Appareils IoT (Module Katara)
+
+actor "Agriculteur\n(Vérifié)" as Farmer
+actor "Appareil ESP32" as Device <<device>>
+actor "Administrateur" as Admin
+
+rectangle "Module Katara — Gestion des Appareils IoT" {
+
+  usecase "Associer un appareil\nà une parcelle" as UC_PAIR
+  usecase "Consulter les appareils\nd'une parcelle" as UC_LIST_DEV
+  usecase "Dissocier un appareil\n(soft-unlink)" as UC_UNLINK
+  usecase "Supprimer un appareil\n(hard-unpair)" as UC_UNPAIR
+  usecase "Régénérer la clé API\nde l'appareil" as UC_ROTATE
+  usecase "Consulter l'historique\ndes appareils" as UC_DEV_HISTORY
+  usecase "S'authentifier avec\nla clé API" as UC_DEV_AUTH
+
+  usecase "Validation du format\nESP-KAT-NNN" as UC_VALIDATE <<include>>
+  usecase "Affichage unique\nde la clé API" as UC_SHOW_KEY <<include>>
+  usecase "Vérification du\nstatut agriculteur" as UC_FARMER_AUTH <<include>>
+
+  note right of UC_PAIR
+    Format requis : ESP-KAT-NNN
+    La clé API est affichée
+    une seule fois après
+    l'association
+  end note
+
+  note right of UC_UNLINK
+    Soft-unlink :
+    - Préserve l'historique
+    - Statut → UNLINKED
+    - Réassociable ailleurs
+  end note
+
+  note right of UC_UNPAIR
+    Hard-unpair :
+    Uniquement si l'appareil
+    n'a jamais envoyé de
+    télémétrie
+  end note
+
+  note bottom of UC_DEV_AUTH
+    Authentification par
+    X-Device-Id + X-Device-Api-Key
+    (bcrypt), jamais par JWT
+  end note
+}
+
+' Agriculteur vérifié
+Farmer --> UC_PAIR
+Farmer --> UC_LIST_DEV
+Farmer --> UC_UNLINK
+Farmer --> UC_UNPAIR
+Farmer --> UC_ROTATE
+Farmer --> UC_DEV_HISTORY
+
+' Admin
+Admin --> UC_LIST_DEV
+Admin --> UC_DEV_HISTORY
+
+' Appareil ESP32
+Device --> UC_DEV_AUTH
+
+' Inclusions / extensions
+UC_PAIR   ..> UC_FARMER_AUTH : <<include>>
+UC_UNLINK ..> UC_FARMER_AUTH : <<include>>
+UC_UNPAIR ..> UC_FARMER_AUTH : <<include>>
+UC_ROTATE ..> UC_FARMER_AUTH : <<include>>
+UC_PAIR   ..> UC_VALIDATE    : <<include>>
+UC_PAIR   ..> UC_SHOW_KEY    : <<include>>
+UC_ROTATE ..> UC_SHOW_KEY    : <<include>>
+
+@enduml

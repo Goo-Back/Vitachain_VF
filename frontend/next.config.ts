@@ -1,5 +1,8 @@
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
+import createNextIntlPlugin from "next-intl/plugin";
+
+const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
 // INF-03 — standalone output for slim Docker image; behind NGINX upstream (INF-01).
 const nextConfig: NextConfig = {
@@ -20,7 +23,7 @@ const nextConfig: NextConfig = {
 // developer's local `next build` runs without needing a Sentry account.
 // The maps are deleted from the client bundle after upload so they never
 // reach the public served chunks.
-export default withSentryConfig(nextConfig, {
+export default withSentryConfig(withNextIntl(nextConfig), {
   org: "vitachain",
   project: "vitachain-prod",
   silent: !process.env.CI,

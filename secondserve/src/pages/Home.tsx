@@ -17,7 +17,7 @@ export function Home() {
   };
 
   const categories: { name: CommerceType | 'All'; label: string; icon: React.ReactNode }[] = [
-    { name: 'All', label: language === 'ar' ? 'الكل' : 'All', icon: <Utensils className="h-5 w-5" /> },
+    { name: 'All', label: t('categoryAll'), icon: <Utensils className="h-5 w-5" /> },
     { name: 'Patisserie', label: t('patisserie'), icon: <ShoppingBag className="h-5 w-5" /> },
     { name: 'Superette', label: t('superette'), icon: <Store className="h-5 w-5" /> },
     { name: 'Buffet à volonté', label: t('buffet'), icon: <Utensils className="h-5 w-5" /> },

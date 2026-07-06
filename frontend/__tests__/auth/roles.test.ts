@@ -5,7 +5,7 @@ import {
   ROLE_DESCRIPTIONS_FR,
   SELF_SIGNUP_ROLES,
 } from "@/lib/auth/roles";
-import { RegisterSchema } from "@/app/register/schema";
+import { RegisterSchema } from "@/app/[locale]/register/schema";
 
 describe("role constants", () => {
   it("SELF_SIGNUP_ROLES excludes ADMIN", () => {

@@ -1,0 +1,190 @@
+@startuml UC_Global_VitaChain
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+
+skinparam actor {
+  BackgroundColor #DBEAFE
+  BorderColor     #1D4ED8
+  FontColor       #1E3A8A
+  FontStyle       bold
+}
+
+skinparam usecase {
+  BackgroundColor #F0F9FF
+  BorderColor     #0284C7
+  FontColor       #0C4A6E
+  FontSize        11
+}
+
+skinparam rectangle {
+  BackgroundColor #F8FAFC
+  BorderColor     #94A3B8
+  FontColor       #334155
+  FontStyle       bold
+  FontSize        13
+  RoundCorner     12
+}
+
+skinparam ArrowColor #64748B
+skinparam ArrowThickness 1.2
+
+skinparam note {
+  BackgroundColor #FFFBEB
+  BorderColor     #D97706
+  FontColor       #78350F
+  FontSize        10
+}
+
+title \nDiagramme de Cas d'Utilisation Général — Plateforme VitaChain\n
+
+' ══════════════════════════════════════════════
+'  ACTEURS
+' ══════════════════════════════════════════════
+actor "Agriculteur\n(FARMER)"      as Farmer   #DBEAFE
+actor "Restaurateur\n(RESTAURANT)" as Resto    #DCFCE7
+actor "Citoyen\n(CITIZEN)"         as Citizen  #FEF9C3
+actor "Administrateur\n(ADMIN)"    as Admin    #FAE8FF
+actor "ESP32\n(Dispositif IoT)"    as ESP32    #F1F5F9
+actor "Système\n(Workers/Cron)"    as System   #E2E8F0
+
+' ══════════════════════════════════════════════
+'  MODULE AUTH & KYC
+' ══════════════════════════════════════════════
+rectangle "  Module Auth & KYC  " as AUTH #line.bold {
+  usecase "S'inscrire (multi-rôle)"     as UC_AUTH1
+  usecase "Se connecter / JWT"          as UC_AUTH2
+  usecase "Soumettre documents KYC"     as UC_AUTH3
+  usecase "Approuver / Rejeter KYC"     as UC_AUTH4
+}
+
+' ══════════════════════════════════════════════
+'  MODULE KATARA
+' ══════════════════════════════════════════════
+rectangle "  Module Katara — Surveillance IoT  " as KATARA #line.bold {
+  usecase "Gérer ses parcelles\n(CRUD + carte)"      as UC_KAT1
+  usecase "Appairer un dispositif\nESP32"             as UC_KAT2
+  usecase "Envoyer télémétrie\n(sol, batterie)"       as UC_KAT3
+  usecase "Visualiser dashboard\n(graphiques 24h/7j)" as UC_KAT4
+  usecase "Configurer seuils\nd'alerte"               as UC_KAT5
+  usecase "Demander diagnostic IA\n(Gemini)"          as UC_KAT6
+  usecase "Consulter météo\n(OpenWeatherMap)"         as UC_KAT7
+  usecase "Consulter NDVI\n(Sentinel-2)"              as UC_KAT8
+}
+
+' ══════════════════════════════════════════════
+'  MODULE FARMARKET
+' ══════════════════════════════════════════════
+rectangle "  Module FarMarket — Marketplace Agricole  " as FARMARKET #line.bold {
+  usecase "Publier une annonce\n(produit + photos)"   as UC_FAR1
+  usecase "Parcourir le catalogue\n(filtres, recherche)" as UC_FAR2
+  usecase "Passer une commande\n(multi-articles)"     as UC_FAR3
+  usecase "Accepter / Rejeter\narticles (vue anon.)"  as UC_FAR4
+  usecase "Suivre statut commande\n(PENDING→DELIVERED)" as UC_FAR5
+  usecase "Confirmer paiement COD"                    as UC_FAR6
+  usecase "Évaluer l'agriculteur\n(★ + commentaire)"  as UC_FAR7
+}
+
+' ══════════════════════════════════════════════
+'  MODULE SECONDSERVE
+' ══════════════════════════════════════════════
+rectangle "  Module SecondServe — Anti-gaspillage  " as SS #line.bold {
+  usecase "Accéder via SSO\n(magic-link OTP)"         as UC_SS0
+  usecase "Publier offre surplus"                     as UC_SS1
+  usecase "Consulter offres\n(filtres ville/type)"    as UC_SS2
+  usecase "Commander une offre\n(COD)"                as UC_SS3
+}
+
+' ══════════════════════════════════════════════
+'  MODULE ADMINISTRATION
+' ══════════════════════════════════════════════
+rectangle "  Module Administration  " as ADMIN_MOD #line.bold {
+  usecase "Traiter file KYC\n(revue + décision)"      as UC_ADM1
+  usecase "Gérer les utilisateurs\n(rôle, ban)"       as UC_ADM2
+  usecase "Tableau de bord\nFarMarket / SecondServe"  as UC_ADM3
+}
+
+' ══════════════════════════════════════════════
+'  RELATIONS — AUTH
+' ══════════════════════════════════════════════
+Farmer  --> UC_AUTH1
+Farmer  --> UC_AUTH2
+Farmer  --> UC_AUTH3
+Resto   --> UC_AUTH1
+Resto   --> UC_AUTH2
+Resto   --> UC_AUTH3
+Citizen --> UC_AUTH1
+Citizen --> UC_AUTH2
+Admin   --> UC_AUTH4
+UC_AUTH4 ..> UC_AUTH3 : <<include>>
+
+' ══════════════════════════════════════════════
+'  RELATIONS — KATARA
+' ══════════════════════════════════════════════
+Farmer  --> UC_KAT1
+Farmer  --> UC_KAT2
+ESP32   --> UC_KAT3
+UC_KAT3 ..> UC_KAT2 : <<include>>
+Farmer  --> UC_KAT4
+Farmer  --> UC_KAT5
+Farmer  --> UC_KAT6
+Farmer  --> UC_KAT7
+Farmer  --> UC_KAT8
+System  --> UC_KAT4 : alertes email
+System  --> UC_KAT6 : worker IA
+
+' ══════════════════════════════════════════════
+'  RELATIONS — FARMARKET
+' ══════════════════════════════════════════════
+Farmer  --> UC_FAR1
+Farmer  --> UC_FAR4
+Resto   --> UC_FAR2
+Resto   --> UC_FAR3
+UC_FAR3 ..> UC_FAR2 : <<include>>
+Resto   --> UC_FAR5
+Resto   --> UC_FAR6
+Resto   --> UC_FAR7
+UC_FAR7 ..> UC_FAR6 : <<extend>>
+System  --> UC_FAR1 : expiration J+7
+
+' ══════════════════════════════════════════════
+'  RELATIONS — SECONDSERVE
+' ══════════════════════════════════════════════
+Farmer  --> UC_SS0
+Resto   --> UC_SS0
+Citizen --> UC_SS0
+Resto   --> UC_SS1
+UC_SS1 ..> UC_SS0 : <<include>>
+Citizen --> UC_SS2
+Citizen --> UC_SS3
+UC_SS3 ..> UC_SS2 : <<include>>
+
+' ══════════════════════════════════════════════
+'  RELATIONS — ADMINISTRATION
+' ══════════════════════════════════════════════
+Admin   --> UC_ADM1
+Admin   --> UC_ADM2
+Admin   --> UC_ADM3
+UC_ADM1 ..> UC_AUTH4 : <<include>>
+
+' ══════════════════════════════════════════════
+'  NOTES
+' ══════════════════════════════════════════════
+note top of KATARA
+  Accès réservé aux agriculteurs
+  avec statut VERIFIED (KYC approuvé)
+end note
+
+note top of FARMARKET
+  Farmers et Restaurateurs doivent
+  être VERIFIED pour publier / commander
+end note
+
+note bottom of ESP32
+  Auth par X-Device-Id
+  + X-Device-Api-Key (bcrypt)
+  — pas de JWT
+end note
+
+@enduml

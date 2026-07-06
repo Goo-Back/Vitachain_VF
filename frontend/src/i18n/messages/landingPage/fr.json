@@ -1,0 +1,125 @@
+{
+  "landingPage": {
+    "hero": {
+      "badge": "Écosystème anti-gaspillage agro-alimentaire",
+      "titlePrefix": "Du sol à l'assiette,",
+      "titleHighlight": "zéro maillon perdu",
+      "paragraph": "VitaChain relie agriculteurs et restaurateurs autour d'une chaîne courte et tracée : surveillance IoT, place de marché logistique et redistribution des surplus — sur une seule plateforme.",
+      "ctaPrimary": "Créer mon compte",
+      "ctaSecondary": "Découvrir les modules",
+      "trustLine": "Comptes vérifiés · chaîne tracée de bout en bout"
+    },
+    "marquee": {
+      "sensors": "Capteurs ESP32",
+      "thresholds": "Seuils par parcelle",
+      "alerts": "Alertes en temps réel",
+      "marketplace": "Place de marché",
+      "logistics": "Suivi logistique",
+      "shortCircuit": "Circuit court",
+      "antiWaste": "Anti-gaspillage",
+      "verifiedAccounts": "Comptes vérifiés"
+    },
+    "modules": {
+      "heading": {
+        "eyebrow": "Quatre modules, une plateforme",
+        "title": "Une chaîne agro-alimentaire complète",
+        "subtitle": "Chaque module fonctionne seul — ensemble, ils couvrent tout le parcours, de la culture à la consommation."
+      },
+      "soonBadge": "Bientôt",
+      "items": {
+        "katara": {
+          "tag": "Suivi IoT du sol",
+          "desc": "Vos capteurs ESP32 remontent humidité, pH et conductivité par parcelle. Définissez vos seuils et obtenez un diagnostic agronomique à la demande.",
+          "point1": "Mesures temps réel",
+          "point2": "Seuils personnalisés",
+          "point3": "Diagnostic à la demande"
+        },
+        "farmarket": {
+          "tag": "Place de marché & logistique",
+          "desc": "Les restaurateurs commandent directement aux producteurs. VitaChain orchestre la logistique et le suivi de commande, du champ jusqu'au comptoir.",
+          "point1": "Catalogue producteurs",
+          "point2": "Pipeline de commandes",
+          "point3": "Suivi de livraison"
+        },
+        "botaba9a": {
+          "tag": "Traçabilité chaîne du froid",
+          "desc": "Suivez la température du transport au stockage : une chaîne du froid tracée de bout en bout pour garantir la fraîcheur et la sécurité des produits.",
+          "point1": "Suivi de température",
+          "point2": "Alertes rupture de froid",
+          "point3": "Historique traçable"
+        },
+        "secondserve": {
+          "tag": "Redistribution des surplus",
+          "desc": "Les invendus et surplus deviennent des offres à prix réduit pour les partenaires : moins de pertes, plus de valeur rendue à la filière.",
+          "point1": "Offres de surplus",
+          "point2": "Partenaires approuvés",
+          "point3": "Impact mesuré"
+        }
+      }
+    },
+    "flow": {
+      "heading": {
+        "eyebrow": "Comment ça marche",
+        "title": "Quatre étapes, un circuit vertueux",
+        "subtitle": "VitaChain raccourcit la chaîne et garde chaque maillon connecté au suivant."
+      },
+      "steps": {
+        "cultivate": {
+          "title": "Cultivez & mesurez",
+          "desc": "Katara surveille le sol en continu et vous alerte dès qu'un seuil est franchi."
+        },
+        "sell": {
+          "title": "Vendez en direct",
+          "desc": "Publiez votre récolte sur FarMarket ; les restaurateurs commandent en quelques clics."
+        },
+        "deliver": {
+          "title": "Livrez & suivez",
+          "desc": "La logistique est orchestrée et tracée jusqu'à la réception de la commande."
+        },
+        "valorize": {
+          "title": "Valorisez les surplus",
+          "desc": "Les invendus repartent via SecondServe au lieu d'être jetés."
+        }
+      }
+    },
+    "impact": {
+      "heading": {
+        "eyebrow": "Notre raison d'être",
+        "title": "Moins de gaspillage, plus de valeur",
+        "subtitle": "Une filière mieux connectée perd moins — au champ comme en cuisine."
+      },
+      "stats": {
+        "modules": {
+          "label": "Modules intégrés",
+          "caption": "Une plateforme unifiée"
+        },
+        "soilParams": {
+          "label": "Paramètres de sol",
+          "caption": "Humidité · pH · conductivité"
+        },
+        "monitoring": {
+          "label": "Supervision continue",
+          "caption": "Données en temps réel"
+        },
+        "tracedChain": {
+          "label": "Chaîne tracée",
+          "caption": "Du champ à l'assiette"
+        }
+      }
+    },
+    "finalCta": {
+      "title": "Rejoignez la chaîne VitaChain",
+      "paragraph": "Agriculteur ou restaurateur, créez votre compte et reprenez la main sur votre filière — du suivi des cultures à la lutte contre le gaspillage.",
+      "ctaPrimary": "Commencer gratuitement",
+      "ctaSecondary": "J'ai déjà un compte"
+    },
+    "footer": {
+      "description": "L'écosystème anti-gaspillage agro-alimentaire — du champ au tableau de bord, du producteur au restaurateur.",
+      "modulesHeading": "Modules",
+      "accountHeading": "Compte",
+      "login": "Connexion",
+      "register": "Inscription",
+      "copyright": "© {year} VitaChain · Écosystème anti-gaspillage agro-alimentaire"
+    }
+  }
+}

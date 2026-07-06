@@ -20,7 +20,7 @@ import {
   useState,
 } from "react";
 
-import type { Ad } from "@/app/dashboard/farmer/ads/actions";
+import type { Ad } from "@/app/[locale]/dashboard/farmer/ads/actions";
 
 const STORAGE_KEY = "vita_favorites_v1";
 

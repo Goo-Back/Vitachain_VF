@@ -1,0 +1,276 @@
+@startuml DiagrammeClasses_VitaChain
+!theme plain
+skinparam classBackgroundColor #EFF6FF
+skinparam classBorderColor     #2563EB
+skinparam classHeaderBackgroundColor #DBEAFE
+skinparam ArrowColor #475569
+skinparam NoteBackgroundColor #FFFDE7
+skinparam NoteBorderColor #F9A825
+hide empty members
+
+title Diagramme de Classes — VitaChain v3
+
+' ══════════════════════════════════════════════════════════
+' DOMAINE AUTH & KYC
+' ══════════════════════════════════════════════════════════
+class Profile {
+  +id : UUID <<PK>>
+  +role : UserRole
+  +verification_status : VerificationStatus
+  +full_name : String
+  +phone : String
+  +locale : String <<default: fr>>
+  +banned : Boolean <<default: false>>
+  +created_at : Timestamp
+  +updated_at : Timestamp
+}
+
+class KycDocument {
+  +id : UUID <<PK>>
+  +user_id : UUID <<FK→Profile>>
+  +type : DocType
+  +storage_path : String
+  +status : String
+  +reviewer_id : UUID <<FK→Profile>>
+  +reviewer_note : String
+  +submitted_at : Timestamp
+  +reviewed_at : Timestamp
+}
+
+' ══════════════════════════════════════════════════════════
+' DOMAINE KATARA (IoT)
+' ══════════════════════════════════════════════════════════
+class Parcel {
+  +id : UUID <<PK>>
+  +farmer_id : UUID <<FK→Profile>>
+  +name : String
+  +crop_type : String
+  +surface_area_ha : Decimal
+  +geojson : GeoJSON
+  +created_at : Timestamp
+}
+
+class Device {
+  +id : UUID <<PK>>
+  +device_id : String <<UNIQUE>>
+  +parcel_id : UUID <<FK→Parcel>>
+  +farmer_id : UUID <<FK→Profile>>
+  +api_key_hash : String
+  +status : DeviceStatus
+  +last_seen : Timestamp
+  +linked_at : Timestamp
+}
+
+class TelemetryReading {
+  +id : UUID <<PK>>
+  +device_id : String <<FK→Device>>
+  +parcel_id : UUID <<FK→Parcel>>
+  +farmer_id : UUID <<FK→Profile>>
+  +soil_moisture : Decimal
+  +soil_temperature : Decimal
+  +soil_ph : Decimal
+  +soil_conductivity : Decimal
+  +battery_level : Decimal
+  +recorded_at : Timestamp <<UNIQUE(device_id)>>
+}
+
+class AlertThreshold {
+  +id : UUID <<PK>>
+  +parcel_id : UUID <<FK→Parcel>>
+  +metric : String
+  +min_value : Decimal
+  +max_value : Decimal
+  +enabled : Boolean
+  +updated_at : Timestamp
+}
+
+class AiDiagnostic {
+  +id : UUID <<PK>>
+  +parcel_id : UUID <<FK→Parcel>>
+  +requested_by : UUID <<FK→Profile>>
+  +status : DiagnosticStatus
+  +diagnostic_summary : Text
+  +weather_snapshot : JSONB
+  +telemetry_snapshot : JSONB
+  +requested_at : Timestamp
+  +completed_at : Timestamp
+}
+
+' ══════════════════════════════════════════════════════════
+' DOMAINE FARMARKET
+' ══════════════════════════════════════════════════════════
+class FarmarketAd {
+  +id : UUID <<PK>>
+  +farmer_id : UUID <<FK→Profile>>
+  +title : String
+  +description : Text
+  +product_type : String
+  +price_mad : Decimal
+  +quantity_kg : Decimal
+  +region : Region
+  +photo_paths : String[]
+  +is_featured : Boolean
+  +status : AdStatus
+  +expires_at : Timestamp
+  +created_at : Timestamp
+}
+
+class FarmarketOrder {
+  +id : UUID <<PK>>
+  +restaurant_id : UUID <<FK→Profile>>
+  +status : OrderStatus
+  +delivery_region : Region
+  +subtotal_mad : Decimal
+  +logistics_fee_mad : Decimal
+  +total_mad : Decimal
+  +payment_method : String
+  +payment_status : String
+  +created_at : Timestamp
+}
+
+class OrderItem {
+  +id : UUID <<PK>>
+  +order_id : UUID <<FK→FarmarketOrder>>
+  +ad_id : UUID <<FK→FarmarketAd>>
+  +farmer_id : UUID <<FK→Profile>>
+  +quantity_kg : Decimal
+  +unit_price_snapshot : Decimal
+  +line_total_mad : Decimal
+  +status : ItemStatus
+  +updated_at : Timestamp
+}
+
+class FarmerRating {
+  +id : UUID <<PK>>
+  +farmer_id : UUID <<FK→Profile>>
+  +restaurant_id : UUID <<FK→Profile>>
+  +rating : Integer <<1..5>>
+  +review : Text
+  +reviewer_name : String
+  +created_at : Timestamp
+}
+
+' ══════════════════════════════════════════════════════════
+' DOMAINE SECONDSERVE
+' ══════════════════════════════════════════════════════════
+class SsOffer {
+  +id : UUID <<PK>>
+  +partner_id : UUID <<FK→SsProfile>>
+  +name : String
+  +description : Text
+  +original_price : Decimal
+  +reduced_price : Decimal
+  +quantity_available : Integer
+  +pickup_time : Time
+  +commerce_type : String
+  +city : String
+  +is_surprise_box : Boolean
+  +photo_url : String
+  +created_at : Timestamp
+}
+
+class SsOrder {
+  +id : UUID <<PK>>
+  +consumer_id : UUID <<FK→SsProfile>>
+  +offer_id : UUID <<FK→SsOffer>>
+  +offer_snapshot : JSONB
+  +quantity : Integer
+  +total_price : Decimal
+  +payment_method : String
+  +payment_status : String
+  +status : String
+  +created_at : Timestamp
+}
+
+class SsProfile {
+  +id : UUID <<PK>>
+  +app : String <<ss_app>>
+  +full_name : String
+  +city : String
+  +commerce_type : String
+  +approved : Boolean
+  +banned : Boolean
+}
+
+' ══════════════════════════════════════════════════════════
+' ENUMS
+' ══════════════════════════════════════════════════════════
+enum UserRole {
+  FARMER
+  RESTAURANT
+  CITIZEN
+  ADMIN
+}
+
+enum DeviceStatus {
+  PENDING
+  ACTIVE
+  OFFLINE
+  UNLINKED
+}
+
+enum AdStatus {
+  ACTIVE
+  EXPIRED
+  DELETED
+}
+
+enum OrderStatus {
+  PENDING
+  PARTIALLY_ACCEPTED
+  ACCEPTED
+  IN_PROGRESS
+  DELIVERED
+  CANCELLED
+}
+
+' ══════════════════════════════════════════════════════════
+' RELATIONS
+' ══════════════════════════════════════════════════════════
+
+Profile          "1" --> "0..*" KycDocument      : soumet >
+Profile          "1" --> "0..*" Parcel            : possède >
+Parcel           "1" --> "0..*" Device            : associe >
+Device           "1" --> "0..*" TelemetryReading  : génère >
+Parcel           "1" --> "0..*" AlertThreshold    : configure >
+Parcel           "1" --> "0..*" AiDiagnostic      : requiert >
+Profile          "1" --> "0..*" FarmarketAd       : publie >
+Profile          "1" --> "0..*" FarmarketOrder    : passe >
+FarmarketOrder   "1" --> "1..*" OrderItem         : contient >
+FarmarketAd      "1" --> "0..*" OrderItem         : référencé par >
+Profile          "1" --> "0..*" FarmerRating      : reçoit >
+SsProfile        "1" --> "0..*" SsOffer           : publie >
+SsOffer          "1" --> "0..*" SsOrder           : commande >
+
+Profile     ..> UserRole   : utilise
+Device      ..> DeviceStatus : utilise
+FarmarketAd ..> AdStatus   : utilise
+FarmarketOrder ..> OrderStatus : utilise
+
+note bottom of Profile
+  Géré par Supabase Auth.
+  profiles.id = auth.users.id
+  Trigger handle_new_user()
+  crée le profil à l'inscription.
+end note
+
+note bottom of TelemetryReading
+  UNIQUE(device_id, recorded_at)
+  Contrainte ON CONFLICT DO NOTHING
+  garantit l'idempotence.
+  FORCE RLS activée.
+end note
+
+note bottom of OrderItem
+  farmer_id dénormalisé (snapshot)
+  unit_price_snapshot figé à la commande
+  pour protéger contre variation prix.
+end note
+
+note bottom of SsOffer
+  Visible uniquement si
+  ss_profiles.approved = true
+  ET commerce_type défini.
+end note
+
+@enduml

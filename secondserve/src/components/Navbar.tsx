@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { MapPin, User as UserIcon, LogOut, Menu, X, Bell, Globe } from 'lucide-react';
+import { MapPin, User as UserIcon, LogOut, Menu, X, Bell, Globe, ArrowLeft } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { toast } from 'sonner';
 import { ConfirmModal } from './ConfirmModal';
 import { supabase } from '../lib/supabase';
+import { VITACHAIN_URL } from '../lib/vitachain';
 
 export function Navbar() {
   const { 
@@ -30,9 +31,15 @@ export function Navbar() {
     await supabase.auth.signOut();
     setUser(null);
     setIsLogoutModalOpen(false);
-    toast.success(language === 'ar' ? '✅ تم تسجيل الخروج بنجاح' : '✅ Logged out successfully');
-    navigate('/');
+    // Redirect to VitaChain login so the user lands on the main platform
+    // rather than staying on the SecondServe origin after signing out.
+    window.location.href = `${VITACHAIN_URL}/login`;
   };
+
+  const vitachainDashboardUrl =
+    user?.role === 'restaurant'
+      ? `${VITACHAIN_URL}/dashboard/restaurant`
+      : `${VITACHAIN_URL}/dashboard`;
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -57,14 +64,7 @@ export function Navbar() {
               {t('meals')}
             </Link>
 
-            {user && user.role === 'admin' && (
-              <Link 
-                to="/admin/dashboard" 
-                className="text-xs font-black text-indigo-700 bg-indigo-50 border border-indigo-100 hover:bg-indigo-100 transition-colors px-3.5 py-1.5 rounded-full"
-              >
-                {language === 'ar' ? 'لوحة المسؤول 🛡️' : 'Admin Panel 🛡️'}
-              </Link>
-            )}
+            {/* SecondServe admin moved to the VitaChain console; no in-app link. */}
 
             {selectedCity && (
               <button 
@@ -87,11 +87,13 @@ export function Navbar() {
                 aria-label="Toggle language menu"
               >
                 <Globe className="h-4 w-4 text-gray-500" />
-                <span>{language === 'en' ? 'EN 🇬🇧' : 'العربية 🇸🇦'}</span>
+                <span>
+                  {language === 'en' ? 'EN 🇬🇧' : language === 'fr' ? 'FR 🇫🇷' : 'العربية 🇸🇦'}
+                </span>
               </button>
 
               {isLangDropdownOpen && (
-                <div 
+                <div
                   className={`absolute mt-2 w-36 bg-white rounded-2xl border border-gray-100 shadow-xl z-50 py-1.5 ${
                     language === 'ar' ? 'left-0' : 'right-0'
                   }`}
@@ -106,6 +108,17 @@ export function Navbar() {
                     }`}
                   >
                     <span>🇬🇧 English</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setLanguage('fr');
+                      setIsLangDropdownOpen(false);
+                    }}
+                    className={`flex items-center gap-2 w-full text-left px-4 py-2 text-xs font-bold hover:bg-slate-50 transition-colors ${
+                      language === 'fr' ? 'text-primary' : 'text-gray-700'
+                    }`}
+                  >
+                    <span>🇫🇷 Français</span>
                   </button>
                   <button
                     onClick={() => {
@@ -149,17 +162,17 @@ export function Navbar() {
                   >
                     <div className="flex items-center justify-between px-4 pb-2 border-b border-gray-100">
                       <h4 className="text-xs font-black uppercase text-gray-900 tracking-wider">
-                        {language === 'ar' ? 'التنبيهات المباشرة' : 'Real-time Orders'}
+                        {t('realtimeOrdersHeading')}
                       </h4>
                       {notifications.length > 0 && (
-                        <button 
+                        <button
                           onClick={() => {
                             clearAllNotifications();
-                            toast.success(language === 'ar' ? 'تم مسح التنبيهات' : 'Notifications cleared');
-                          }} 
+                            toast.success(t('notificationsClearedToast'));
+                          }}
                           className="text-[10px] font-bold text-red-500 hover:underline"
                         >
-                          {language === 'ar' ? 'حذف الكل' : 'Clear All'}
+                          {t('clearAllNotifBtn')}
                         </button>
                       )}
                     </div>
@@ -211,7 +224,15 @@ export function Navbar() {
 
             {user ? (
               <div className="flex items-center gap-4">
-                <Link 
+                <a
+                  href={vitachainDashboardUrl}
+                  className="flex items-center gap-1.5 text-sm font-bold text-gray-600 hover:text-primary transition-colors bg-gray-50 px-3 py-1.5 rounded-full border border-gray-200"
+                  title="Retour à VitaChain"
+                >
+                  <ArrowLeft className="h-3.5 w-3.5" />
+                  <span>VitaChain</span>
+                </a>
+                <Link
                   to={user.role === 'admin' ? '/admin/dashboard' : user.role === 'consumer' ? '/dashboard' : '/restaurant-dashboard'}
                   className="flex items-center gap-2 text-sm font-bold text-gray-700 hover:text-primary transition-colors bg-gray-50 px-3 py-1.5 rounded-full border border-gray-100"
                 >
@@ -263,12 +284,15 @@ export function Navbar() {
               </button>
             )}
 
-            {/* Quick Language switcher on Mobile */}
+            {/* Quick Language switcher on Mobile — cycles en → fr → ar → en,
+                always showing the language it will switch TO next. */}
             <button
-              onClick={() => setLanguage(language === 'en' ? 'ar' : 'en')}
+              onClick={() =>
+                setLanguage(language === 'en' ? 'fr' : language === 'fr' ? 'ar' : 'en')
+              }
               className="text-xs font-black border border-gray-200 px-2.5 py-1 rounded-full text-gray-700 hover:text-primary text-center"
             >
-              {language === 'en' ? 'العربية 🇸🇦' : 'EN 🇬🇧'}
+              {language === 'en' ? 'FR 🇫🇷' : language === 'fr' ? 'العربية 🇸🇦' : 'EN 🇬🇧'}
             </button>
 
             <button
@@ -310,7 +334,15 @@ export function Navbar() {
 
             {user ? (
               <>
-                <Link 
+                <a
+                  href={vitachainDashboardUrl}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center justify-between text-base font-bold text-gray-700 px-4 py-3 rounded-xl hover:bg-gray-50 border border-gray-200"
+                >
+                  <ArrowLeft className="h-5 w-5 text-gray-400" />
+                  <span>Retour à VitaChain</span>
+                </a>
+                <Link
                   to={user.role === 'admin' ? '/admin/dashboard' : user.role === 'consumer' ? '/dashboard' : '/restaurant-dashboard'}
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="flex items-center justify-between text-base font-bold text-gray-900 px-4 py-3 rounded-xl hover:bg-gray-50"

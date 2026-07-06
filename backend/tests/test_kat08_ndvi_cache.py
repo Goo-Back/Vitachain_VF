@@ -148,7 +148,7 @@ def test_access_token_minted_and_cached() -> None:
 
     assert first == second == "minted-tok"
     assert len(calls) == 1, "token must be minted once and cached"
-    assert calls[0]["url"] == sentinel_client._TOKEN_URL
+    assert calls[0]["url"] == sentinel_client._token_url()
     assert calls[0]["data"]["grant_type"] == "client_credentials"
     assert calls[0]["data"]["client_id"] == "cid"
 

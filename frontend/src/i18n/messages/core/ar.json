@@ -1,0 +1,133 @@
+{
+  "common": {
+    "appName": "VitaChain"
+  },
+  "nav": {
+    "openMenu": "فتح التنقل",
+    "closeMenu": "إغلاق التنقل",
+    "expandMenu": "توسيع التنقل",
+    "collapseMenu": "طي التنقل",
+    "mainNav": "التنقل الرئيسي",
+    "account": "حسابي",
+    "farmer": {
+      "overview": "نظرة عامة",
+      "parcels": "قطعي الأرضية",
+      "ads": "إعلاناتي",
+      "orders": "الطلبات",
+      "weather": "الطقس",
+      "satellite": "الأقمار الصناعية",
+      "settings": "الإعدادات",
+      "logout": "تسجيل الخروج",
+      "newParcel": "قطعة أرضية جديدة"
+    },
+    "restaurant": {
+      "overview": "نظرة عامة",
+      "catalog": "الكتالوج",
+      "favorites": "المفضلة",
+      "cart": "السلة",
+      "orders": "طلباتي",
+      "help": "المساعدة",
+      "notifications": "الإشعارات",
+      "settings": "الإعدادات",
+      "logout": "تسجيل الخروج",
+      "farmarketSection": "FarMarket",
+      "secondserveSection": "SecondServe",
+      "publishSurplus": "نشر الفائض",
+      "viewCart": "عرض السلة"
+    },
+    "citizen": {
+      "home": "الرئيسية",
+      "marketplace": "إعلانات FarMarket",
+      "logout": "تسجيل الخروج",
+      "farmarketSection": "FarMarket",
+      "secondserveSection": "SecondServe",
+      "surplusMeals": "وجبات مكافحة الهدر"
+    },
+    "admin": {
+      "verifications": "التحقق من الهوية",
+      "users": "المستخدمون",
+      "farmarket": "FarMarket",
+      "secondserve": "SecondServe"
+    }
+  },
+  "landing": {
+    "nav": {
+      "modules": "الوحدات",
+      "howItWorks": "طريقة العمل",
+      "impact": "الأثر",
+      "login": "تسجيل الدخول",
+      "start": "ابدأ الآن",
+      "menu": "القائمة"
+    }
+  },
+  "auth": {
+    "shell": {
+      "defaultBadge": "منصة VitaChain",
+      "footer": "منظومة مكافحة الهدر",
+      "rightPanelBadge": "منظومة زراعية غذائية لمكافحة الهدر",
+      "headingStart": "من الحقل إلى المائدة،",
+      "headingHighlight": "بلا أي حلقة مفقودة",
+      "paragraph": "منصة واحدة تربط كل حلقة من سلسلة الإنتاج الزراعي الغذائي — من متابعة المحاصيل إلى إعادة توزيع الفائض.",
+      "soon": "قريباً",
+      "modules": {
+        "katara": "متابعة التربة عبر إنترنت الأشياء",
+        "farmarket": "سوق إلكتروني",
+        "botaba9a": "سلسلة التبريد",
+        "secondserve": "مكافحة الهدر"
+      },
+      "statCard": "يُفقد ما يقارب ثلث الغذاء المُنتَج. تعيد VitaChain ربط السلسلة الغذائية لتقليل الفاقد في كل مرحلة.",
+      "verifiedFooter": "حسابات موثّقة · سلسلة تتبع كاملة"
+    },
+    "login": {
+      "badge": "تسجيل الدخول",
+      "title": "مرحباً بعودتك.",
+      "subtitle": "سجّل الدخول لاستعادة السيطرة على نشاطك.",
+      "emailLabel": "البريد الإلكتروني",
+      "passwordLabel": "كلمة المرور",
+      "remember": "البقاء متصلاً على هذا الجهاز",
+      "submit": "تسجيل الدخول",
+      "or": "أو",
+      "noAccount": "ليس لديك حساب بعد؟",
+      "createAccount": "إنشاء حسابي",
+      "secondserveCta": "تبحث عن وجبات مكافحة الهدر؟",
+      "secondserveLink": "الانتقال إلى SecondServe ←"
+    },
+    "register": {
+      "badge": "إنشاء حساب",
+      "title": "مرحباً بك في VitaChain.",
+      "subtitle": "اختر دورك واحصل على وصول إلى السلسلة بأكملها — من متابعة المحاصيل إلى مكافحة الهدر الغذائي.",
+      "fullNameLabel": "الاسم الكامل",
+      "emailLabel": "البريد الإلكتروني",
+      "passwordLabel": "كلمة المرور",
+      "roleLabel": "أنا…",
+      "languageLabel": "اللغة",
+      "termsPrefix": "أوافق على",
+      "termsLink": "شروط الاستخدام",
+      "termsSuffix": "وسياسة الخصوصية.",
+      "submit": "إنشاء حسابي",
+      "alreadyRegistered": "لديك حساب بالفعل؟",
+      "login": "تسجيل الدخول",
+      "secondserveCta": "تبحث فقط عن وجبات مكافحة الهدر؟",
+      "secondserveLink": "سجّل مباشرة على SecondServe ←",
+      "errors": {
+        "email_taken": "يوجد حساب مسجّل بالفعل بهذا البريد الإلكتروني.",
+        "weak_password": "كلمة المرور ضعيفة جداً — 10 أحرف على الأقل، مع حرف كبير وحرف صغير ورقم.",
+        "rate_limited": "عدد كبير جداً من المحاولات. يرجى إعادة المحاولة خلال ساعة.",
+        "invalid_input": "بيانات غير صالحة — تحقق من الحقول.",
+        "network": "تعذّر الاتصال. تحقق من شبكتك وأعد المحاولة.",
+        "unknown": "حدث خطأ غير متوقع. تم إبلاغ فريقنا."
+      }
+    }
+  },
+  "dashboardRoot": {
+    "unknownAccountTitle": "حساب غير معروف على VitaChain",
+    "unknownAccountBody": "هذا الحساب ({email}) لا يملك ملفاً شخصياً على VitaChain. قد ينتمي إلى تطبيق آخر (SecondServe). سجّل الدخول بحساب VitaChain، أو سجّل الخروج.",
+    "logout": "تسجيل الخروج",
+    "greeting": "مرحباً، {name}",
+    "profileUnavailable": "الملف الشخصي غير متاح ({message}). يرجى إعادة المحاولة لاحقاً.",
+    "role": "الدور",
+    "status": "الحالة",
+    "language": "اللغة",
+    "otherModules": "سيتم ربط الوحدات الأخرى في المراحل القادمة."
+  }
+}

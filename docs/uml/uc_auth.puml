@@ -1,0 +1,143 @@
+@startuml UC_Authentification_KYC
+!theme plain
+skinparam actorStyle awesome
+skinparam usecase {
+  BackgroundColor #EDE7F6
+  BorderColor     #4527A0
+  FontSize 13
+}
+skinparam actor {
+  BackgroundColor #D1C4E9
+  BorderColor     #4527A0
+}
+skinparam rectangle {
+  BackgroundColor #F5F0FF
+  BorderColor     #4527A0
+}
+skinparam note {
+  BackgroundColor #FFFDE7
+  BorderColor     #F9A825
+}
+
+title Diagramme de Cas d'Utilisation — Authentification & KYC
+
+actor "Utilisateur\n(tout rôle)"    as User
+actor "Professionnel\n(FARMER/RESTO)" as Pro
+actor "Administrateur"              as Admin
+actor "Hook Supabase\n(JWT Claims)" as Hook <<system>>
+actor "Worker Email\n(Brevo)"       as Worker <<system>>
+actor "Trigger Supabase\n(immutabilité)" as Trigger <<system>>
+
+rectangle "Module Authentification & KYC" {
+
+  ' ── Inscription / Connexion ──────────────────────────────
+  usecase "S'inscrire avec\ne-mail + rôle" as UC_REGISTER
+  usecase "Confirmer l'e-mail\n(lien Supabase)" as UC_CONFIRM
+  usecase "Se connecter\n(JWT 1h)" as UC_LOGIN
+  usecase "Rafraîchir\nle token (7j)" as UC_REFRESH
+  usecase "Se déconnecter" as UC_LOGOUT
+  usecase "Accès SSO\n(Magic Link OTP)" as UC_SSO
+
+  ' ── KYC Professionnel ────────────────────────────────────
+  usecase "Soumettre un\ndocument KYC" as UC_SUBMIT_KYC
+  usecase "Consulter le statut\nde sa vérification" as UC_KYC_STATUS
+  usecase "Re-soumettre après\nrejet" as UC_RESUBMIT
+
+  ' ── Admin ─────────────────────────────────────────────────
+  usecase "Consulter la file\nd'attente PENDING" as UC_KYC_QUEUE
+  usecase "Prévisualiser\nle document (URL signée)" as UC_PREVIEW
+  usecase "Approuver le\ndossier KYC" as UC_APPROVE
+  usecase "Rejeter le\ndossier KYC (+ note)" as UC_REJECT
+
+  ' ── Inclusions système ───────────────────────────────────
+  usecase "Création profil\n(trigger handle_new_user)" as UC_PROFILE_CREATE <<include>>
+  usecase "Injection rôle & statut\ndans JWT (Custom Hook)" as UC_JWT_CLAIMS <<include>>
+  usecase "Contrôle accès\n(require_verified)" as UC_REQUIRE_VERIFIED <<include>>
+  usecase "Envoi e-mail\nde décision (Brevo)" as UC_EMAIL_NOTIF <<include>>
+  usecase "Écriture protégée\n(trigger immutabilité)" as UC_IMMUTABILITY <<include>>
+
+  note right of UC_REGISTER
+    Rôles disponibles :
+    FARMER | RESTAURANT | CITIZEN
+    Profil créé automatiquement
+    via trigger handle_new_user().
+    Statut initial : PENDING
+  end note
+
+  note right of UC_LOGIN
+    JWT expire dans 1h.
+    Claims injectés par le hook
+    Supabase Custom Access Token :
+    user_role, verification_status
+  end note
+
+  note right of UC_SUBMIT_KYC
+    Types acceptés :
+    RC, CIN, AGRI_CARD, OTHER
+    Stocké : bucket kyc-documents
+    (Supabase Storage, RLS private)
+  end note
+
+  note right of UC_APPROVE
+    Effets atomiques (best-effort) :
+    1. kyc_documents.status → APPROVED
+    2. profiles.verification_status → VERIFIED
+    3. Outbox → kyc.approved → e-mail
+    Seul le JWT service_role peut écrire
+    profiles.verification_status (trigger 0005)
+  end note
+
+  note right of UC_SSO
+    Handoff SecondServe :
+    POST /api/v1/secondserve/handoff
+    Génère OTP Supabase à usage unique.
+    Valide 30 secondes.
+  end note
+}
+
+' Relations Utilisateur
+User  --> UC_REGISTER
+User  --> UC_CONFIRM
+User  --> UC_LOGIN
+User  --> UC_REFRESH
+User  --> UC_LOGOUT
+User  --> UC_SSO
+User  --> UC_KYC_STATUS
+
+' Relations Professionnel (extend User)
+Pro   --> UC_SUBMIT_KYC
+Pro   --> UC_RESUBMIT
+
+' Relations Admin
+Admin --> UC_KYC_QUEUE
+Admin --> UC_PREVIEW
+Admin --> UC_APPROVE
+Admin --> UC_REJECT
+
+' Inclusions — Inscription
+UC_REGISTER  ..> UC_PROFILE_CREATE  : <<include>>
+
+' Inclusions — Connexion
+UC_LOGIN     ..> UC_JWT_CLAIMS      : <<include>>
+UC_REFRESH   ..> UC_JWT_CLAIMS      : <<include>>
+
+' Inclusions — Accès ressources protégées
+UC_SUBMIT_KYC ..> UC_REQUIRE_VERIFIED : <<extend>>
+
+' Inclusions — File d'attente admin
+UC_KYC_QUEUE ..> UC_PREVIEW : <<extend>>
+
+' Inclusions — Décision admin
+UC_APPROVE   ..> UC_IMMUTABILITY  : <<include>>
+UC_APPROVE   ..> UC_EMAIL_NOTIF   : <<include>>
+UC_REJECT    ..> UC_EMAIL_NOTIF   : <<include>>
+
+' Re-soumission
+UC_RESUBMIT  ..> UC_SUBMIT_KYC : <<include>>
+
+' Acteurs système
+Hook    --> UC_JWT_CLAIMS
+Worker  --> UC_EMAIL_NOTIF
+Trigger --> UC_IMMUTABILITY
+
+@enduml

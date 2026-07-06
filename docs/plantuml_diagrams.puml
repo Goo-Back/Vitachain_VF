@@ -1,0 +1,435 @@
+@startuml fig1_2_acteurs
+' ─────────────────────────────────────────────
+' Fig 1.2 — Diagramme des acteurs
+' Rendu : plantuml.com  →  Export PNG  →  figures/fig1_2_acteurs.png
+' ─────────────────────────────────────────────
+left to right direction
+skinparam actorStyle awesome
+skinparam backgroundColor #FEFEFE
+skinparam ArrowColor #475569
+skinparam ActorBackgroundColor #EFF6FF
+skinparam ActorBorderColor #2563EB
+
+actor "Agriculteur"    as farmer  #DBEAFE
+actor "Restaurateur"   as resto   #DCFCE7
+actor "Citoyen"        as citizen #FEF9C3
+actor "Administrateur" as admin   #FCE7F3
+actor "ESP32"          as esp32   #F1F5F9
+
+rectangle "Plateforme VitaChain" {
+  usecase "Katara\n(IoT agricole)"        as kat  #DBEAFE
+  usecase "FarMarket\n(Marketplace B2B)"  as far  #DCFCE7
+  usecase "SecondServe\n(Anti-gaspillage)" as ss  #FFEDD5
+  usecase "Administration\n& KYC"         as adm  #FAE8FF
+}
+
+farmer  --> kat
+farmer  --> far
+esp32   --> kat
+resto   --> far
+resto   --> ss
+citizen --> ss
+admin   --> adm
+@enduml
+
+' ─────────────────────────────────────────────
+@startuml fig2_2_uc_auth
+' Fig 2.2 — Diagramme de cas d'utilisation : Auth & KYC
+' Export PNG → figures/fig2_2_uc_auth.png
+' ─────────────────────────────────────────────
+left to right direction
+skinparam backgroundColor #FEFEFE
+skinparam usecase { BackgroundColor #EFF6FF; BorderColor #2563EB }
+
+actor "Utilisateur\n(tout rôle)" as user
+actor "Administrateur"           as admin
+
+rectangle "Module Authentification & KYC" {
+  (S'inscrire avec e-mail)    as UC1
+  (Se connecter / JWT)        as UC2
+  (Rafraîchir le token)       as UC3
+  (Soumettre documents KYC)   as UC4
+  (Consulter statut KYC)      as UC5
+  (Examiner dossier KYC)      as UC6
+  (Approuver / Rejeter KYC)   as UC7
+}
+
+user  --> UC1
+user  --> UC2
+user  --> UC3
+user  --> UC4
+user  --> UC5
+admin --> UC6
+admin --> UC7
+UC6   ..> UC4 : <<include>>
+UC7   ..> UC6 : <<include>>
+@enduml
+
+' ─────────────────────────────────────────────
+@startuml fig2_3_uc_katara
+' Fig 2.3 — Diagramme de cas d'utilisation : Katara
+' Export PNG → figures/fig2_3_uc_katara.png
+' ─────────────────────────────────────────────
+left to right direction
+skinparam backgroundColor #FEFEFE
+skinparam usecase { BackgroundColor #EFF6FF; BorderColor #2563EB }
+
+actor "Agriculteur\n(VERIFIED)" as farmer
+actor "Dispositif ESP32"        as esp32
+
+rectangle "Module Katara — Surveillance IoT" {
+  (Créer / modifier parcelle)     as UC1
+  (Appairer dispositif ESP32)     as UC2
+  (Envoyer télémétrie)            as UC3
+  (Visualiser dashboard)          as UC4
+  (Configurer seuils d'alerte)    as UC5
+  (Consulter alertes actives)     as UC6
+  (Demander diagnostic IA)        as UC7
+  (Consulter météo locale)        as UC8
+  (Consulter indice NDVI)         as UC9
+}
+
+farmer --> UC1
+farmer --> UC2
+esp32  --> UC3
+UC3    ..> UC2 : <<include>>
+farmer --> UC4
+farmer --> UC5
+farmer --> UC6
+farmer --> UC7
+farmer --> UC8
+farmer --> UC9
+@enduml
+
+' ─────────────────────────────────────────────
+@startuml fig2_4_uc_farmarket
+' Fig 2.4 — Diagramme de cas d'utilisation : FarMarket
+' Export PNG → figures/fig2_4_uc_farmarket.png
+' ─────────────────────────────────────────────
+left to right direction
+skinparam backgroundColor #FEFEFE
+skinparam usecase { BackgroundColor #DCFCE7; BorderColor #16A34A }
+
+actor "Agriculteur\n(VERIFIED)"  as farmer
+actor "Restaurateur\n(VERIFIED)" as resto
+
+rectangle "Module FarMarket — Marketplace Agricole" {
+  (Publier annonce)             as UC1
+  (Modifier / Supprimer annonce) as UC2
+  (Parcourir catalogue)         as UC3
+  (Filtrer par région/produit)  as UC4
+  (Passer une commande)         as UC5
+  (Accepter / Refuser article)  as UC6
+  (Confirmer paiement COD)      as UC7
+  (Suivre statut commande)      as UC8
+  (Évaluer l'agriculteur)       as UC9
+}
+
+farmer --> UC1
+farmer --> UC2
+farmer --> UC6
+resto  --> UC3
+UC3    ..> UC4 : <<extend>>
+resto  --> UC5
+UC5    ..> UC3 : <<include>>
+UC6    ..> UC5 : <<include>>
+resto  --> UC7
+resto  --> UC8
+resto  --> UC9
+@enduml
+
+' ─────────────────────────────────────────────
+@startuml fig2_5_uc_secondserve
+' Fig 2.5 — Diagramme de cas d'utilisation : SecondServe
+' Export PNG → figures/fig2_5_uc_secondserve.png
+' ─────────────────────────────────────────────
+left to right direction
+skinparam backgroundColor #FEFEFE
+skinparam usecase { BackgroundColor #FFEDD5; BorderColor #EA580C }
+
+actor "Restaurateur"  as resto
+actor "Citoyen"       as citizen
+
+rectangle "Module SecondServe — Anti-gaspillage" {
+  (Accéder via SSO VitaChain)      as UC0
+  (Publier offre surplus)          as UC1
+  (Consulter liste des offres)     as UC2
+  (Filtrer par ville / type)       as UC3
+  (Réserver / Commander une offre) as UC4
+  (Suivre sa commande)             as UC5
+  (Valider commande reçue)         as UC6
+}
+
+resto   --> UC0
+citizen --> UC0
+resto   --> UC1
+citizen --> UC2
+UC2     ..> UC3 : <<extend>>
+citizen --> UC4
+UC4     ..> UC2 : <<include>>
+citizen --> UC5
+citizen --> UC6
+@enduml
+
+' ─────────────────────────────────────────────
+@startuml fig2_6_classes
+' Fig 2.6 — Diagramme de classes simplifié
+' Export PNG → figures/fig2_6_classes.png
+' ─────────────────────────────────────────────
+skinparam backgroundColor #FEFEFE
+skinparam classBackgroundColor #EFF6FF
+skinparam classBorderColor #2563EB
+skinparam ArrowColor #475569
+hide empty members
+
+class Profile {
+  +id : UUID
+  +role : UserRole
+  +verification_status : VerStatus
+  +full_name : String
+  +phone : String
+}
+
+class KycDocument {
+  +id : UUID
+  +user_id : UUID
+  +type : DocType
+  +storage_path : String
+  +status : String
+}
+
+class Parcel {
+  +id : UUID
+  +farmer_id : UUID
+  +name : String
+  +crop_type : String
+  +surface_area_ha : Decimal
+}
+
+class Device {
+  +id : UUID
+  +device_id : String
+  +parcel_id : UUID
+  +api_key_hash : String
+  +status : DeviceStatus
+  +last_seen : Timestamp
+}
+
+class TelemetryReading {
+  +id : UUID
+  +device_id : String
+  +soil_moisture : Decimal
+  +soil_temperature : Decimal
+  +soil_ph : Decimal
+  +soil_conductivity : Decimal
+  +battery_level : Decimal
+  +recorded_at : Timestamp
+}
+
+class AlertThreshold {
+  +id : UUID
+  +parcel_id : UUID
+  +metric : String
+  +min_value : Decimal
+  +max_value : Decimal
+}
+
+class AiDiagnostic {
+  +id : UUID
+  +parcel_id : UUID
+  +status : DiagStatus
+  +diagnostic_summary : Text
+}
+
+class FarmarketAd {
+  +id : UUID
+  +farmer_id : UUID
+  +title : String
+  +product_type : String
+  +price_mad : Decimal
+  +quantity_kg : Decimal
+  +status : AdStatus
+}
+
+class FarmarketOrder {
+  +id : UUID
+  +restaurant_id : UUID
+  +status : OrderStatus
+  +total_mad : Decimal
+  +payment_method : String
+}
+
+class OrderItem {
+  +id : UUID
+  +order_id : UUID
+  +ad_id : UUID
+  +quantity_kg : Decimal
+  +line_total_mad : Decimal
+  +status : ItemStatus
+}
+
+class FarmerRating {
+  +id : UUID
+  +farmer_id : UUID
+  +restaurant_id : UUID
+  +rating : Integer
+  +review : Text
+}
+
+Profile        "1" --> "0..*" KycDocument    : soumet >
+Profile        "1" --> "0..*" Parcel         : possède >
+Parcel         "1" --> "0..*" Device         : associe >
+Device         "1" --> "0..*" TelemetryReading : génère >
+Parcel         "1" --> "0..*" AlertThreshold : configure >
+Parcel         "1" --> "0..*" AiDiagnostic   : requiert >
+Profile        "1" --> "0..*" FarmarketAd    : publie >
+Profile        "1" --> "0..*" FarmarketOrder : passe >
+FarmarketOrder "1" --> "1..*" OrderItem      : contient >
+FarmarketAd    "1" --> "0..*" OrderItem      : référencé par >
+Profile        "1" --> "0..*" FarmerRating   : reçoit >
+@enduml
+
+' ─────────────────────────────────────────────
+@startuml fig3_1_scrum
+' Fig 3.1 — Processus Scrum VitaChain
+' Export PNG → figures/fig3_1_scrum.png
+' ─────────────────────────────────────────────
+skinparam backgroundColor #FEFEFE
+skinparam activity {
+  BackgroundColor #EFF6FF
+  BorderColor     #2563EB
+  ArrowColor      #475569
+  StartColor      #1D4ED8
+  EndColor        #1D4ED8
+}
+
+start
+:Product Backlog\n(50+ User Stories — 5 modules);
+
+repeat
+  :Sprint Planning\n(2 semaines — sélection US);
+  :Développement\nFastAPI · Next.js · Tests unitaires;
+  :Code Review\nGitHub Actions CI — 5 jobs;
+  :Sprint Review\nDémo fonctionnelle au tuteur;
+  :Sprint Retrospective\nAjustements backlog;
+repeat while (Sprints restants ?) is (Oui)
+->Non (Sprint 10 terminé);
+
+:Tests de charge (Locust)\n+ Tests d'intégration;
+:Documentation + Rapport PFE;
+stop
+@enduml
+
+' ─────────────────────────────────────────────
+@startuml fig3_35_appairage_seq
+' Fig 3.35 — Diagramme de séquence : appairage ESP32
+' Export PNG → figures/fig3_35_appairage_seq.png
+' ─────────────────────────────────────────────
+skinparam backgroundColor #FEFEFE
+skinparam sequenceArrowThickness 1.5
+skinparam sequenceParticipantBackgroundColor #EFF6FF
+skinparam sequenceParticipantBorderColor #2563EB
+skinparam noteBorderColor #FDBA74
+skinparam noteBackgroundColor #FFF7ED
+
+actor "Agriculteur"             as farmer
+participant "Frontend\n(Next.js)" as fe
+participant "Backend\n(FastAPI)"  as be
+database    "PostgreSQL\n(Supabase)" as db
+
+farmer -> fe : Cliquer « Associer un capteur »
+fe     -> be : POST /api/v1/katara/devices\n{ device_id, parcel_id }
+be     -> db : Vérifier propriété parcelle\n(politique RLS)
+db    --> be : OK — parcelle appartient à l'agriculteur
+be     -> be : Générer api_key\n« vk_<32 hex aléatoires> »
+be     -> be : bcrypt(api_key)  →  hash
+be     -> db : INSERT m1_katara_devices\n{ device_id, api_key_hash, status=PENDING }
+db    --> be : device créé
+be    --> fe : { device_id, api_key (plaintext), parcel_id }
+fe    --> farmer : Afficher api_key UNE SEULE FOIS
+
+note over farmer
+  L'agriculteur flashe le QR ou copie
+  api_key dans devices.json sur l'ESP32
+end note
+
+...ESP32 redémarre et se connecte au Wi-Fi...
+
+farmer -> be : POST /api/v1/katara/ingest\nHeaders: X-Device-Id + X-Device-Api-Key
+be     -> db : CALL m1_katara_ingest(payload)\n(SECURITY DEFINER)
+db     -> db : verify_device_api_key()\n→ bcrypt.compare
+db     -> db : INSERT m1_katara_telemetry_readings
+db     -> db : UPDATE m1_katara_devices SET status=ACTIVE
+db    --> be : { reading_id }
+be    --> farmer : HTTP 200 OK
+
+note over db
+  Toutes les opérations se font
+  dans une seule transaction
+  SQL via fonction SECURITY DEFINER
+end note
+@enduml
+
+' ─────────────────────────────────────────────
+@startuml fig3_5_archi_cloud
+' Fig 3.5 — Architecture Cloud VitaChain
+' Export PNG → figures/fig3_5_archi_cloud.png
+' ─────────────────────────────────────────────
+skinparam backgroundColor #FEFEFE
+skinparam component {
+  BackgroundColor #EFF6FF
+  BorderColor     #2563EB
+}
+skinparam ArrowColor #475569
+skinparam nodeBackgroundColor #F8FAFC
+skinparam nodeBorderColor #CBD5E1
+
+node "VPS Linux\n(Ubuntu 24.04)" as vps {
+  component "NGINX 1.27\n(Reverse Proxy · TLS 1.3)" as nginx
+  component "Next.js 15\n(Frontend SSR)"             as fe
+  component "FastAPI\n(Backend REST)"                as be
+  component "Workers\n(LISTEN/NOTIFY)"               as workers
+  component "Uptime Kuma"                            as kuma
+}
+
+cloud "Supabase Cloud" as supabase {
+  database "PostgreSQL 17\n+ RLS + 50 migrations" as pg
+  component "Auth (JWT · Magic Link)"              as auth
+  storage   "Storage (S3)"                         as s3
+}
+
+cloud "APIs Externes" as ext {
+  component "OpenWeatherMap"  as owm
+  component "Sentinel-2 Hub\n(OAuth2)"      as sentinel
+  component "Google Gemini\n(Flash 1.5)"    as gemini
+  component "Brevo\n(E-mails transac.)"     as brevo
+}
+
+cloud "Backblaze B2\n(Backups nuit)" as b2
+cloud "Sentry\n(Erreurs APM)"       as sentry
+
+nginx    --> fe
+nginx    --> be
+be       --> pg
+be       --> auth
+be       --> s3
+be       --> owm      : météo
+be       --> sentinel : NDVI
+workers  --> gemini   : diagnostics IA
+workers  --> brevo    : notifications
+workers  --> pg       : LISTEN/NOTIFY
+be       --> sentry   : erreurs
+fe       --> sentry   : erreurs
+workers  --> b2       : dumps nocturnels
+@enduml
+
+' ─────────────────────────────────────────────
+' FIN DU FICHIER plantuml_diagrams.puml
+'
+' INSTRUCTIONS D'UTILISATION :
+' 1. Allez sur  https://www.plantuml.com/plantuml/uml/
+' 2. Copiez-collez chaque bloc @startuml...@enduml
+' 3. Cliquez « Submit » → téléchargez le PNG
+' 4. Renommez le fichier selon le nom indiqué (ex: fig1_2_acteurs.png)
+' 5. Uploadez dans le dossier  figures/  sur Overleaf
+' ─────────────────────────────────────────────

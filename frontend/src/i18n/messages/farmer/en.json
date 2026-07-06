@@ -1,0 +1,737 @@
+{
+  "farmer": {
+    "common": {
+      "breadcrumbHome": "My Farm",
+      "breadcrumbAriaLabel": "Breadcrumb",
+      "weather": {
+        "unavailableTitle": "Weather unavailable",
+        "unavailableShort": "—",
+        "sunTitle": "Weather: Optimal",
+        "sunShort": "Sunny",
+        "rainTitle": "Weather: Rainy",
+        "rainShort": "Rainy",
+        "stormTitle": "Weather: Stormy",
+        "stormShort": "Stormy",
+        "snowTitle": "Weather: Snowy",
+        "snowShort": "Snowy",
+        "fogTitle": "Weather: Foggy",
+        "fogShort": "Foggy",
+        "cloudTitle": "Weather: Cloudy",
+        "cloudShort": "Cloudy"
+      },
+      "relativeTime": {
+        "justNow": "just now",
+        "minutesAgo": "{count, plural, one {# minute ago} other {# minutes ago}}",
+        "hoursAgo": "{count, plural, one {# hour ago} other {# hours ago}}",
+        "daysAgo": "{count, plural, one {# day ago} other {# days ago}}"
+      },
+      "ndviBands": {
+        "veryDense": {
+          "label": "Very dense",
+          "advice": "Vigorous plant cover — routine monitoring."
+        },
+        "dense": {
+          "label": "Dense",
+          "advice": "Good vigor for the season."
+        },
+        "moderate": {
+          "label": "Moderate",
+          "advice": "Weaker cover than expected — check irrigation and fertilization."
+        },
+        "low": {
+          "label": "Low / stressed",
+          "advice": "Likely water stress or delayed emergence — cross-check with sensor data."
+        },
+        "bare": {
+          "label": "Bare soil / water",
+          "advice": "No vegetation detected on the plot."
+        }
+      }
+    },
+    "overview": {
+      "eyebrow": "Overview",
+      "greetingMorning": "Good morning",
+      "greetingAfternoon": "Good afternoon",
+      "greetingEvening": "Good evening",
+      "subtitle": "A live snapshot of your farm: sensors, soil moisture, and plot status.",
+      "myParcelsTitle": "My plots",
+      "parcelsCount": "{count, plural, one {# registered plot} other {# registered plots}}",
+      "addParcel": "+ Add",
+      "empty": {
+        "firstStep": "First step",
+        "welcomeTitle": "Welcome to <katara>Katara</katara>.",
+        "welcomeBody": "You haven't registered a plot yet. Create one to pair an ESP32 sensor and start monitoring your soil live.",
+        "ctaCreateFirst": "Create my first plot",
+        "featureParcelTitle": "Set up the plot",
+        "featureParcelDesc": "Name, crop, and area. 30 seconds.",
+        "featureSensorTitle": "Connect the sensor",
+        "featureSensorDesc": "Pairing with a 6-digit code.",
+        "featureAdviceTitle": "Get your first insights",
+        "featureAdviceDesc": "AI diagnostic from the very first reading.",
+        "freeTrial": "Free for 30 days",
+        "noCommitment": "No commitment",
+        "verificationRequired": "Identity verification is required to pair a sensor.",
+        "previewBadge": "Preview — available after your first plot",
+        "previewLiveMonitoring": "Live monitoring",
+        "previewYourParcels": "Your plots",
+        "previewSoilMoisture": "Soil moisture",
+        "previewCropHealth": "Crop health",
+        "previewSatelliteImagery": "Satellite imagery"
+      },
+      "kpi": {
+        "ariaLabel": "Farm indicators",
+        "parcelsTile": "Plots",
+        "totalSurfaceSub": "{value} ha total",
+        "activeSensorsTile": "Active sensors",
+        "offlineCount": "{count} offline",
+        "pendingCount": "{count} pending",
+        "unlinkedCount": "{count, plural, one {# unlinked} other {# unlinked}}",
+        "allOperational": "All operational",
+        "forecastTile": "Forecast",
+        "weatherUnavailable": "Weather unavailable",
+        "alertsTile": "Open alerts",
+        "parcelsToVerify": "{count, plural, one {# plot to check} other {# plots to check}}",
+        "noThresholdExceeded": "No threshold exceeded",
+        "toVerifyBadge": "To check",
+        "surfaceTile": "Area",
+        "surfacePerParcel": "~{value} ha / plot",
+        "surfaceNoParcel": "—"
+      },
+      "quickActions": {
+        "ariaLabel": "Quick actions",
+        "parcelsLabel": "My plots",
+        "parcelsSub": "Sensors & IoT tracking",
+        "adsLabel": "My listings",
+        "adsSub": "FarMarket · online sales",
+        "satelliteLabel": "Satellite view",
+        "satelliteSub": "NDVI · Sentinel Hub"
+      },
+      "status": {
+        "ariaLabel": "Farm status",
+        "weatherUnavailableDetail": "No geolocated plot, or the weather service is unavailable.",
+        "sensorsOk": "Sensors: Operational",
+        "noSensors": "No sensor paired",
+        "sensorsAlert": "Sensors: Alert",
+        "noSensorsDetail": "Add an IoT sensor to your plots to start monitoring.",
+        "troubledDetail": "{troubled, plural, one {# sensor} other {# sensors}} offline or pending — {parcelCount, plural, one {# plot monitored} other {# plots monitored}}.",
+        "okDetail": "{active, plural, one {# active sensor} other {# active sensors}} across {parcelCount, plural, one {# plot} other {# plots}}.",
+        "favorable": "FAVORABLE",
+        "ok": "OK",
+        "critical": "CRITICAL",
+        "dash": "—"
+      },
+      "trend": {
+        "title": "Trend",
+        "moisture": "Soil moisture",
+        "temperature": "Temperature",
+        "precip": "Rainfall",
+        "forecast5d": "5-day forecast",
+        "tabsAriaLabel": "Choose the metric",
+        "noPrecipData": "Rainfall forecast unavailable.",
+        "noSensorData": "Not enough sensor data yet to plot a trend."
+      },
+      "satelliteCard": {
+        "title": "Mapping · Live satellite",
+        "viewAll": "View all",
+        "altText": "Sentinel-2 NDVI tile — {name}",
+        "unavailable": "Unavailable"
+      },
+      "parcelCard": {
+        "statusHealthy": "Healthy",
+        "statusSensorOffline": "Sensor offline",
+        "statusThresholdExceeded": "Threshold exceeded",
+        "openAriaLabel": "Open plot {name}",
+        "soilMoisture": "Soil moisture",
+        "optimal": "Optimal",
+        "tooLow": "Too low",
+        "tooHigh": "Too high",
+        "sparklineDays": "7 d",
+        "noMeasurement": "No reading yet",
+        "active": "Active",
+        "offline": "Offline",
+        "pending": "Pending",
+        "vigor": "Vigor",
+        "sensorHealth": "Sensor health"
+      },
+      "parcelGrid": {
+        "ariaLabel": "My plots"
+      },
+      "error": {
+        "title": "Something went wrong on this page",
+        "body": "Some data couldn't be loaded. You can try again, or come back later if the problem persists.",
+        "retry": "Try again"
+      },
+      "loading": {
+        "srLoading": "Loading…"
+      }
+    },
+    "parcels": {
+      "common": {
+        "breadcrumb": "My plots"
+      },
+      "list": {
+        "parcelsCount": "{count, plural, one {# registered plot} other {# registered plots}}",
+        "subtitle": "Click a plot to see its telemetry, thresholds, and diagnostic.",
+        "newParcel": "New plot",
+        "unverifiedTitle": "Professional verification required.",
+        "unverifiedBody": "You must first have your documents validated before registering a plot.",
+        "submitDocuments": "Submit my documents",
+        "emptyTitle": "No plots yet.",
+        "emptyBody": "Create your first plot to activate IoT ingestion.",
+        "createParcel": "Create a plot",
+        "openAriaLabel": "Open plot {name}",
+        "activeBadge": "Active plot",
+        "createdOn": "Created on {date}",
+        "clickToView": "Click to see telemetry, sensors, and the AI diagnostic."
+      },
+      "new": {
+        "backToParcels": "← My plots",
+        "title": "New plot",
+        "subtitle": "Enter the plot's details. The GeoJSON polygon will be used by the irrigation and alerting modules.",
+        "form": {
+          "errors": {
+            "name_required": "The plot name is required.",
+            "crop_type_required": "The crop type is required.",
+            "surface_area_invalid": "The area must be a strictly positive number.",
+            "geojson_syntax": "Invalid polygon — draw at least 3 points on the map.",
+            "verification_required": "Your account isn't verified yet. Submit your documents to continue.",
+            "role_not_allowed": "Only FARMER accounts can register a plot.",
+            "parcel_create_failed": "Saving failed on the server. Please try again shortly.",
+            "unexpected": "Unexpected error ({code}). Please try again."
+          },
+          "nameLabel": "Plot name",
+          "namePlaceholder": "North plot",
+          "cropTypeLabel": "Crop type",
+          "cropTypePlaceholder": "— Choose a crop type —",
+          "cropTypeOther": "Other (specify)",
+          "cropTypeOtherPlaceholder": "Specify the crop type…",
+          "surfaceLabel": "Area (hectares)",
+          "computeFromPolygon": "⟳ Compute from polygon (~{value} ha)",
+          "delimitLabel": "Outline your plot",
+          "delimitHelp": "Click on the map to place the polygon's vertices. Minimum 3 points.",
+          "undoPoint": "↩ Undo last point",
+          "reset": "Reset",
+          "pointsCount": "{count, plural, one {# point} other {# points}}",
+          "clickMap": " — click on the map",
+          "morePointsNeeded": " — {count} more needed to draw",
+          "polygonReady": " ✓ polygon ready",
+          "submitting": "Saving…",
+          "submit": "Save plot"
+        }
+      },
+      "detail": {
+        "page": {
+          "eyebrow": "Plot",
+          "modify": "Edit",
+          "thresholdExceeded": "Threshold exceeded",
+          "sensorOffline": "Sensor offline",
+          "allGood": "All good",
+          "createdOn": "Created on {date}"
+        },
+        "switcher": {
+          "ariaLabel": "Switch between my plots",
+          "thresholdExceeded": "Threshold exceeded"
+        },
+        "tabs": {
+          "navAriaLabel": "Plot navigation",
+          "data": "Data",
+          "sensors": "Sensors",
+          "diagnostic": "AI Diagnostic",
+          "satellite": "Satellite",
+          "telemetryUnavailable": "Telemetry data unavailable.",
+          "viewAllOnSatellite": "View all plots on the Satellite page →"
+        },
+        "devices": {
+          "title": "ESP32 sensors",
+          "associate": "+ Pair a sensor",
+          "unverifiedTitle": "Professional verification required.",
+          "unverifiedBody": "You must first have your documents validated before pairing a sensor to a plot.",
+          "emptyTitle": "No sensor paired to this plot.",
+          "emptyBody": "Pair your ESP32 to activate telemetry ingestion (KAT-03).",
+          "keyLabel": "key: vk_…{last4}",
+          "addedOn": "Added on {date} · {lastSeen}",
+          "lastPing": "last ping {date}",
+          "noTelemetry": "no telemetry received yet",
+          "regenerateKey": "Regenerate key",
+          "deleting": "Deleting…",
+          "delete": "Delete",
+          "deleteTitle": "Permanent deletion — only possible before the first reading.",
+          "detach": "Detach",
+          "detachTitle": "Detach the sensor from this plot. History is kept.",
+          "unlinkedNotice": "This sensor has been detached from the plot. Its history remains available. Pair it to another plot from its page to reactivate it.",
+          "confirmHardUnpair": "Delete sensor {deviceId}? This action is permanent (no reading has been sent yet).",
+          "status": {
+            "pending": "Pending",
+            "active": "Online",
+            "offline": "Offline",
+            "unlinked": "Detached"
+          },
+          "errors": {
+            "pair": {
+              "device_already_paired": "A sensor is already paired to this plot. Detach it before adding another one.",
+              "parcel_not_found": "Plot not found.",
+              "verification_required": "Your professional account must be verified to pair a sensor.",
+              "role_not_allowed": "Only a verified farmer can pair a sensor.",
+              "generic": "Error: {detail}"
+            },
+            "unpair": {
+              "device_has_telemetry": "This sensor has already sent readings. Deleting its history will be available in a future version (KAT-12).",
+              "device_not_found": "Sensor not found (already detached?).",
+              "generic": "Error: {detail}"
+            },
+            "unlink": {
+              "device_not_found": "Sensor not found.",
+              "device_already_unlinked": "This sensor is already detached.",
+              "role_not_allowed": "Action reserved to farmers.",
+              "generic": "Error: {detail}"
+            }
+          },
+          "pairDialog": {
+            "title": "Pair an ESP32 sensor",
+            "idLabel": "Sensor ID",
+            "idPlaceholder": "ESP-KAT-001",
+            "idHelp": "The ID is printed on the sensor's casing (format {format}).",
+            "cancel": "Cancel",
+            "submitting": "Pairing…",
+            "submit": "Pair"
+          },
+          "reveal": {
+            "title": "API key for sensor {deviceId}",
+            "body": "Copy this key now and flash it into your ESP32's firmware.",
+            "warning": "You won't be able to view it again afterwards.",
+            "copy": "Copy to clipboard",
+            "copied": "✓ Copied",
+            "confirmCheckbox": "I confirm I've saved the key. I understand it won't be shown again.",
+            "finish": "Done"
+          },
+          "rotateDialog": {
+            "title": "Regenerate the API key",
+            "body": "A new key will be generated for sensor {deviceId}.",
+            "warning": "The old key will stop working immediately.",
+            "note": "You'll need to reflash the firmware with the new value.",
+            "ack": "I understand the old key will be revoked.",
+            "cancel": "Cancel",
+            "submitting": "Regenerating…",
+            "submit": "Regenerate"
+          },
+          "unlinkDialog": {
+            "title": "Detach sensor {deviceId}",
+            "body": "The sensor will be detached from plot {parcelName}. Concretely:",
+            "bullet1": "<strong>The old API key stops working</strong> as soon as the ESP32 sends its next transmission.",
+            "bullet2": "The reading history remains stored under this plot.",
+            "bullet3": "To reuse this sensor on another plot, open its page and click “Pair a sensor” using the same ID {deviceId} — a new key will be generated.",
+            "ack": "I understand the sensor's API key will be invalidated.",
+            "cancel": "Cancel",
+            "submitting": "Detaching…",
+            "submit": "Detach sensor"
+          }
+        },
+        "diagnostic": {
+          "title": "AI Diagnostic",
+          "subtitle": "Analysis of your sensor, weather, and satellite data by the agronomic AI.",
+          "requesting": "Sending…",
+          "request": "Request an AI diagnostic",
+          "disabledUnverified": "Account not verified",
+          "disabledNoData": "No sensor data available",
+          "disabledInFlight": "A diagnostic is already in progress",
+          "status": {
+            "pending": "Pending",
+            "processing": "In progress…",
+            "completed": "Completed",
+            "failed": "Failed"
+          },
+          "errors": {
+            "diagnostic_already_in_progress": "A diagnostic is already in progress for this plot.",
+            "diagnostic_rate_limit_exceeded": "Daily limit reached (3 diagnostics / 24h).",
+            "verification_required": "Your account must be verified to request a diagnostic.",
+            "role_not_allowed": "Only farmers can request a diagnostic.",
+            "not_authenticated": "Session expired — please sign in again.",
+            "generic": "An error occurred. Please try again."
+          },
+          "viewResult": "View result",
+          "failedRetry": "The diagnostic failed. You can request a new one."
+        },
+        "telemetry": {
+          "title": "Sensors — Readings",
+          "requestDiagnosticDisabledTitle": "Coming soon (KAT-07)",
+          "requestDiagnostic": "Request an AI diagnostic",
+          "windows": {
+            "24h": "24 h",
+            "7d": "7 days",
+            "30d": "30 days"
+          },
+          "history": "History",
+          "filteredOneSensor": " · filtered to 1 sensor",
+          "windowAriaLabel": "Time window",
+          "pointsCount": "{count} points · bucket {granularity}",
+          "loadingSuffix": " · loading…",
+          "metrics": {
+            "soilMoisture": "Soil moisture (%)",
+            "soilTemperature": "Soil temperature (°C)",
+            "soilPh": "Soil pH",
+            "conductivity": "Conductivity (µS/cm)"
+          },
+          "noData": "No data.",
+          "ptsSuffix": "{count} pts",
+          "chartAriaLabel": "{title}, latest value {value}{unit}",
+          "latestTile": {
+            "soilMoisture": "Soil moisture",
+            "soilTemperature": "Soil temperature",
+            "soilPh": "Soil pH",
+            "conductivity": "Conductivity"
+          },
+          "unlinkedBadge": "Sensor detached",
+          "unlinkedDetail": "Latest reading from sensor{deviceLabel}",
+          "unlinkedAtSuffix": ", detached {relative}.",
+          "unlinkedNoSuffix": ".",
+          "battery": "Battery {level} %",
+          "lastReading": "Latest reading {relative}",
+          "emptyHasHistoryTitle": "Sensor detached — no recent data.",
+          "emptyHasHistoryBody": "The reading history remains available via the \"Sensor history\" card below. To resume data collection, pair a new ESP32 sensor to this plot.",
+          "emptyNoHistoryTitle": "No sensor data yet.",
+          "emptyNoHistoryBody": "If you just paired an ESP32, the first reading arrives within 15 minutes. Check the sensor pairing above.",
+          "relative": {
+            "seconds": "{count, plural, one {# second ago} other {# seconds ago}}",
+            "minutes": "{count, plural, one {# minute ago} other {# minutes ago}}",
+            "hours": "{count, plural, one {# hour ago} other {# hours ago}}",
+            "days": "{count, plural, one {# day ago} other {# days ago}}",
+            "dash": "—"
+          },
+          "deviceHistory": {
+            "title": "Sensor history",
+            "viewAll": "View all sensors",
+            "paired": "Paired",
+            "readingsCount": "{count} readings",
+            "detached": "Detached {relative}",
+            "filterActive": "Filter active",
+            "filterGraph": "Filter chart",
+            "status": {
+              "pending": "Pending",
+              "active": "Active",
+              "offline": "Offline",
+              "unlinked": "Detached"
+            },
+            "dash": "—",
+            "recently": "recently"
+          }
+        },
+        "thresholds": {
+          "title": "Alert thresholds",
+          "unverifiedNotice": "You must be verified to save thresholds. Viewing remains available.",
+          "metricHeader": "Metric",
+          "minHeader": "Min",
+          "maxHeader": "Max",
+          "enabledHeader": "Enabled",
+          "metrics": {
+            "soil_moisture": "Soil moisture",
+            "soil_temperature": "Soil temperature",
+            "soil_ph": "Soil pH",
+            "soil_conductivity": "Conductivity",
+            "battery_level": "Battery"
+          },
+          "minAriaLabel": "{label} minimum",
+          "maxAriaLabel": "{label} maximum",
+          "enableAriaLabel": "{label} enable",
+          "helpText": "Leave Min or Max empty to disable that side. Alerts are sent at most once every 24 h per metric.",
+          "saving": "Saving…",
+          "save": "Save",
+          "errorVerificationRequired": "You must be verified to save thresholds.",
+          "errorGeneric": "An error occurred ({error}).",
+          "saved": "Thresholds saved."
+        },
+        "deleteButton": {
+          "delete": "Delete",
+          "confirmPrompt": "Delete permanently?",
+          "cancel": "Cancel",
+          "deleting": "Deleting…",
+          "confirm": "Confirm",
+          "failed": "Deletion failed. Please try again."
+        }
+      },
+      "edit": {
+        "eyebrow": "Plot",
+        "breadcrumbModify": "Edit",
+        "modifyTitle": "Edit \"{name}\"",
+        "form": {
+          "errors": {
+            "name_required": "The plot name is required.",
+            "crop_type_required": "The crop type is required.",
+            "surface_area_invalid": "The area must be a strictly positive number.",
+            "geojson_syntax": "Invalid polygon — draw at least 3 points on the map.",
+            "network_error": "Network error. Check your connection and try again.",
+            "parcel_create_failed": "Update failed on the server. Please try again.",
+            "unexpected": "Unexpected error ({code}). Please try again."
+          },
+          "nameLabel": "Plot name",
+          "namePlaceholder": "North plot",
+          "cropTypeLabel": "Crop type",
+          "cropTypePlaceholder": "— Choose a crop type —",
+          "cropTypeOther": "Other (specify)",
+          "cropTypeOtherPlaceholder": "Specify the crop type…",
+          "surfaceLabel": "Area (hectares)",
+          "computeFromPolygon": "⟳ Compute from polygon (~{value} ha)",
+          "delimitLabel": "Outline your plot",
+          "delimitHelp": "Click on the map to reposition the vertices. Minimum 3 points.",
+          "undoPoint": "↩ Undo last point",
+          "reset": "Reset",
+          "pointsCount": "{count, plural, one {# point} other {# points}}",
+          "clickMap": " — click on the map",
+          "morePointsNeeded": " — {count} more needed to draw",
+          "polygonReady": " ✓ polygon ready",
+          "submitting": "Saving…",
+          "submit": "Save changes"
+        }
+      }
+    },
+    "ads": {
+      "list": {
+        "breadcrumb": "My listings",
+        "eyebrow": "FarMarket",
+        "adsCount": "{count, plural, one {# listing} other {# listings}}",
+        "subtitle": "Manage your sales listings on the B2B agricultural marketplace.",
+        "newAd": "New listing",
+        "unverifiedTitle": "Professional verification required.",
+        "unverifiedBody": "You must first have your documents validated before publishing a listing.",
+        "submitDocuments": "Submit my documents",
+        "emptyTitle": "No listings yet.",
+        "emptyBody": "Publish your first listing to become visible to restaurants.",
+        "createAd": "Create a listing",
+        "status": {
+          "ACTIVE": "Active",
+          "EXPIRED": "Expired",
+          "DELETED": "Deleted"
+        },
+        "available": "Available",
+        "expiresIn": "{count, plural, one {Expires in # day} other {Expires in # days}}",
+        "expiresToday": "Expires today",
+        "edit": "Edit",
+        "delete": "Delete"
+      },
+      "new": {
+        "backToAds": "← My listings",
+        "title": "New listing",
+        "subtitle": "Publish your product on FarMarket. The listing expires automatically after 7 days and can be renewed.",
+        "form": {
+          "errors": {
+            "title_required": "The title is required.",
+            "description_required": "The description is required.",
+            "product_type_required": "The product type is required.",
+            "price_invalid": "The price must be greater than 0.",
+            "quantity_invalid": "The quantity must be greater than 0.",
+            "region_required": "The region is required.",
+            "not_authenticated": "Session expired. Please sign in again.",
+            "network_error": "Network error. Check your connection and try again.",
+            "verification_required": "Your account isn't verified yet. Submit your documents to continue.",
+            "role_not_allowed": "Only FARMER accounts can publish a listing.",
+            "too_many_photos": "Maximum {max} photos allowed.",
+            "photo_too_large": "A photo exceeds the 2 MB limit.",
+            "invalid_photo_type": "Only images are accepted (JPEG, PNG, WebP…).",
+            "unexpected": "Unexpected error ({code}). Please try again."
+          },
+          "titleLabel": "Listing title",
+          "titlePlaceholder": "E.g.: Organic Souss tomatoes — grade A",
+          "descriptionLabel": "Description",
+          "descriptionPlaceholder": "Describe your product: variety, growing conditions, packaging…",
+          "productTypeLabel": "Product type",
+          "productTypePlaceholder": "E.g.: Tomatoes, Olives, Durum wheat…",
+          "regionLabel": "Region",
+          "regionPlaceholder": "— Choose a region —",
+          "priceLabel": "Price (MAD / kg)",
+          "quantityLabel": "Available quantity (kg)",
+          "photosLabel": "Photos",
+          "photosOptional": "(optional — max {max}, {size} MB each)",
+          "photoAlt": "Photo {index}",
+          "removePhotoAriaLabel": "Remove photo {index}",
+          "addPhotos": "Add photos",
+          "submitting": "Publishing…",
+          "submit": "Publish listing",
+          "tooManyPhotos": "Maximum {max} photos allowed.",
+          "photoTooLarge": "\"{name}\" exceeds {size} MB.",
+          "notAnImage": "\"{name}\" is not an image."
+        }
+      },
+      "edit": {
+        "breadcrumbEdit": "Edit",
+        "eyebrow": "FarMarket",
+        "title": "Edit listing",
+        "form": {
+          "errors": {
+            "no_fields_to_update": "Change at least one field before saving.",
+            "ad_not_found": "Listing not found.",
+            "not_ad_owner": "You do not own this listing.",
+            "not_editable": "Only active listings can be edited.",
+            "too_many_photos": "Maximum 5 photos allowed.",
+            "photo_too_large": "Each photo must not exceed 2 MB.",
+            "invalid_photo_type": "Only images are accepted.",
+            "network_error": "Network error. Check your connection and try again.",
+            "not_authenticated": "Session expired. Please sign in again.",
+            "generic": "Error: {error}"
+          },
+          "titleLabel": "Listing title",
+          "descriptionLabel": "Description",
+          "productTypeLabel": "Product type",
+          "priceLabel": "Price (MAD/kg)",
+          "quantityLabel": "Quantity (kg)",
+          "regionLabel": "Region",
+          "photosLabel": "Photos (leave empty to keep the current photos)",
+          "photoAlt": "Photo {index}",
+          "newPhotosNotice": "{count, plural, one {# new photo} other {# new photos}} — will replace all existing photos.",
+          "photosHelp": "Max 5 photos · 2 MB per photo · image formats only",
+          "cancel": "Cancel",
+          "saving": "Saving…",
+          "save": "Save changes"
+        }
+      }
+    },
+    "orders": {
+      "list": {
+        "breadcrumb": "Orders",
+        "eyebrow": "FarMarket",
+        "title": "Incoming orders",
+        "subtitle": "Restaurants are anonymized — you only see an opaque handle and the delivery region. VitaChain handles logistics coordination.",
+        "pendingBadge": "{count} pending",
+        "ordersCountBadge": "{count, plural, one {# order} other {# orders}}",
+        "columns": {
+          "resto": "Restaurant (anon.)",
+          "ad": "Listing",
+          "quantity": "Quantity",
+          "total": "Total",
+          "region": "Region",
+          "status": "Status",
+          "actions": "Actions"
+        },
+        "kpi": {
+          "revenueDelivered": "Revenue delivered",
+          "revenueSub": "lines with Delivered status",
+          "activeLines": "Active lines",
+          "activeSub": "in progress",
+          "kgDelivered": "Kg delivered",
+          "kgSub": "total volume shipped",
+          "pending": "Pending",
+          "pendingSubAction": "decisions required",
+          "pendingSubNone": "no action required"
+        },
+        "emptyTitle": "No orders yet.",
+        "emptyBody": "When a restaurant places an order on your listings, it will appear here.",
+        "manageAds": "Manage my listings",
+        "scrollHint": "Scroll horizontally on mobile to see all columns."
+      },
+      "row": {
+        "status": {
+          "PENDING": "Pending",
+          "ACCEPTED": "Accepted",
+          "REJECTED": "Rejected",
+          "PICKED_UP": "Picked up",
+          "IN_TRANSIT": "In transit",
+          "DELIVERED": "Delivered"
+        },
+        "rejectReasonPlaceholder": "Reason (optional, do not include contact details)",
+        "confirmReject": "Confirm rejection",
+        "cancel": "Cancel",
+        "accept": "Accept",
+        "reject": "Reject",
+        "markPickedUp": "Mark picked up",
+        "markInTransit": "In transit",
+        "markDelivered": "Mark delivered",
+        "dash": "—"
+      }
+    },
+    "weather": {
+      "breadcrumb": "Weather",
+      "eyebrow": "Local weather",
+      "title": "Current conditions & forecast.",
+      "subtitle": "OpenWeatherMap data, computed at the centroid of the selected plot's polygon. Backend cache 3 h.",
+      "parcelPickerAriaLabel": "Choose the plot",
+      "parcelLabel": "Plot",
+      "now": "Now · {city}",
+      "feelsLike": "feels like {value}°",
+      "updatedAt": "Updated at {time}",
+      "minMax": "Min / Max",
+      "airHumidity": "Air humidity",
+      "wind": "Wind",
+      "rain3h": "Rain 3 h",
+      "next24h": "Next 24 hours",
+      "nowShort": "Now",
+      "today": "Today",
+      "weekdaysShort": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+      "daysForecastTitle": "{count} next days",
+      "source": "Source: OpenWeatherMap · auto-updated",
+      "noParcelsTitle": "No plots to display",
+      "noParcelsBody": "Create a plot with its GeoJSON polygon to activate local weather.",
+      "createParcel": "Create a plot",
+      "unavailableTitle": "Weather data unavailable",
+      "unavailableBody": "The backend is unreachable, OpenWeatherMap returned an error, or the API key isn't configured server-side (env variable <code>OPENWEATHERMAP_API_KEY</code>)."
+    },
+    "satellite": {
+      "page": {
+        "breadcrumb": "Satellite",
+        "eyebrow": "Satellite imagery",
+        "title": "Sentinel-2 view & vegetation vigor.",
+        "subtitle": "NDVI index computed from the most recent cloud-free Sentinel-2 image, clipped to the plot's polygon. Backend cache 12 h.",
+        "parcelPickerAriaLabel": "Choose the plot",
+        "parcelLabel": "Plot",
+        "noParcelsTitle": "No plots to display",
+        "noParcelsBody": "Create a plot with its GeoJSON polygon to activate satellite imagery.",
+        "createParcel": "Create a plot"
+      },
+      "panel": {
+        "scaleTitle": "Vegetation vigor scale",
+        "scaleBare": "Bare soil / water",
+        "scaleModerate": "Moderate",
+        "scaleDense": "Very dense",
+        "vigorTitle": "Vegetation vigor",
+        "acquisition": "Acquisition · {date}",
+        "sentinel2L2A": "Sentinel-2 L2A",
+        "imageAlt": "Sentinel-2 NDVI tile clipped to the plot",
+        "expand": "Expand ↗",
+        "imageUnavailable": "NDVI image unavailable for this period. The average is still computed from the latest cloud-free composite.",
+        "copernicus": "Copernicus / Sentinel Hub",
+        "resolution": "512×512 resolution · 12 h cache",
+        "cropLabel": "Crop",
+        "surfaceLabel": "Area",
+        "revisitLabel": "Sentinel-2 revisit",
+        "revisitValue": "~5 days",
+        "unavailableTitle": "Satellite data unavailable",
+        "unavailableBody": "No cloud-free Sentinel-2 image was found for this period, the backend is unreachable, or the Sentinel Hub OAuth credentials aren't configured server-side (env variables <code1>SENTINEL_HUB_CLIENT_ID</code1> / <code2>SENTINEL_HUB_CLIENT_SECRET</code2>). Sentinel-2 data is refreshed roughly every 5 days."
+      }
+    },
+    "settings": {
+      "page": {
+        "breadcrumb": "Settings",
+        "eyebrow": "Settings",
+        "title": "Your account.",
+        "subtitle": "Profile information and verification status.",
+        "profileSection": "Profile",
+        "email": "Email",
+        "role": "Role",
+        "language": "Language",
+        "verificationSection": "Identity verification",
+        "verified": "Account verified",
+        "verificationPending": "Verification in progress",
+        "verificationNeeded": "Verification required",
+        "verifiedBody": "You can pair sensors and register plots.",
+        "unverifiedBody": "Pairing a sensor and creating a plot require identity verification.",
+        "submitDocuments": "Submit my documents",
+        "sessionSection": "Session",
+        "signOut": "Sign out",
+        "dash": "—"
+      },
+      "profileForm": {
+        "firstName": "First name",
+        "lastName": "Last name",
+        "region": "Farm region",
+        "regionNotSet": "— Not set —",
+        "regionHelp": "This information is visible to restaurants on your listings.",
+        "saved": "Profile saved",
+        "saving": "Saving…",
+        "save": "Save"
+      },
+      "actions": {
+        "sessionExpired": "Session expired. Please sign in again.",
+        "nameTooLong": "First name and last name must be under 80 characters.",
+        "invalidRegion": "Invalid region.",
+        "saveFailed": "Saving failed. Please try again."
+      }
+    }
+  }
+}

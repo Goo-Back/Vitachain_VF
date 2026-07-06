@@ -507,6 +507,10 @@ class ParcelOverviewEntry(BaseModel):
     last_reading_at: datetime | None = None
     last_soil_moisture: float | None = None
     has_open_threshold_breach: bool
+    # Count of in-scope metrics (soil_moisture/temperature/ph/conductivity —
+    # battery_level excluded, see migration 0053) currently breaching an
+    # enabled threshold. has_open_threshold_breach == open_alert_count > 0.
+    open_alert_count: int = Field(..., ge=0, le=4)
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -520,7 +524,11 @@ class FarmKpiRollup(BaseModel):
     device_offline_count: int = Field(..., ge=0)
     device_pending_count: int = Field(..., ge=0)
     device_unlinked_count: int = Field(..., ge=0)
+    # Number of parcels with >=1 open alert (affected-parcel count).
     parcels_with_open_breach: int = Field(..., ge=0)
+    # Total breached metrics across the farm (severity count, distinct from
+    # parcels_with_open_breach which counts parcels, not metrics).
+    open_alert_count: int = Field(..., ge=0)
 
 
 class FarmerOverviewResponse(BaseModel):

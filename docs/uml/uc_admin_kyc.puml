@@ -1,0 +1,132 @@
+@startuml UC_Admin_Verification_KYC
+!theme plain
+skinparam actorStyle awesome
+skinparam usecase {
+  BackgroundColor #FFF8E1
+  BorderColor #F57F17
+  FontSize 13
+}
+skinparam actor {
+  BackgroundColor #FFECB3
+  BorderColor #F57F17
+}
+skinparam rectangle {
+  BackgroundColor #FFFDF0
+  BorderColor #F57F17
+}
+skinparam note {
+  BackgroundColor #FFFDE7
+  BorderColor #F9A825
+}
+
+title Diagramme de Cas d'Utilisation — Vérification KYC (Module Admin)
+
+actor "Administrateur" as Admin
+actor "Agriculteur /\nProfessionnel" as Pro
+actor "Worker\nNotification" as Worker <<system>>
+actor "Trigger Supabase\n(immutabilité)" as Trigger <<system>>
+
+rectangle "Module Admin — Vérification KYC" {
+
+  ' --- Pro (soumission)
+  usecase "Soumettre un document\nKYC" as UC_SUBMIT
+  usecase "Consulter le statut\nde sa vérification" as UC_STATUS
+  usecase "Re-soumettre après\nrejet" as UC_RESUBMIT
+
+  ' --- Admin (file d'attente)
+  usecase "Consulter la file\nd'attente PENDING" as UC_QUEUE
+  usecase "Prévisualiser le document\n(URL signée 5 min)" as UC_PREVIEW
+  usecase "Approuver le document" as UC_APPROVE
+  usecase "Rejeter le document\n(avec note)" as UC_REJECT
+
+  ' --- Inclusions / Extensions système
+  usecase "Vérification statut\nPENDING (idempotence)" as UC_CHECK_PENDING <<include>>
+  usecase "Mise à jour\nverification_status → VERIFIED" as UC_FLIP_VERIFIED <<include>>
+  usecase "Enregistrement\nkyc_documents.status" as UC_DOC_STATUS <<include>>
+  usecase "Insertion outbox\nnotification (kyc.approved / kyc.rejected)" as UC_OUTBOX <<include>>
+  usecase "Envoi e-mail\n(Brevo via Worker)" as UC_EMAIL <<include>>
+  usecase "Écriture protégée\n(trigger immutabilité mig 0005)" as UC_TRIGGER <<include>>
+
+  note right of UC_SUBMIT
+    Types de documents acceptés :
+    - RC  : Registre de commerce
+    - CIN : Carte d'identité nationale
+    - AGRI_CARD : Carte d'agriculteur
+    - OTHER
+    Stocké dans le bucket kyc-documents
+    (Supabase Storage).
+  end note
+
+  note right of UC_QUEUE
+    GET /api/v1/admin/kyc/pending
+    Ordre FIFO (submitted_at ASC).
+    Pagination 20 / page.
+    Affiche : nom, email, type doc,
+    format, taille, date soumission.
+  end note
+
+  note right of UC_APPROVE
+    POST /api/v1/admin/kyc/{id}/decide
+    decision = "APPROVED"
+    Effets atomiques (best-effort) :
+    1. kyc_documents.status → APPROVED
+    2. profiles.verification_status → VERIFIED
+    3. Outbox → kyc.approved (e-mail)
+  end note
+
+  note right of UC_REJECT
+    POST /api/v1/admin/kyc/{id}/decide
+    decision = "REJECTED" + note (≤2000 chars)
+    Effets :
+    1. kyc_documents.status → REJECTED
+    2. profiles.verification_status reste PENDING
+       → re-soumission autorisée
+    3. Outbox → kyc.rejected (e-mail)
+  end note
+
+  note bottom of UC_RESUBMIT
+    Après un rejet, le professionnel
+    peut déposer un nouveau document.
+    L'ancien reste en base pour audit.
+    Seul le nouveau passe en PENDING.
+  end note
+}
+
+' Relations Professionnel
+Pro --> UC_SUBMIT
+Pro --> UC_STATUS
+Pro --> UC_RESUBMIT
+
+' Relations Admin
+Admin --> UC_QUEUE
+Admin --> UC_PREVIEW
+Admin --> UC_APPROVE
+Admin --> UC_REJECT
+
+' Inclusions — File d'attente
+UC_QUEUE ..> UC_PREVIEW : <<extend>>
+
+' Inclusions — Décision
+UC_APPROVE ..> UC_CHECK_PENDING : <<include>>
+UC_REJECT  ..> UC_CHECK_PENDING : <<include>>
+
+UC_APPROVE ..> UC_DOC_STATUS    : <<include>>
+UC_REJECT  ..> UC_DOC_STATUS    : <<include>>
+
+UC_APPROVE ..> UC_FLIP_VERIFIED : <<include>>
+UC_APPROVE ..> UC_FLIP_VERIFIED
+UC_FLIP_VERIFIED ..> UC_TRIGGER : <<include>>
+
+UC_APPROVE ..> UC_OUTBOX : <<include>>
+UC_REJECT  ..> UC_OUTBOX : <<include>>
+
+UC_OUTBOX ..> UC_EMAIL : <<include>>
+
+' Re-soumission
+UC_RESUBMIT ..> UC_SUBMIT : <<include>>
+
+' Relations système
+Trigger --> UC_TRIGGER
+Worker  --> UC_EMAIL
+
+@enduml

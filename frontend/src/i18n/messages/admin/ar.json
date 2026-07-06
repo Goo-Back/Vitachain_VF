@@ -1,0 +1,384 @@
+{
+  "admin": {
+    "shell": {
+      "signOut": "تسجيل الخروج",
+      "badge": "مسؤول"
+    },
+    "overview": {
+      "title": "لوحة الإدارة",
+      "subtitle": "نظرة عامة على أدوات إدارة المنصة.",
+      "open": "فتح ←",
+      "cards": {
+        "kyc": {
+          "title": "التحقق من الهوية (KYC)",
+          "description": "مراجعة المستندات المُرسلة والموافقة عليها أو رفضها.",
+          "metricLabel": "قيد الانتظار"
+        },
+        "users": {
+          "title": "المستخدمون",
+          "description": "البحث عن الحسابات وتغيير الأدوار والحظر أو إعادة التفعيل.",
+          "metricLabel": "حساب"
+        },
+        "farmarket": {
+          "title": "FarMarket",
+          "description": "الإعلانات والطلبات وتسوية مدفوعات الدفع عند الاستلام.",
+          "metricLabel": "طلب"
+        },
+        "secondserve": {
+          "title": "SecondServe",
+          "description": "الشركاء والمستخدمون والطلبات والدعم لمكافحة الهدر الغذائي.",
+          "metricLabel": "حساب"
+        }
+      }
+    },
+    "verifications": {
+      "docType": {
+        "RC": "السجل التجاري",
+        "CIN": "البطاقة الوطنية للتعريف",
+        "AGRI_CARD": "بطاقة الفلاح",
+        "OTHER": "أخرى"
+      },
+      "unknownError": "خطأ غير معروف",
+      "title": "التحقق من الهوية (KYC)",
+      "subtitle": "مستندات في انتظار التحقق",
+      "pendingCount": "{count} قيد الانتظار",
+      "fetchError": "تعذّر تحميل الطلبات: {error}",
+      "empty": "لا توجد مستندات قيد الانتظار. كل شيء محدّث!",
+      "statusBadge": "قيد الانتظار",
+      "fields": {
+        "type": "النوع",
+        "format": "الصيغة",
+        "size": "الحجم",
+        "submittedAt": "تاريخ الإرسال"
+      },
+      "viewDocument": "عرض المستند",
+      "review": {
+        "pending": "جارٍ التنفيذ…",
+        "approve": "الموافقة",
+        "reject": "رفض",
+        "rejectPlaceholder": "سبب الرفض (اختياري)",
+        "confirmReject": "تأكيد الرفض",
+        "cancel": "إلغاء"
+      },
+      "actions": {
+        "missingId": "المعرّف مفقود.",
+        "genericError": "خطأ {status}{detail}"
+      }
+    },
+    "users": {
+      "roleOptions": {
+        "all": "كل الأدوار",
+        "FARMER": "فلاح",
+        "RESTAURANT": "مطعم",
+        "CITIZEN": "مواطن",
+        "ADMIN": "مسؤول"
+      },
+      "statusOptions": {
+        "all": "كل الحالات",
+        "active": "نشط",
+        "banned": "محظور"
+      },
+      "unknownError": "خطأ غير معروف",
+      "title": "المستخدمون",
+      "subtitle": "إدارة حسابات المنصة والأدوار وصلاحيات الوصول.",
+      "accountCount": "{count, plural, zero {# حساب} one {حساب واحد} two {حسابان} few {# حسابات} many {# حسابًا} other {# حساب}}",
+      "form": {
+        "searchLabel": "بحث",
+        "searchPlaceholder": "الاسم أو البريد الإلكتروني…",
+        "roleLabel": "الدور",
+        "statusLabel": "الحالة",
+        "submit": "تصفية"
+      },
+      "fetchError": "تعذّر تحميل المستخدمين: {error}",
+      "empty": "لا يوجد مستخدم يطابق هذه المعايير.",
+      "table": {
+        "user": "المستخدم",
+        "kyc": "التحقق",
+        "role": "الدور",
+        "joined": "تاريخ التسجيل",
+        "status": "الحالة",
+        "action": "إجراء"
+      },
+      "pagination": {
+        "page": "صفحة {page} / {totalPages}",
+        "previous": "السابق",
+        "next": "التالي"
+      },
+      "row": {
+        "you": "أنت",
+        "verif": {
+          "VERIFIED": "موثّق",
+          "PENDING": "قيد الانتظار",
+          "UNVERIFIED": "غير موثّق",
+          "REJECTED": "مرفوض"
+        },
+        "confirmPending": "…",
+        "confirm": "موافق",
+        "banned": "محظور",
+        "active": "نشط",
+        "banPending": "جارٍ التنفيذ…",
+        "reactivate": "إعادة التفعيل",
+        "ban": "حظر"
+      },
+      "actions": {
+        "missingData": "بيانات مفقودة.",
+        "cannotChangeSelfRole": "لا يمكنك تغيير دورك الخاص.",
+        "genericError": "خطأ {status}{detail}",
+        "missingId": "المعرّف مفقود.",
+        "cannotBanSelf": "لا يمكنك حظر نفسك."
+      }
+    },
+    "farmarket": {
+      "adminView": {
+        "title": "FarMarket",
+        "subtitle": "واجهة المشغّل — إعلانات السوق الزراعي بين الشركات وتسوية المدفوعات.",
+        "tabs": {
+          "dashboard": "لوحة القيادة",
+          "orders": "الطلبات",
+          "ads": "الإعلانات",
+          "cod": "تسوية الدفع عند الاستلام",
+          "reports": "التقارير"
+        },
+        "featured": "★ مميّز",
+        "table": {
+          "title": "العنوان",
+          "typeRegion": "النوع / الجهة",
+          "price": "السعر",
+          "status": "الحالة",
+          "pinned": "مثبّت؟",
+          "actions": "إجراءات"
+        },
+        "empty": "لا توجد إعلانات.",
+        "pinnedYes": "نعم ★",
+        "pinnedNo": "لا",
+        "togglePending": "…",
+        "unpin": "إلغاء التثبيت",
+        "pin": "تثبيت"
+      },
+      "codReconciliation": {
+        "stats": {
+          "pendingOrders": "طلبات الدفع عند الاستلام المعلّقة",
+          "cashToReconcile": "نقد بانتظار التسوية",
+          "oldestDays": "الأقدم (بالأيام)"
+        },
+        "bestPractices": {
+          "label": "أفضل الممارسات:",
+          "before": "لا تضع علامة على الطلب كـ",
+          "after": "إلا بعد إيداع المبلغ النقدي فعليًا في الصندوق. يجب أن يتضمن كل تجاوز سببًا واضحًا (مرجع الإيداع، رقم الحادثة، إلخ) — يتم تسجيل كل انتقال في سجل التدقيق."
+        },
+        "table": {
+          "reference": "المرجع",
+          "restaurant": "المطعم",
+          "region": "الجهة",
+          "amount": "المبلغ",
+          "age": "المدة",
+          "orderStatus": "حالة الطلب",
+          "actions": "إجراءات"
+        },
+        "ageUnit": "ي",
+        "empty": "لا توجد طلبات دفع عند الاستلام معلّقة — تمت تسوية الصندوق.",
+        "markPaid": "تعليم كمدفوعة",
+        "markFailed": "تعليم كفاشلة",
+        "audit": "تدقيق",
+        "override": {
+          "reasonTooShort": "يجب أن يتكون السبب من 3 أحرف على الأقل.",
+          "titlePaid": "تعليم الطلب كـ PAID",
+          "titleFailed": "تعليم الدفع كـ FAILED",
+          "titleReopen": "إعادة فتح الدفع (DUE)",
+          "reference": "المرجع:",
+          "amount": "المبلغ:",
+          "reasonLabel": "السبب (إلزامي — سيُسجَّل في سجل التدقيق)",
+          "placeholderPaid": "مثال: تم إيداع النقد في الصندوق بتاريخ 28/05/2026 — إيصال رقم BD-2026-152.",
+          "placeholderFailed": "مثال: استرداد من مزود خدمة الدفع، مرجع TXN-9921. تم استرداد قيمة الطلب.",
+          "placeholderReopen": "مثال: إلغاء الدفع بناءً على طلب المطعم — تذكرة رقم 438.",
+          "cancel": "إلغاء",
+          "saving": "جارٍ الحفظ…",
+          "confirm": "تأكيد",
+          "networkError": "خطأ في الشبكة. يُرجى إعادة المحاولة."
+        },
+        "auditDialog": {
+          "httpError": "خطأ HTTP {status}",
+          "networkError": "خطأ في الشبكة",
+          "title": "سجل التدقيق · {ref}",
+          "subtitle": "جميع تحولات حالة الدفع (payment_status) لهذا الطلب.",
+          "empty": "لا يوجد أي تحول مسجَّل لهذا الطلب.",
+          "actor": "الفاعل",
+          "reasonQuote": "«{reason}»",
+          "close": "إغلاق"
+        },
+        "errors": {
+          "alreadyStatus": "الحالة المطلوبة هي الحالة الحالية أصلًا.",
+          "orderNotFound": "الطلب غير موجود.",
+          "overrideFailed": "فشل التجاوز في قاعدة البيانات. تحقق من الصلاحيات.",
+          "auditInsertFailed": "لم يُسجَّل التدقيق — تم إلغاء التجاوز. يُرجى إعادة المحاولة.",
+          "fallback": "خطأ ({code})."
+        }
+      },
+      "ordersManagement": {
+        "filters": {
+          "all": "الكل",
+          "PENDING": "قيد الانتظار",
+          "ACCEPTED": "مؤكَّدة",
+          "IN_PROGRESS": "تم الشحن",
+          "DELIVERED": "تم التسليم",
+          "CANCELLED": "ملغاة",
+          "RETURNED": "مرتجعة"
+        },
+        "table": {
+          "reference": "المرجع",
+          "client": "العميل",
+          "phone": "الهاتف",
+          "cityRegion": "المدينة / الجهة",
+          "amount": "المبلغ",
+          "payment": "الدفع",
+          "status": "الحالة",
+          "actions": "إجراءات"
+        },
+        "empty": "لا توجد طلبات ضمن هذا التصفية.",
+        "paymentBankTransfer": "تحويل بنكي",
+        "expanded": {
+          "address": "العنوان:",
+          "restaurantId": "المطعم (UUID):",
+          "subtotalLogistics": "المجموع الفرعي / اللوجستيك:",
+          "deliveryNotes": "ملاحظات التسليم:"
+        },
+        "busy": "…",
+        "networkError": "خطأ في الشبكة. يُرجى إعادة المحاولة.",
+        "errors": {
+          "invalidTransition": "هذا التحول في الحالة غير مسموح به لهذا الطلب.",
+          "alreadyStatus": "الطلب في هذه الحالة أصلًا.",
+          "orderNotFound": "الطلب غير موجود.",
+          "updateFailed": "فشل التحديث في قاعدة البيانات. يُرجى إعادة المحاولة.",
+          "fallback": "خطأ ({code})."
+        }
+      },
+      "reports": {
+        "unavailable": "التقارير غير متاحة حاليًا.",
+        "cards": {
+          "sales": "المبيعات (الإيرادات المحجوزة)",
+          "delivered": "الطلبات المسلَّمة",
+          "cancelled": "الطلبات الملغاة",
+          "returnRate": "معدل الإرجاع"
+        },
+        "cancelledSub": "{pct} من الإجمالي",
+        "returnedSub": "{count, plural, zero {# مرتجعة} one {مرتجعة واحدة} two {مرتجعتان} few {# مرتجعات} many {# مرتجعة} other {# مرتجعة}}",
+        "distributionTitle": "توزيع الطلبات حسب الحالة",
+        "footer": "{count, plural, zero {الإجمالي: # طلب.} one {الإجمالي: طلب واحد.} two {الإجمالي: طلبان.} few {الإجمالي: # طلبات.} many {الإجمالي: # طلبًا.} other {الإجمالي: # طلب.}} معدل الإلغاء {cancelRate} · معدل الإرجاع {returnRate}."
+      },
+      "stats": {
+        "unavailable": "الإحصائيات غير متاحة حاليًا.",
+        "kpis": {
+          "ordersTotal": "الطلبات (الإجمالي)",
+          "revenueBooked": "الإيرادات المحجوزة",
+          "revenueCollected": "المحصَّل (المدفوع)",
+          "codOutstanding": "الدفع عند الاستلام المتبقي تحصيله",
+          "productsSold": "المنتجات المباعة (المسلَّمة)",
+          "delivered": "الطلبات المسلَّمة"
+        },
+        "revenueBookedHint": "باستثناء الملغاة / المرفوضة / المرتجعة"
+      },
+      "orderStatus": {
+        "status": {
+          "PENDING": "قيد الانتظار",
+          "PARTIALLY_ACCEPTED": "مقبولة جزئيًا",
+          "ACCEPTED": "مؤكَّدة",
+          "REJECTED": "مرفوضة",
+          "IN_PROGRESS": "تم الشحن",
+          "DELIVERED": "تم التسليم",
+          "CANCELLED": "ملغاة",
+          "RETURNED": "مرتجعة"
+        },
+        "transitionAction": {
+          "ACCEPTED": "تأكيد",
+          "IN_PROGRESS": "تعليم كمشحونة",
+          "DELIVERED": "تعليم كمسلَّمة",
+          "CANCELLED": "إلغاء",
+          "RETURNED": "تعليم كمرتجعة",
+          "PENDING": "إعادة إلى قيد الانتظار",
+          "PARTIALLY_ACCEPTED": "مقبولة جزئيًا",
+          "REJECTED": "رفض"
+        }
+      }
+    },
+    "secondserve": {
+      "confirmDeleteUser": "هل تريد حذف حساب SecondServe هذا نهائيًا؟ هذا الإجراء لا رجعة فيه.",
+      "confirmCancelOrder": "هل تريد إلغاء هذا الطلب؟",
+      "errorStatus": "خطأ {status}",
+      "networkError": "خطأ في الشبكة",
+      "resolveNeedsResponse": "أدخل ردًا قبل الحل.",
+      "title": "SecondServe",
+      "subtitle": "إدارة مركزية لسوق SecondServe لمكافحة الهدر الغذائي.",
+      "kpis": {
+        "accounts": "الحسابات",
+        "partners": "الشركاء",
+        "orders": "الطلبات",
+        "revenue": "الإيرادات (MAD)"
+      },
+      "tabs": {
+        "dashboard": "لوحة القيادة",
+        "partners": "الشركاء",
+        "users": "المستخدمون",
+        "orders": "الطلبات",
+        "support": "الدعم"
+      },
+      "dashboard": {
+        "active": "نشطة",
+        "completed": "مكتملة",
+        "cancelled": "ملغاة",
+        "cancellationRate": "معدل الإلغاء",
+        "topProducts": "المنتجات الأكثر إنقاذًا",
+        "mealsRescued": "{count, plural, zero {تم إنقاذ # وجبة إجمالًا.} one {تم إنقاذ وجبة واحدة إجمالًا.} two {تم إنقاذ وجبتين إجمالًا.} few {تم إنقاذ # وجبات إجمالًا.} many {تم إنقاذ # وجبة إجمالًا.} other {تم إنقاذ # وجبة إجمالًا.}}",
+        "noSales": "لا توجد مبيعات مسجَّلة حتى الآن.",
+        "units": "{count, plural, zero {# وحدة} one {وحدة واحدة} two {وحدتان} few {# وحدات} many {# وحدة} other {# وحدة}}"
+      },
+      "partners": {
+        "pendingApproval": "بانتظار الموافقة",
+        "noPending": "لا توجد طلبات معلّقة.",
+        "approved": "الشركاء المعتمدون",
+        "noApproved": "لا يوجد شركاء معتمدون.",
+        "busy": "…",
+        "approve": "الموافقة",
+        "suspend": "تعليق"
+      },
+      "users": {
+        "table": {
+          "user": "المستخدم",
+          "role": "الدور",
+          "city": "المدينة",
+          "status": "الحالة",
+          "actions": "إجراءات"
+        },
+        "empty": "لا يوجد مستخدمون.",
+        "banned": "محظور",
+        "active": "نشط",
+        "busy": "…",
+        "unban": "إلغاء الحظر",
+        "ban": "حظر",
+        "delete": "حذف"
+      },
+      "orders": {
+        "table": {
+          "refDate": "المرجع / التاريخ",
+          "client": "العميل",
+          "partner": "الشريك",
+          "meal": "الوجبة",
+          "amount": "المبلغ",
+          "status": "الحالة",
+          "action": "إجراء"
+        },
+        "empty": "لا توجد طلبات.",
+        "busy": "…",
+        "cancel": "إلغاء"
+      },
+      "support": {
+        "empty": "لا توجد تذاكر دعم.",
+        "resolved": "تم الحل",
+        "pending": "قيد الانتظار",
+        "responseLabel": "الرد: ",
+        "replyPlaceholder": "رد من الإدارة…",
+        "busy": "…",
+        "resolve": "الرد وحل التذكرة"
+      }
+    }
+  }
+}

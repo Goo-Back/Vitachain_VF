@@ -53,31 +53,87 @@
   --color-danger-500: oklch(0.62 0.20 25);
   --color-danger-700: oklch(0.48 0.18 25);
 
+  /* Katara blue — logo water-drop azure, registered as global tokens so
+     Tailwind utility classes (from-katara-blue-600 etc.) work anywhere. */
+  --color-katara-blue-400: oklch(0.66 0.13 245);
+  --color-katara-blue-500: oklch(0.58 0.15 245);
+  --color-katara-blue-600: oklch(0.50 0.15 248);
+  --color-katara-blue-700: oklch(0.43 0.13 250);
+
+  /* FarMarket blue — matches the FarMarket logo's cerulean sky-blue (a
+     brighter, more cyan hue than Katara's indigo-leaning blue, so the two
+     brands stay visually distinct). Kept light — 400/500 are the workhorse
+     shades, 600/700 reserved for text-on-light-background contrast only. */
+  --color-market-blue-50: oklch(0.96 0.03 231);
+  --color-market-blue-100: oklch(0.92 0.06 231);
+  --color-market-blue-300: oklch(0.81 0.10 230);
+  --color-market-blue-400: oklch(0.72 0.12 228);
+  --color-market-blue-500: oklch(0.65 0.14 226);
+  --color-market-blue-600: oklch(0.57 0.15 224);
+  --color-market-blue-700: oklch(0.49 0.14 222);
+
   /* Legacy alias kept so existing imports keep working. */
   --color-brand-50: var(--color-leaf-50);
   --color-brand-600: var(--color-leaf-600);
   --color-brand-700: var(--color-leaf-700);
 
-  /* Typography — system stack first (zero asset cost), Inter when present. */
+  /* Typography — Plus Jakarta Sans for display/headings, Inter for body copy. */
   --font-sans:
-    "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
+    "Plus Jakarta Sans", "Inter", ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
   --font-display:
-    "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto;
+    "Plus Jakarta Sans", "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto;
   --font-mono:
     ui-monospace, SFMono-Regular, "Cascadia Mono", "Roboto Mono", Menlo,
     Consolas, monospace;
 
-  /* Soft elevation system — agri-tech surfaces prefer subtle shadows
-     over heavy borders so the parcel imagery stays the hero. */
-  --shadow-soft: 0 1px 2px 0 oklch(0 0 0 / 0.04), 0 1px 3px 0 oklch(0 0 0 / 0.04);
-  --shadow-card: 0 2px 4px -1px oklch(0 0 0 / 0.05), 0 4px 12px -2px oklch(0 0 0 / 0.06);
-  --shadow-lifted: 0 10px 24px -8px oklch(0 0 0 / 0.10), 0 4px 8px -2px oklch(0 0 0 / 0.05);
+  /* Premium elevation system — three tiers of depth, each a stack of
+     two shadows: a tight contact shadow (crisp base) + a large soft
+     ambient halo (floating feel). Reference: the fitness-app card style
+     with pure-white surfaces that visually float above the page. */
+  /* Premium floating shadows — lighter than before so cards appear to hover
+     above the page rather than being pressed into it.
+     Each tier: small contact shadow (crisp) + large ambient halo (airy). */
+  --shadow-soft:
+    0 1px 2px 0 oklch(0 0 0 / 0.04),
+    0 4px 16px -4px oklch(0 0 0 / 0.05);
+  --shadow-card:
+    0 1px 3px 0 oklch(0 0 0 / 0.04),
+    0 8px 30px -4px oklch(0 0 0 / 0.08);
+  --shadow-lifted:
+    0 2px 4px -1px oklch(0 0 0 / 0.05),
+    0 16px 40px -8px oklch(0 0 0 / 0.10);
+  --shadow-float:
+    0 1px 2px 0 oklch(0 0 0 / 0.03),
+    0 8px 24px -4px oklch(0 0 0 / 0.07),
+    0 32px 64px -16px oklch(0 0 0 / 0.08);
 
-  --radius-tile: 0.875rem;
+  --radius-tile: 1.25rem;
 
   /* Motion */
   --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Material Symbols base — variable font axes driven by fontVariationSettings
+   in the MIcon component. display:inline-flex + line-height:1 stops the
+   font from adding phantom vertical space inside flex containers. */
+.material-symbols-outlined {
+  font-family: "Material Symbols Outlined";
+  font-weight: normal;
+  font-style: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: "liga";
+  font-feature-settings: "liga";
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
 }
 
 /* Base reset — small affordances so we don't need a UI library. */
@@ -87,12 +143,17 @@
     text-rendering: optimizeLegibility;
   }
 
+  a {
+    -webkit-tap-highlight-color: transparent;
+  }
+
   body {
     font-family: var(--font-sans);
     background:
-      radial-gradient(1200px 600px at 100% -200px, var(--color-leaf-50), transparent 70%),
-      radial-gradient(900px 500px at -200px 100%, var(--color-soil-50), transparent 70%),
-      oklch(0.985 0.005 152);
+      radial-gradient(1400px 700px at 100% -200px, var(--color-leaf-100), transparent 65%),
+      radial-gradient(1000px 600px at -200px 80%, var(--color-soil-100), transparent 65%),
+      radial-gradient(800px 500px at 60% 110%, oklch(0.93 0.04 245 / 0.25), transparent 60%),
+      oklch(0.978 0.007 200);
     background-attachment: fixed;
     color: oklch(0.22 0.02 152);
   }
@@ -131,65 +192,105 @@
 /* ---- Reusable utility patterns -------------------------------- */
 
 @layer components {
-  /* Surface card — used pervasively across dashboards. */
+  /* Surface card — premium floating surface.
+     No visible border: shadow does the separation work.
+     Subtle linear tint from top-left (near-white) to bottom-right
+     (barely perceptible cool tone) gives the card a slight dimensionality
+     without screaming "gradient". */
   .vc-card {
-    background: white;
-    border: 1px solid oklch(0.92 0.005 152);
+    background:
+      linear-gradient(145deg, oklch(1 0 0), oklch(0.985 0.006 220));
+    border: 1px solid oklch(0.94 0.004 220 / 0.6);
     border-radius: var(--radius-tile);
-    box-shadow: var(--shadow-soft);
+    box-shadow: var(--shadow-card);
     transition:
-      transform 200ms var(--ease-out-soft),
-      box-shadow 200ms var(--ease-out-soft),
-      border-color 200ms var(--ease-out-soft);
+      transform 240ms var(--ease-out-soft),
+      box-shadow 240ms var(--ease-out-soft),
+      border-color 240ms var(--ease-out-soft);
   }
   .vc-card:hover {
-    border-color: var(--color-leaf-200);
-    box-shadow: var(--shadow-card);
+    border-color: oklch(0.88 0.012 220 / 0.8);
+    box-shadow: var(--shadow-lifted);
   }
   .vc-card-interactive:hover {
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-lifted);
-    border-color: var(--color-leaf-300);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-float);
+    border-color: var(--color-leaf-200);
   }
 
-  /* Pill / badge — small status indicator chip. */
+  /* Pill / badge — premium status chip with richer tones and ring border. */
   .vc-pill {
     display: inline-flex;
     align-items: center;
     gap: 0.375rem;
-    padding: 0.125rem 0.5rem;
+    padding: 0.25rem 0.625rem;
     border-radius: 9999px;
-    font-size: 0.75rem;
-    font-weight: 500;
-    line-height: 1.25rem;
-    background: oklch(0.96 0.005 152);
-    color: oklch(0.35 0.02 152);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: 0.01em;
+    background: oklch(0.94 0.012 152);
+    color: oklch(0.32 0.04 152);
+    box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.8), 0 1px 2px oklch(0 0 0 / 0.06);
   }
-  .vc-pill-ok    { background: var(--color-success-50); color: var(--color-success-700); }
-  .vc-pill-warn  { background: var(--color-warn-50);    color: var(--color-warn-700); }
-  .vc-pill-danger{ background: var(--color-danger-50);  color: var(--color-danger-700); }
-  .vc-pill-info  { background: var(--color-sky-tint-50); color: var(--color-sky-tint-700); }
-  .vc-pill-leaf  { background: var(--color-leaf-50);    color: var(--color-leaf-700); }
-  .vc-pill-soil  { background: var(--color-soil-50);    color: var(--color-soil-700); }
+  .vc-pill-ok    {
+    background: oklch(0.92 0.06 152);
+    color: var(--color-success-700);
+    box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.6), 0 1px 2px oklch(0.46 0.12 152 / 0.15);
+  }
+  .vc-pill-warn  {
+    background: oklch(0.94 0.06 80);
+    color: var(--color-warn-700);
+    box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.6), 0 1px 2px oklch(0.55 0.13 60 / 0.15);
+  }
+  .vc-pill-danger{
+    background: oklch(0.94 0.06 25);
+    color: var(--color-danger-700);
+    box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.6), 0 1px 2px oklch(0.48 0.18 25 / 0.15);
+  }
+  .vc-pill-info  {
+    background: oklch(0.93 0.06 220);
+    color: var(--color-sky-tint-700);
+    box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.6), 0 1px 2px oklch(0.46 0.13 220 / 0.15);
+  }
+  .vc-pill-leaf  {
+    background: oklch(0.92 0.07 152);
+    color: var(--color-leaf-700);
+    box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.6), 0 1px 2px oklch(0.46 0.12 152 / 0.15);
+  }
+  .vc-pill-soil  {
+    background: oklch(0.93 0.05 60);
+    color: var(--color-soil-700);
+    box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.6), 0 1px 2px oklch(0.45 0.10 60 / 0.15);
+  }
 
-  /* Primary CTA — leaf gradient, depth via shadow. */
+  /* Primary CTA — premium gradient button with multi-layer glow shadow. */
   .vc-btn-primary {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    padding: 0.625rem 1rem;
+    padding: 0.6875rem 1.25rem;
     font-size: 0.875rem;
-    font-weight: 500;
+    font-weight: 600;
+    letter-spacing: 0.01em;
     color: white;
-    background: linear-gradient(135deg, var(--color-leaf-500), var(--color-leaf-700));
-    border-radius: 0.5rem;
-    box-shadow: 0 1px 2px oklch(0 0 0 / 0.05), 0 4px 12px -4px oklch(0.55 0.14 152 / 0.4);
-    transition: transform 150ms var(--ease-out-soft), box-shadow 150ms var(--ease-out-soft);
+    background: linear-gradient(135deg, var(--color-leaf-400), var(--color-leaf-700));
+    border-radius: 0.875rem;
+    box-shadow:
+      0 1px 0 oklch(1 0 0 / 0.15) inset,
+      0 2px 4px oklch(0 0 0 / 0.08),
+      0 8px 24px -4px oklch(0.55 0.14 152 / 0.45);
+    transition:
+      transform 150ms var(--ease-out-soft),
+      box-shadow 150ms var(--ease-out-soft);
   }
   .vc-btn-primary:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 1px 2px oklch(0 0 0 / 0.05), 0 8px 18px -4px oklch(0.55 0.14 152 / 0.45);
+    transform: translateY(-2px);
+    box-shadow:
+      0 1px 0 oklch(1 0 0 / 0.15) inset,
+      0 2px 4px oklch(0 0 0 / 0.08),
+      0 14px 32px -6px oklch(0.55 0.14 152 / 0.55);
   }
   .vc-btn-primary:active { transform: translateY(0); }
 
@@ -198,36 +299,40 @@
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    padding: 0.5rem 0.875rem;
+    padding: 0.625rem 1rem;
     font-size: 0.875rem;
     font-weight: 500;
     color: oklch(0.30 0.02 152);
-    background: white;
+    background: linear-gradient(145deg, white, oklch(0.98 0.005 220));
     border: 1px solid oklch(0.90 0.005 152);
-    border-radius: 0.5rem;
-    transition: all 150ms var(--ease-out-soft);
+    border-radius: 0.875rem;
+    box-shadow: 0 1px 3px oklch(0 0 0 / 0.06), 0 4px 12px -4px oklch(0 0 0 / 0.08);
+    transition: all 180ms var(--ease-out-soft);
   }
   .vc-btn-ghost:hover {
-    border-color: var(--color-leaf-400);
+    border-color: var(--color-leaf-300);
     color: var(--color-leaf-700);
-    background: var(--color-leaf-50);
+    background: linear-gradient(145deg, var(--color-leaf-50), white);
+    box-shadow: 0 1px 3px oklch(0 0 0 / 0.06), 0 8px 20px -4px oklch(0.55 0.14 152 / 0.18);
+    transform: translateY(-1px);
   }
 
   /* Input — consistent across the dashboard. */
   .vc-input {
     width: 100%;
-    padding: 0.625rem 0.75rem;
+    padding: 0.6875rem 0.875rem;
     font-size: 0.875rem;
-    background: white;
+    background: linear-gradient(145deg, white, oklch(0.99 0.004 220));
     border: 1px solid oklch(0.90 0.005 152);
-    border-radius: 0.5rem;
+    border-radius: 0.875rem;
+    box-shadow: 0 1px 3px oklch(0 0 0 / 0.05);
     transition: border-color 150ms var(--ease-out-soft), box-shadow 150ms var(--ease-out-soft);
   }
   .vc-input:hover { border-color: var(--color-leaf-300); }
   .vc-input:focus {
     outline: none;
     border-color: var(--color-leaf-500);
-    box-shadow: 0 0 0 3px var(--color-leaf-100);
+    box-shadow: 0 0 0 3px var(--color-leaf-100), 0 1px 3px oklch(0 0 0 / 0.05);
   }
 
   /* Section heading — eyebrow + title. */
@@ -297,88 +402,103 @@
  */
 @layer components {
   .theme-katara {
-    /* Logo-matched azure for the water drop. */
-    --katara-blue-400: oklch(0.66 0.13 245);
-    --katara-blue-500: oklch(0.58 0.15 245);
-    --katara-blue-600: oklch(0.50 0.15 248);
-    --katara-blue-700: oklch(0.43 0.13 250);
+    /* Logo-matched azure — alias to global tokens so the theme vars
+       and Tailwind utilities stay in sync. */
+    --katara-blue-400: var(--color-katara-blue-400);
+    --katara-blue-500: var(--color-katara-blue-500);
+    --katara-blue-600: var(--color-katara-blue-600);
+    --katara-blue-700: var(--color-katara-blue-700);
 
     /* Brand sweeps: drop (blue) → leaf (green). */
     --gradient-katara: linear-gradient(135deg, var(--katara-blue-500), var(--color-leaf-500));
     --gradient-katara-strong: linear-gradient(135deg, var(--katara-blue-600), var(--color-leaf-600));
     --gradient-katara-soft: linear-gradient(135deg, oklch(0.95 0.04 245), var(--color-leaf-50));
 
-    /* Softer, more uniform shapes across the farmer surface. */
-    --radius-tile: 1rem;
-    --katara-blue-shadow: 0 8px 20px -8px oklch(0.5 0.15 248 / 0.45);
+    /* Premium shapes — rounder than global defaults. */
+    --radius-tile: 1.5rem;
+    --katara-blue-shadow:
+      0 8px 24px -6px oklch(0.5 0.15 248 / 0.35),
+      0 2px 6px -2px oklch(0.5 0.15 248 / 0.15);
   }
 
-  /* Surface cards — rounder corners + a blue-leaning lift on hover. */
-  .theme-katara .vc-card { border-radius: var(--radius-tile); }
-  .theme-katara .vc-card:hover { border-color: var(--katara-blue-400); }
+  /* Surface cards — rounder corners, no colour change on hover. */
+  .theme-katara .vc-card {
+    border-radius: var(--radius-tile);
+    background: linear-gradient(145deg, oklch(1 0 0), oklch(0.984 0.009 230));
+    border-color: oklch(0.93 0.008 230 / 0.7);
+  }
+  .theme-katara .vc-card:hover {
+    box-shadow: var(--shadow-lifted);
+  }
   .theme-katara .vc-card-interactive:hover {
-    border-color: var(--katara-blue-400);
-    box-shadow: var(--shadow-lifted), var(--katara-blue-shadow);
+    box-shadow: var(--shadow-float);
   }
 
-  /* Primary CTA — the Katara blue→green sweep. */
+  /* Primary CTA — Katara blue→green sweep, premium glow. */
   .theme-katara .vc-btn-primary {
     background: var(--gradient-katara-strong);
-    border-radius: 0.75rem;
-    box-shadow: 0 1px 2px oklch(0 0 0 / 0.05), var(--katara-blue-shadow);
+    border-radius: 1rem;
+    box-shadow:
+      0 1px 0 oklch(1 0 0 / 0.15) inset,
+      0 2px 4px oklch(0 0 0 / 0.08),
+      var(--katara-blue-shadow);
   }
   .theme-katara .vc-btn-primary:hover {
-    box-shadow: 0 1px 2px oklch(0 0 0 / 0.05), 0 12px 24px -8px oklch(0.5 0.15 248 / 0.55);
+    box-shadow:
+      0 1px 0 oklch(1 0 0 / 0.15) inset,
+      0 2px 4px oklch(0 0 0 / 0.08),
+      0 16px 36px -8px oklch(0.5 0.15 248 / 0.50),
+      0 6px 12px -4px oklch(0.5 0.15 248 / 0.25);
   }
 
-  /* Ghost button + inputs — blue focus/hover to match. */
-  .theme-katara .vc-btn-ghost { border-radius: 0.75rem; }
+  /* Ghost button + inputs — blue focus ring. */
+  .theme-katara .vc-btn-ghost { border-radius: 1rem; }
   .theme-katara .vc-btn-ghost:hover {
     border-color: var(--katara-blue-400);
     color: var(--katara-blue-700);
-    background: oklch(0.96 0.03 245);
+    background: linear-gradient(145deg, oklch(0.97 0.04 245), oklch(0.99 0.01 230));
+    box-shadow: 0 1px 3px oklch(0 0 0 / 0.06), 0 6px 18px -4px oklch(0.5 0.15 248 / 0.20);
   }
-  .theme-katara .vc-input { border-radius: 0.75rem; }
+  .theme-katara .vc-input { border-radius: 1rem; }
   .theme-katara .vc-input:hover { border-color: var(--katara-blue-400); }
   .theme-katara .vc-input:focus {
     border-color: var(--katara-blue-500);
-    box-shadow: 0 0 0 3px oklch(0.93 0.05 245);
+    box-shadow: 0 0 0 4px oklch(0.93 0.06 245 / 0.5), 0 1px 3px oklch(0 0 0 / 0.05);
   }
 
   /* Eyebrow label picks up the brand blue. */
   .theme-katara .vc-eyebrow { color: var(--katara-blue-600); }
 
-  /* Premium card surface — a barely-there top sheen + layered depth, with
-     a soft brand glow that fades in on hover. Pair with `group`. */
+  /* Premium card surface — elevated glass-like surface with deep multi-layer
+     shadows and a brand glow on hover. Pair with `group`. */
   .theme-katara .katara-card {
     position: relative;
-    isolation: isolate; /* own stacking context so the glow sits behind content */
+    isolation: isolate;
     background:
-      linear-gradient(180deg, oklch(1 0 0 / 0.9), oklch(0.99 0.004 230 / 0.85)),
-      white;
-    border: 1px solid oklch(0.93 0.006 230);
+      linear-gradient(160deg, oklch(1 0 0), oklch(0.984 0.01 230));
+    border: 1px solid oklch(0.92 0.010 230 / 0.7);
     border-radius: var(--radius-tile);
-    box-shadow: var(--shadow-soft);
+    box-shadow: var(--shadow-card);
     transition:
-      box-shadow 280ms var(--ease-out-soft),
-      border-color 280ms var(--ease-out-soft);
+      transform 260ms var(--ease-out-soft),
+      box-shadow 260ms var(--ease-out-soft),
+      border-color 260ms var(--ease-out-soft);
   }
   .theme-katara .katara-card:hover {
-    border-color: var(--katara-blue-400);
-    box-shadow: var(--shadow-card), var(--katara-blue-shadow);
+    box-shadow: var(--shadow-lifted);
   }
-  /* Brand glow wash revealed on hover — sits under the content. */
+  /* Brand glow wash revealed on hover — richer than before. */
   .theme-katara .katara-glow {
     position: absolute;
     inset: 0;
-    z-index: -1; /* behind the card content, above the surface */
+    z-index: -1;
     border-radius: inherit;
     pointer-events: none;
     opacity: 0;
     background:
-      radial-gradient(120% 80% at 50% -10%, oklch(0.62 0.14 245 / 0.12), transparent 55%),
-      radial-gradient(120% 80% at 50% 110%, oklch(0.64 0.15 152 / 0.10), transparent 55%);
-    transition: opacity 420ms var(--ease-out-soft);
+      radial-gradient(130% 90% at 50% -20%, oklch(0.62 0.14 245 / 0.18), transparent 55%),
+      radial-gradient(130% 90% at 50% 120%, oklch(0.64 0.15 152 / 0.14), transparent 55%);
+    transition: opacity 380ms var(--ease-out-soft);
   }
   .theme-katara .group:hover .katara-glow { opacity: 1; }
 
@@ -392,6 +512,83 @@
     color: transparent;
   }
   .theme-katara .katara-ring { box-shadow: 0 0 0 1px oklch(0.5 0.15 248 / 0.18); }
+}
+
+/* ---------------------------------------------------------------
+ * FarMarket theme — scoped to the restaurant dashboard (.theme-farmarket)
+ * ---------------------------------------------------------------
+ * FarMarket is the restaurant-facing produce marketplace. Its accent
+ * matches the actual FarMarket logo — a light, bright cerulean blue paired
+ * with leaf-green — rather than a dark tone, so it reads as airy, not
+ * heavy. The blue hue (~226) is more cyan than Katara's indigo-leaning blue
+ * (~248), keeping the two brands distinguishable while both stay
+ * "blue + green". Reuses vc-card, vc-btn-primary, etc. like Katara does.
+ */
+@layer components {
+  .theme-farmarket {
+    --fm-blue-300: var(--color-market-blue-300);
+    --fm-blue-400: var(--color-market-blue-400);
+    --fm-blue-500: var(--color-market-blue-500);
+    --fm-blue-600: var(--color-market-blue-600);
+    --fm-blue-700: var(--color-market-blue-700);
+
+    --gradient-farmarket: linear-gradient(135deg, var(--fm-blue-400), var(--color-leaf-500));
+    --gradient-farmarket-strong: linear-gradient(135deg, var(--fm-blue-500), var(--color-leaf-600));
+    --gradient-farmarket-soft: linear-gradient(135deg, var(--color-market-blue-50), var(--color-leaf-50));
+
+    --radius-tile: 1.375rem;
+    --fm-blue-shadow:
+      0 8px 24px -6px oklch(0.65 0.14 226 / 0.30),
+      0 2px 6px -2px oklch(0.65 0.14 226 / 0.14);
+  }
+
+  /* Surface cards — faint cool-blue tint instead of Katara's deeper blue. */
+  .theme-farmarket .vc-card {
+    border-radius: var(--radius-tile);
+    background: linear-gradient(150deg, oklch(1 0 0), oklch(0.985 0.008 226));
+    border-color: oklch(0.93 0.012 226 / 0.6);
+  }
+  .theme-farmarket .vc-card-interactive:hover {
+    border-color: var(--fm-blue-300);
+  }
+
+  /* Primary CTA — light blue→leaf sweep, soft glow (not heavy/dark). */
+  .theme-farmarket .vc-btn-primary {
+    background: var(--gradient-farmarket-strong);
+    border-radius: 1rem;
+    box-shadow:
+      0 1px 0 oklch(1 0 0 / 0.15) inset,
+      0 2px 4px oklch(0 0 0 / 0.06),
+      var(--fm-blue-shadow);
+  }
+  .theme-farmarket .vc-btn-primary:hover {
+    box-shadow:
+      0 1px 0 oklch(1 0 0 / 0.15) inset,
+      0 2px 4px oklch(0 0 0 / 0.06),
+      0 16px 36px -8px oklch(0.65 0.14 226 / 0.40),
+      0 6px 12px -4px oklch(0.65 0.14 226 / 0.18);
+  }
+
+  /* Ghost button + inputs — light blue focus ring. */
+  .theme-farmarket .vc-btn-ghost { border-radius: 1rem; }
+  .theme-farmarket .vc-btn-ghost:hover {
+    border-color: var(--fm-blue-300);
+    color: var(--fm-blue-700);
+    background: linear-gradient(145deg, var(--color-market-blue-50), white);
+    box-shadow: 0 1px 3px oklch(0 0 0 / 0.05), 0 6px 18px -4px oklch(0.65 0.14 226 / 0.16);
+  }
+  .theme-farmarket .vc-input { border-radius: 1rem; }
+  .theme-farmarket .vc-input:hover { border-color: var(--fm-blue-300); }
+  .theme-farmarket .vc-input:focus {
+    border-color: var(--fm-blue-400);
+    box-shadow: 0 0 0 4px oklch(0.92 0.05 226 / 0.5), 0 1px 3px oklch(0 0 0 / 0.05);
+  }
+
+  /* Eyebrow label + focus ring pick up the FarMarket blue accent. */
+  .theme-farmarket .vc-eyebrow { color: var(--fm-blue-600); }
+  .theme-farmarket :where(a, button, input, select, textarea, [role="button"]):focus-visible {
+    outline-color: var(--fm-blue-500);
+  }
 }
 
 /* Registered so the conic gradient angle can be animated smoothly. */

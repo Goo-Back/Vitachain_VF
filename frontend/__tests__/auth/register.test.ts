@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { RegisterSchema } from "@/app/register/schema";
+import { RegisterSchema } from "@/app/[locale]/register/schema";
 import { mapAuthError } from "@/lib/auth/errors";
 
 describe("RegisterSchema", () => {

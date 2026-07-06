@@ -1,0 +1,104 @@
+@startuml Comparaison_Architectures
+!theme plain
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam ArrowColor #475569
+skinparam shadowing false
+skinparam linetype ortho
+
+skinparam rectangle {
+  BackgroundColor #F8FAFC
+  BorderColor     #CBD5E1
+  FontSize        11
+  RoundCorner     8
+}
+skinparam package {
+  BackgroundColor #FFFFFF
+  BorderColor     #94A3B8
+  FontSize        13
+  FontStyle       bold
+}
+skinparam database {
+  BackgroundColor #F5F3FF
+  BorderColor     #7C3AED
+  FontSize        11
+}
+skinparam note {
+  BackgroundColor #FFFDE7
+  BorderColor     #F9A825
+  FontSize        10
+}
+
+title Comparaison des styles d'architecture
+
+' ══════════════════════════════════════════════════════════
+' COLONNE 1 : Microservices
+' ══════════════════════════════════════════════════════════
+package "Microservices" as MS #FFF1F2 {
+
+  rectangle "Service A\n(Katara)" as MSA #FECDD3
+  rectangle "Service B\n(FarMarket)" as MSB #FECDD3
+  rectangle "Service C\n(SecondServe)" as MSC #FECDD3
+
+  database "DB A" as DBA #F5F3FF
+  database "DB B" as DBB #F5F3FF
+  database "DB C" as DBC #F5F3FF
+
+  MSA --> DBA
+  MSB --> DBB
+  MSC --> DBC
+
+  MSA <..> MSB : API REST\n/ message bus
+  MSB <..> MSC : API REST\n/ message bus
+}
+
+note bottom of MS
+  <color:#DC2626>✗</color> Complexité opérationnelle élevée
+  <color:#DC2626>✗</color> Latence inter-services
+  <color:#DC2626>✗</color> Transactions distribuées difficiles
+  <color:#16A34A>✓</color> Scalabilité indépendante par service
+end note
+
+' ══════════════════════════════════════════════════════════
+' COLONNE 2 : Monolithe Modulaire  ← VitaChain
+' ══════════════════════════════════════════════════════════
+package "Monolithe Modulaire\n★ VitaChain" as MM #F0FDF4 {
+
+  rectangle "  Module Katara  \n(routes + logique)" as MMA #BBF7D0
+  rectangle " Module FarMarket\n(routes + logique)" as MMB #BBF7D0
+  rectangle "Module SecondServe\n(routes + logique)" as MMC #BBF7D0
+
+  database "Base partagée\n(RLS par module)" as MMDB #D9F99D
+
+  MMA --> MMDB
+  MMB --> MMDB
+  MMC --> MMDB
+}
+
+note bottom of MM
+  <color:#16A34A>✓</color> Déploiement simple (1 serveur)
+  <color:#16A34A>✓</color> Modules isolés, contrats clairs
+  <color:#16A34A>✓</color> Transactions locales (SQL natif)
+  <color:#16A34A>✓</color> Équipe réduite — charge maîtrisée
+end note
+
+' ══════════════════════════════════════════════════════════
+' COLONNE 3 : Monolithe Classique
+' ══════════════════════════════════════════════════════════
+package "Monolithe Classique" as MC #FFFBEB {
+
+  rectangle "Tout le code\nmélangé\n\n(Katara + FarMarket\n+ SecondServe\n+ Admin + Auth...)" as MCC #FEF08A
+
+  database "Base unique\n(sans isolation)" as MCDB #F5F3FF
+
+  MCC --> MCDB
+}
+
+note bottom of MC
+  <color:#16A34A>✓</color> Simple à démarrer
+  <color:#DC2626>✗</color> Couplage fort entre domaines
+  <color:#DC2626>✗</color> Difficile à faire évoluer
+  <color:#DC2626>✗</color> Tests et maintenance lourds
+end note
+
+@enduml

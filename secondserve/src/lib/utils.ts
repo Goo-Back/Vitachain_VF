@@ -7,7 +7,7 @@ export function cn(...inputs: ClassValue[]) {
 
 export function buildMapSearchUrl(
   query: { lat: number; lng: number } | string,
-  language: 'en' | 'ar' = 'en'
+  language: 'en' | 'ar' | 'fr' = 'en'
 ): string {
   const params = `&hl=${language}&gl=ma`;
   if (typeof query === 'string') {
@@ -16,10 +16,10 @@ export function buildMapSearchUrl(
   return `https://www.google.com/maps/search/?api=1&query=${query.lat},${query.lng}${params}`;
 }
 
-export function buildMapEmbedUrl(lat: number | string, lng: number | string, language: 'en' | 'ar' = 'en'): string {
+export function buildMapEmbedUrl(lat: number | string, lng: number | string, language: 'en' | 'ar' | 'fr' = 'en'): string {
   return `https://maps.google.com/maps?q=${lat},${lng}&z=15&output=embed&hl=${language}&gl=ma`;
 }
 
-export function buildMapLink(lat: number | string, lng: number | string, language: 'en' | 'ar' = 'en'): string {
+export function buildMapLink(lat: number | string, lng: number | string, language: 'en' | 'ar' | 'fr' = 'en'): string {
   return `https://www.google.com/maps?q=${lat},${lng}&hl=${language}&gl=ma`;
 }

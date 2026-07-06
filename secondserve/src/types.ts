@@ -22,6 +22,8 @@ export interface User {
   phone?: string;
   coordinates?: Coordinates;
   mapLink?: string;
+  /** Account-level language preference, set at signup; source of truth once logged in. */
+  locale?: 'fr' | 'en' | 'ar';
 }
 
 export interface Offer {
@@ -59,6 +61,7 @@ export interface Order {
   offerSnapshot: Offer;
   paymentMethod?: 'online' | 'delivery';
   paymentStatus?: 'pending' | 'successful' | 'failed' | 'released';
+  paidAt?: string;
   customerMessage?: string;
   pickupCode?: string;
   expiresAt?: string;

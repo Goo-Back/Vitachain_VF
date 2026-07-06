@@ -5,19 +5,21 @@ import { Order } from '../types';
 import { useAppContext, isOrderExpired } from '../context/AppContext';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { buildMapEmbedUrl, buildMapSearchUrl } from '../lib/utils';
-import { Clock, MapPin, Phone, ArrowLeft, Loader2, CheckCircle2, XCircle, AlertTriangle, Navigation, ShoppingBag, CreditCard, Coins } from 'lucide-react';
+import { Clock, MapPin, ArrowLeft, Loader2, CheckCircle2, XCircle, AlertTriangle, Navigation, ShoppingBag, CreditCard, Coins, Banknote } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export function OrderReceipt() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user, orders, cancelOrder, t, language } = useAppContext();
+  const { user, orders, cancelOrder, confirmCodPayment, t, language } = useAppContext();
   const isRTL = language === 'ar';
 
   const [fallbackOrder, setFallbackOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [errorKey, setErrorKey] = useState<'receiptNotFound' | 'receiptNotAuthorized' | null>(null);
   const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
+  const [confirmCodOpen, setConfirmCodOpen] = useState(false);
+  const [codConfirming, setCodConfirming] = useState(false);
   const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
@@ -120,6 +122,13 @@ export function OrderReceipt() {
     navigate('/dashboard');
   };
 
+  const handleConfirmCod = async () => {
+    setConfirmCodOpen(false);
+    setCodConfirming(true);
+    await confirmCodPayment(order.id);
+    setCodConfirming(false);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-10" dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="max-w-2xl mx-auto px-4">
@@ -211,12 +220,52 @@ export function OrderReceipt() {
                     ? order.paymentStatus === 'released'
                       ? (isRTL ? '🟢 تم تحرير الأموال إلى الشريك.' : '🟢 Funds released to the partner.')
                       : (isRTL ? '⏳ الأموال محجوزة في الضمان حتى الاستلام.' : '⏳ Funds held in escrow until pickup.')
-                    : (isRTL
-                        ? '🤝 أحضر المبلغ نقداً عند الاستلام في الوقت المحدد.'
-                        : '🤝 Bring the cash amount at pickup time.')}
+                    : order.paymentStatus === 'successful'
+                      ? (isRTL ? '✅ تم تأكيد الدفع نقداً.' : '✅ Cash payment confirmed.')
+                      : (isRTL
+                          ? '🤝 أحضر المبلغ نقداً عند الاستلام في الوقت المحدد.'
+                          : '🤝 Bring the cash amount at pickup time.')}
                 </p>
+                {order.paymentStatus === 'successful' && order.paidAt && (
+                  <p className="text-[11px] text-gray-400 font-mono mt-1">
+                    {isRTL ? 'تم الدفع في' : 'Paid at'}: {new Date(order.paidAt).toLocaleString()}
+                  </p>
+                )}
               </div>
             </section>
+
+            {user.id === order.consumerId
+              && order.paymentMethod === 'delivery'
+              && order.paymentStatus === 'pending'
+              && order.status !== 'cancelled' && (
+              <section className="bg-amber-50 border border-amber-200 rounded-2xl p-4 space-y-3">
+                <div className="flex items-start gap-2.5">
+                  <Banknote className="h-4 w-4 text-amber-700 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-xs font-bold text-amber-900">
+                      {isRTL ? 'تأكيد الدفع نقداً' : 'Confirm cash payment'}
+                    </p>
+                    <p className="text-[11px] text-amber-800 mt-1 font-semibold leading-relaxed">
+                      {isRTL
+                        ? 'بعد تسليم المبلغ نقداً للشريك، اضغط أدناه لتأكيد الدفع.'
+                        : 'After handing the cash to the partner, tap below to confirm payment.'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setConfirmCodOpen(true)}
+                  disabled={codConfirming}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-bold bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white transition-colors"
+                >
+                  {codConfirming
+                    ? <Loader2 className="h-4 w-4 animate-spin" />
+                    : <Banknote className="h-4 w-4" />}
+                  {isRTL
+                    ? `تأكيد دفع ${order.totalPrice.toFixed(2)} MAD نقداً`
+                    : `Confirm ${order.totalPrice.toFixed(2)} MAD cash payment`}
+                </button>
+              </section>
+            )}
 
             <section>
               <h2 className="text-[11px] font-bold uppercase tracking-wider text-gray-500 mb-3">{t('receiptPartnerSection')}</h2>
@@ -283,6 +332,18 @@ export function OrderReceipt() {
         cancelText={t('cancel')}
         onConfirm={handleCancel}
         onCancel={() => setConfirmCancelOpen(false)}
+      />
+
+      <ConfirmModal
+        isOpen={confirmCodOpen}
+        title={isRTL ? 'تأكيد الدفع نقداً' : 'Confirm cash payment'}
+        message={isRTL
+          ? `هل دفعت ${order?.totalPrice.toFixed(2)} MAD نقداً للشريك؟ لا يمكن التراجع عن هذا الإجراء.`
+          : `Did you hand ${order?.totalPrice.toFixed(2)} MAD in cash to the partner? This cannot be undone.`}
+        confirmText={isRTL ? 'نعم، تم الدفع' : 'Yes, paid'}
+        cancelText={t('cancel')}
+        onConfirm={handleConfirmCod}
+        onCancel={() => setConfirmCodOpen(false)}
       />
     </div>
   );

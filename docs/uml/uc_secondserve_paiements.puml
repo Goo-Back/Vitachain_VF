@@ -1,0 +1,123 @@
+@startuml UC_SecondServe_Gestion_Paiements
+!theme plain
+skinparam actorStyle awesome
+skinparam usecase {
+  BackgroundColor #FCE4EC
+  BorderColor #880E4F
+  FontSize 13
+}
+skinparam actor {
+  BackgroundColor #F8BBD9
+  BorderColor #880E4F
+}
+skinparam rectangle {
+  BackgroundColor #FFF0F5
+  BorderColor #880E4F
+}
+skinparam note {
+  BackgroundColor #FFFDE7
+  BorderColor #F9A825
+}
+
+title Diagramme de Cas d'Utilisation — Gestion des Paiements (Module SecondServe)
+
+actor "Consommateur" as Consumer
+actor "Partenaire\n(Restaurant)" as Partner
+actor "Administrateur" as Admin
+actor "Supabase\nRealtime" as Realtime <<system>>
+
+rectangle "Module SecondServe — Gestion des Paiements" {
+
+  ' --- Consommateur
+  usecase "Choisir méthode\nde paiement" as UC_METHOD
+  usecase "Confirmer paiement\nCOD (espèces)" as UC_COD_CONFIRM
+  usecase "Consulter statut\nde paiement" as UC_STATUS
+  usecase "Afficher reçu\nde commande" as UC_RECEIPT
+
+  ' --- Partenaire
+  usecase "Consulter les paiements\nreçus" as UC_PARTNER_VIEW
+  usecase "Recevoir notification\nnouvelle commande" as UC_NOTIF
+
+  ' --- Admin
+  usecase "Forcer le statut\nde paiement" as UC_ADMIN_FORCE
+  usecase "Consulter la piste\nd'audit paiement" as UC_AUDIT
+  usecase "Exporter l'historique\ndes paiements" as UC_EXPORT
+
+  ' --- Inclusions / Extensions
+  usecase "Validation propriété\ncommande (consumer_id)" as UC_OWNERSHIP <<include>>
+  usecase "Écriture piste d'audit\n(ss_payment_audit)" as UC_WRITE_AUDIT <<include>>
+  usecase "Vérification préconditions\n(méthode=delivery, statut=pending)" as UC_PRECOND <<include>>
+  usecase "Diffusion temps réel\n(Realtime Update)" as UC_RT_UPDATE <<include>>
+
+  note right of UC_METHOD
+    Méthodes disponibles :
+    - delivery (COD) : espèces
+      à la collecte
+    - online : PSP (non implémenté)
+    Choix figé à la commande
+    dans offer_snapshot.
+  end note
+
+  note right of UC_COD_CONFIRM
+    RPC ss_confirm_cod_payment() :
+    1. Vérifie caller = consumer_id
+    2. payment_method = 'delivery'
+    3. payment_status = 'pending'
+    Transitions atomiques :
+    pending → successful
+    paid_at = now()
+  end note
+
+  note right of UC_ADMIN_FORCE
+    Transitions autorisées admin :
+    pending → successful | failed
+    successful → released
+    Toute transition écrit
+    une ligne dans ss_payment_audit.
+    actor_role = 'admin'
+  end note
+
+  note bottom of UC_AUDIT
+    ss_payment_audit : append-only.
+    Colonnes : actor_id, actor_role,
+    previous_status, new_status,
+    previous_paid_at, new_paid_at,
+    reason, created_at.
+    Pas d'UPDATE ni DELETE autorisés.
+  end note
+}
+
+' Relations Consommateur
+Consumer --> UC_METHOD
+Consumer --> UC_COD_CONFIRM
+Consumer --> UC_STATUS
+Consumer --> UC_RECEIPT
+
+' Relations Partenaire
+Partner --> UC_PARTNER_VIEW
+Partner --> UC_NOTIF
+
+' Relations Admin
+Admin --> UC_ADMIN_FORCE
+Admin --> UC_AUDIT
+Admin --> UC_EXPORT
+Admin --> UC_STATUS
+
+' Relations Realtime
+Realtime --> UC_RT_UPDATE
+
+' Inclusions — Confirmation COD
+UC_COD_CONFIRM ..> UC_OWNERSHIP  : <<include>>
+UC_COD_CONFIRM ..> UC_PRECOND    : <<include>>
+UC_COD_CONFIRM ..> UC_WRITE_AUDIT : <<include>>
+UC_COD_CONFIRM ..> UC_RT_UPDATE  : <<include>>
+
+' Inclusions — Admin force
+UC_ADMIN_FORCE ..> UC_WRITE_AUDIT : <<include>>
+UC_ADMIN_FORCE ..> UC_RT_UPDATE   : <<include>>
+
+' Extensions
+UC_COD_CONFIRM ..> UC_RECEIPT : <<extend>>
+UC_STATUS      ..> UC_RECEIPT : <<extend>>
+
+@enduml

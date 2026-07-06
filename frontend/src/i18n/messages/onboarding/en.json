@@ -1,0 +1,54 @@
+{
+  "onboarding": {
+    "verification": {
+      "heading": "Professional verification",
+      "intro": "To publish on the marketplace, we need to confirm your professional identity. Upload one of the following documents: trade register, national ID, or farmer's card.",
+      "noKycRequired": "No KYC verification is required for your role ({role}).",
+      "roleAdmin": "administrator",
+      "roleCitizen": "citizen",
+      "status": {
+        "pending": "Your document is being reviewed. You'll receive an email as soon as an administrator has validated it.",
+        "approved": "Your profile is verified — you can now publish on the marketplace.",
+        "rejected": "Your document was not accepted. You can submit a new one below."
+      },
+      "docType": {
+        "rc": "Trade register",
+        "cin": "National ID card",
+        "agriCard": "Farmer's card",
+        "other": "Other"
+      },
+      "fields": {
+        "document": "Document:",
+        "submittedOn": "Submitted on:",
+        "decisionOn": "Decision on:",
+        "reason": "Reason:"
+      },
+      "previewLink": "Preview document (temporary link)",
+      "publishAd": "Publish a listing",
+      "publishSurplusBox": "Publish a surprise box"
+    },
+    "uploadForm": {
+      "errors": {
+        "fileRequired": "Please select a file.",
+        "fileTooLarge": "File too large — 5 MB maximum.",
+        "invalidFormat": "Format not accepted. Use PDF, JPG, PNG or WebP.",
+        "submitFailed": "Failed: {message}"
+      },
+      "success": {
+        "title": "Document submitted successfully",
+        "body": "Your document is being reviewed. An administrator will review it within 24 to 48 hours. You'll receive an email as soon as a decision is made.",
+        "viewStatus": "View my request status"
+      },
+      "docTypeLabel": "Document type",
+      "docTypeOptions": {
+        "cin": "National ID card (CIN)",
+        "rc": "Trade register (RC)",
+        "agriCard": "Farmer's card",
+        "other": "Other"
+      },
+      "fileLabel": "File (PDF, JPG, PNG, WebP — 5 MB max)",
+      "submitting": "Uploading…",
+      "submit": "Submit for verification"
+    }
+  }
+}

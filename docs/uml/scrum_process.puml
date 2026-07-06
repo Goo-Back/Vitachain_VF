@@ -1,0 +1,112 @@
+@startuml Processus_Scrum_VitaChain
+!theme plain
+skinparam activity {
+  BackgroundColor #EFF6FF
+  BorderColor     #2563EB
+  ArrowColor      #475569
+  StartColor      #1D4ED8
+  EndColor        #1D4ED8
+  DiamondBackgroundColor #FEF9C3
+  DiamondBorderColor     #CA8A04
+}
+skinparam note {
+  BackgroundColor #FFFDE7
+  BorderColor     #F9A825
+}
+skinparam swimlane {
+  BorderColor #CBD5E1
+  TitleBackgroundColor #F8FAFC
+}
+skinparam ArrowColor #475569
+
+title Diagramme d'Activité — Processus Scrum VitaChain (10 sprints × 2 semaines)
+
+|Équipe|
+start
+
+:**Product Backlog initial**
+50+ User Stories
+réparties sur 5 modules
+(Auth, Katara, FarMarket,
+SecondServe, Admin);
+
+note right
+  Stories organisées par épics :
+  INF / AUTH / KAT / FAR / SEC / ADM
+  Critères d'acceptation
+  formalisés en Markdown.
+end note
+
+repeat
+
+  |Équipe|
+  :Sprint Planning (J1)
+  Sélection des User Stories
+  Estimation en points;
+
+  |Équipe|
+  fork
+    :Développement\nFastAPI (Backend)\nPython 3.12 + Pydantic v2;
+  fork again
+    :Développement\nNext.js 15 (Frontend)\nRSC / Server Actions;
+  fork again
+    :Migrations SQL\nPostgreSQL (Supabase)\nRLS + SECURITY DEFINER;
+  end fork
+
+  |CI/CD|
+  :Push GitHub → Déclenchement CI
+  **5 jobs GitHub Actions :**
+  1. Lint (ruff, ESLint, shellcheck)
+  2. Tests backend (pytest)
+  3. Build frontend (Next.js)
+  4. Migrations DB (pgTAP)
+  5. Détection secrets (gitleaks);
+
+  note right
+    Pre-commit hooks :
+    - ruff format
+    - ESLint
+    - Vérification AUTH-05
+      (pas de service_key côté client)
+  end note
+
+  if (CI passe ?) then (Oui)
+    |Équipe|
+    :Merge dans main
+    Déploiement automatique\nvia Docker Compose\n(VPS production);
+  else (Non)
+    |Équipe|
+    :Correction des erreurs
+    Nouveau push → relance CI;
+    stop
+  endif
+
+  |Équipe|
+  :Sprint Review (J14)
+  Démonstration fonctionnelle
+  sur environnement de production;
+
+  :Sprint Retrospective
+  Ajustements du backlog
+  Mise à jour sprint-status.yml;
+
+repeat while (Sprints restants ?) is (Oui)
+->Non (Sprint 10 livré);
+
+|Équipe|
+:Tests de charge
+Locust — endpoint /katara/ingest
+Cible : < 50 ms (p50)
+Cible : < 200 ms (p95);
+
+:Tests d'intégration
+Flux KYC bout-en-bout
+Flux commande multi-agriculteurs;
+
+:Rapport PFE + Documentation
+Rapport académique LaTeX
+Runbook opérationnel;
+
+stop
+
+@enduml

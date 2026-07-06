@@ -16,7 +16,9 @@ const Auth = lazy(() => import('./pages/Auth').then(m => ({ default: m.Auth })))
 const ConsumerDashboard = lazy(() => import('./pages/ConsumerDashboard').then(m => ({ default: m.ConsumerDashboard })));
 const RestaurantDashboard = lazy(() => import('./pages/RestaurantDashboard').then(m => ({ default: m.RestaurantDashboard })));
 const Meals = lazy(() => import('./pages/Meals').then(m => ({ default: m.Meals })));
-const AdminDashboard = lazy(() => import('./pages/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
+// SecondServe admin is centralised in the VitaChain console; the in-app
+// dashboard is retired and these routes now show a redirect notice.
+const AdminMoved = lazy(() => import('./pages/AdminMoved').then(m => ({ default: m.AdminMoved })));
 const OrderReceipt = lazy(() => import('./pages/OrderReceipt').then(m => ({ default: m.OrderReceipt })));
 const Checkout = lazy(() => import('./pages/Checkout').then(m => ({ default: m.Checkout })));
 const RestaurantOrderDetails = lazy(() => import('./pages/RestaurantOrderDetails').then(m => ({ default: m.RestaurantOrderDetails })));
@@ -39,9 +41,9 @@ export default function App() {
                 <Route path="/orders/:id" element={<OrderReceipt />} />
                 <Route path="/restaurant-dashboard" element={<RestaurantDashboard />} />
                 <Route path="/restaurant/orders/:id" element={<RestaurantOrderDetails />} />
-                <Route path="/admin-dashboard" element={<AdminDashboard />} />
-                <Route path="/admin/dashboard" element={<AdminDashboard />} />
-                <Route path="/admin" element={<AdminDashboard />} />
+                <Route path="/admin-dashboard" element={<AdminMoved />} />
+                <Route path="/admin/dashboard" element={<AdminMoved />} />
+                <Route path="/admin" element={<AdminMoved />} />
               </Routes>
             </Suspense>
           </main>

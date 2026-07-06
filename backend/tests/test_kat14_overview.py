@@ -57,6 +57,7 @@ class TestOverviewSchemas:
             "last_reading_at": _now(),
             "last_soil_moisture": 38.1,
             "has_open_threshold_breach": False,
+            "open_alert_count": 0,
         }
         base.update(overrides)
         return base
@@ -110,6 +111,7 @@ class TestOverviewSchemas:
             device_pending_count=0,
             device_unlinked_count=1,
             parcels_with_open_breach=1,
+            open_alert_count=1,
         )
         dumped = kpi.model_dump(mode="json")
         rebuilt = FarmKpiRollup(**dumped)
@@ -127,6 +129,7 @@ class TestOverviewSchemas:
                 device_pending_count=0,
                 device_unlinked_count=0,
                 parcels_with_open_breach=0,
+                open_alert_count=0,
             ),
             parcels=[],
         )
@@ -143,6 +146,7 @@ class TestOverviewSchemas:
                 device_pending_count=0,
                 device_unlinked_count=0,
                 parcels_with_open_breach=0,
+                open_alert_count=0,
             ),
             parcels=[ParcelOverviewEntry(**self._entry_payload())],
         )

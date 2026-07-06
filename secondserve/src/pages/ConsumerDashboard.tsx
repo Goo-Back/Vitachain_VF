@@ -300,7 +300,7 @@ export function ConsumerDashboard() {
                 }`}
               >
                 <ShoppingBag className="h-5 w-5" />
-                {language === 'ar' ? 'طلباتي النشطة' : 'My Orders'}
+                {t('navMyOrders')}
               </button>
               <button
                 onClick={() => setActiveTab('favorites')}
@@ -309,7 +309,7 @@ export function ConsumerDashboard() {
                 }`}
               >
                 <Heart className="h-5 w-5" />
-                {language === 'ar' ? 'المفضلة' : 'Favorites'}
+                {t('navFavorites')}
               </button>
               <button
                 onClick={() => setActiveTab('support')}
@@ -318,7 +318,7 @@ export function ConsumerDashboard() {
                 }`}
               >
                 <MessageSquare className="h-5 w-5" />
-                {language === 'ar' ? 'الدعم والمساعدة' : 'Help & Support'}
+                {t('navHelpSupport')}
               </button>
               <button
                 onClick={() => setActiveTab('settings')}
@@ -327,7 +327,7 @@ export function ConsumerDashboard() {
                 }`}
               >
                 <Settings className="h-5 w-5" />
-                {language === 'ar' ? 'حسابي وبياناتي' : 'Settings'}
+                {t('navSettings')}
               </button>
             </div>
           </div>
@@ -695,7 +695,7 @@ export function ConsumerDashboard() {
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 text-right">
                 <div className="mb-8 text-right">
                   <h2 className="text-2xl font-display font-black text-gray-900">
-                    {language === 'ar' ? 'الدعم الفني والمساعدة' : 'Help & Support'}
+                    {t('navHelpSupport')}
                   </h2>
                   <p className="text-xs font-semibold text-gray-500 mt-1 leading-relaxed">
                     {language === 'ar' 
@@ -709,7 +709,7 @@ export function ConsumerDashboard() {
                   <form onSubmit={(e) => {
                     e.preventDefault();
                     if (!ticketSubject.trim() || !ticketMessage.trim()) {
-                      toast.error(language === 'ar' ? 'الرجاء ملء جميع الحقول' : 'Please fill all fields');
+                      toast.error(t('fillAllFieldsToast'));
                       return;
                     }
                     addSupportTicket(ticketSubject, ticketMessage);
@@ -717,33 +717,33 @@ export function ConsumerDashboard() {
                     setTicketMessage('');
                   }} className="space-y-4 bg-gray-50 p-6 rounded-2xl border border-gray-100">
                     <h3 className="font-extrabold text-sm text-gray-900 uppercase tracking-wide">
-                      {language === 'ar' ? 'إنشاء تذكرة دعم جديدة' : 'Submit Support Request'}
+                      {t('submitSupportRequestBtn')}
                     </h3>
                     
                     <div>
                       <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5 text-right">
-                        {language === 'ar' ? 'الموضوع' : 'Subject'}
+                        {t('subjectLabel')}
                       </label>
                       <input
                         type="text"
                         required
                         value={ticketSubject}
                         onChange={(e) => setTicketSubject(e.target.value)}
-                        placeholder={language === 'ar' ? 'مثال: مشكلة في استلام الطلب' : 'e.g., Order coordinates incorrect'}
+                        placeholder={t('subjectPlaceholder')}
                         className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none bg-white text-sm font-semibold text-right"
                       />
                     </div>
 
                     <div>
                       <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5 text-right">
-                        {language === 'ar' ? 'شرح المشكلة بالتفصيل' : 'Description'}
+                        {t('descriptionLabel')}
                       </label>
                       <textarea
                         required
                         rows={4}
                         value={ticketMessage}
                         onChange={(e) => setTicketMessage(e.target.value)}
-                        placeholder={language === 'ar' ? 'يرجى تقديم تفاصيل واضحة لنتمكن من مساعدتك بحسم...' : 'Provide clear details to facilitate resolution...'}
+                        placeholder={t('descriptionPlaceholder')}
                         className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none bg-white text-sm font-medium resize-none text-right"
                       />
                     </div>
@@ -752,19 +752,19 @@ export function ConsumerDashboard() {
                       type="submit"
                       className="w-full bg-gray-950 hover:bg-primary text-white py-3 rounded-xl font-bold transition-all text-xs cursor-pointer shadow-sm uppercase tracking-wide"
                     >
-                      {language === 'ar' ? 'إرسال التذكرة للإدارة' : 'Submit Ticket'}
+                      {t('submitTicketBtn')}
                     </button>
                   </form>
 
                   {/* Existing Tickets list */}
                   <div className="space-y-4">
                     <h3 className="font-extrabold text-xs text-gray-400 uppercase tracking-widest block text-right">
-                      {language === 'ar' ? 'تذاكرك الحالية' : 'Your Ticket History'}
+                      {t('ticketHistoryHeading')}
                     </h3>
 
                     {supportTickets.filter(t => t.userId === user.id).length === 0 ? (
                       <div className="border border-dashed border-gray-200 rounded-2xl p-6 text-center text-xs font-bold text-gray-400">
-                        {language === 'ar' ? 'لا توجد تذاكر دعم مسجلة لديك.' : 'No active or past support tickets.'}
+                        {t('noTicketsMsg')}
                       </div>
                     ) : (
                       supportTickets.filter(t => t.userId === user.id).map(ticket => (
@@ -776,7 +776,7 @@ export function ConsumerDashboard() {
                                 ? 'bg-emerald-50 text-emerald-800' 
                                 : 'bg-rose-50 text-rose-800'
                             }`}>
-                              {ticket.status === 'resolved' ? (language === 'ar' ? 'محلولة' : 'Resolved') : (language === 'ar' ? 'معالجة جارية' : 'Pending')}
+                              {ticket.status === 'resolved' ? t('ticketResolvedBadge') : t('ticketPendingBadge')}
                             </span>
                           </div>
                           
@@ -786,7 +786,7 @@ export function ConsumerDashboard() {
 
                           {ticket.status === 'resolved' && (
                             <div className="bg-emerald-50/50 p-3 rounded-lg border border-emerald-100 text-emerald-950 text-right mt-2 text-xs">
-                              <p className="font-black mb-1">🛡️ {language === 'ar' ? 'رد مسؤول النظام:' : 'Admin Solution:'}</p>
+                              <p className="font-black mb-1">🛡️ {t('adminSolutionLabel')}</p>
                               <p className="font-semibold text-emerald-800 leading-relaxed font-sans">{ticket.response}</p>
                             </div>
                           )}

@@ -1,0 +1,125 @@
+{
+  "landingPage": {
+    "hero": {
+      "badge": "Anti-waste agri-food ecosystem",
+      "titlePrefix": "From soil to plate,",
+      "titleHighlight": "no link lost",
+      "paragraph": "VitaChain connects farmers and restaurateurs through a short, traceable chain: IoT monitoring, a logistics marketplace and surplus redistribution — all on a single platform.",
+      "ctaPrimary": "Create my account",
+      "ctaSecondary": "Discover the modules",
+      "trustLine": "Verified accounts · fully traceable chain"
+    },
+    "marquee": {
+      "sensors": "ESP32 sensors",
+      "thresholds": "Per-plot thresholds",
+      "alerts": "Real-time alerts",
+      "marketplace": "Marketplace",
+      "logistics": "Logistics tracking",
+      "shortCircuit": "Short supply chain",
+      "antiWaste": "Anti-waste",
+      "verifiedAccounts": "Verified accounts"
+    },
+    "modules": {
+      "heading": {
+        "eyebrow": "Four modules, one platform",
+        "title": "A complete agri-food chain",
+        "subtitle": "Each module works standalone — together, they cover the whole journey, from the field to the plate."
+      },
+      "soonBadge": "Coming soon",
+      "items": {
+        "katara": {
+          "tag": "Soil IoT monitoring",
+          "desc": "Your ESP32 sensors report humidity, pH and conductivity for every plot. Set your own thresholds and get an on-demand agronomic diagnosis.",
+          "point1": "Real-time readings",
+          "point2": "Custom thresholds",
+          "point3": "On-demand diagnosis"
+        },
+        "farmarket": {
+          "tag": "Marketplace & logistics",
+          "desc": "Restaurateurs order directly from producers. VitaChain orchestrates logistics and order tracking, from the field to the counter.",
+          "point1": "Producer catalog",
+          "point2": "Order pipeline",
+          "point3": "Delivery tracking"
+        },
+        "botaba9a": {
+          "tag": "Cold-chain traceability",
+          "desc": "Track temperature from transport to storage: a fully traceable cold chain that keeps products fresh and safe.",
+          "point1": "Temperature tracking",
+          "point2": "Cold-break alerts",
+          "point3": "Traceable history"
+        },
+        "secondserve": {
+          "tag": "Surplus redistribution",
+          "desc": "Unsold stock and surplus become discounted offers for partners: less waste, more value returned to the industry.",
+          "point1": "Surplus offers",
+          "point2": "Approved partners",
+          "point3": "Measured impact"
+        }
+      }
+    },
+    "flow": {
+      "heading": {
+        "eyebrow": "How it works",
+        "title": "Four steps, one virtuous cycle",
+        "subtitle": "VitaChain shortens the chain and keeps every link connected to the next."
+      },
+      "steps": {
+        "cultivate": {
+          "title": "Grow & measure",
+          "desc": "Katara monitors the soil continuously and alerts you as soon as a threshold is crossed."
+        },
+        "sell": {
+          "title": "Sell directly",
+          "desc": "List your harvest on FarMarket; restaurateurs order in just a few clicks."
+        },
+        "deliver": {
+          "title": "Deliver & track",
+          "desc": "Logistics are orchestrated and tracked until the order is received."
+        },
+        "valorize": {
+          "title": "Valorize the surplus",
+          "desc": "Unsold stock finds a second life through SecondServe instead of being thrown away."
+        }
+      }
+    },
+    "impact": {
+      "heading": {
+        "eyebrow": "Our purpose",
+        "title": "Less waste, more value",
+        "subtitle": "A better-connected supply chain loses less — in the field and in the kitchen."
+      },
+      "stats": {
+        "modules": {
+          "label": "Integrated modules",
+          "caption": "One unified platform"
+        },
+        "soilParams": {
+          "label": "Soil parameters",
+          "caption": "Humidity · pH · conductivity"
+        },
+        "monitoring": {
+          "label": "Continuous monitoring",
+          "caption": "Real-time data"
+        },
+        "tracedChain": {
+          "label": "Traced chain",
+          "caption": "From field to plate"
+        }
+      }
+    },
+    "finalCta": {
+      "title": "Join the VitaChain network",
+      "paragraph": "Farmer or restaurateur, create your account and take back control of your supply chain — from crop monitoring to fighting waste.",
+      "ctaPrimary": "Get started for free",
+      "ctaSecondary": "I already have an account"
+    },
+    "footer": {
+      "description": "The anti-waste agri-food ecosystem — from the field to the dashboard, from producer to restaurateur.",
+      "modulesHeading": "Modules",
+      "accountHeading": "Account",
+      "login": "Log in",
+      "register": "Sign up",
+      "copyright": "© {year} VitaChain · Anti-waste agri-food ecosystem"
+    }
+  }
+}

@@ -66,7 +66,7 @@ export function OfferCard({ offer }: OfferCardProps) {
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!reservationName.trim() || !reservationPhone.trim()) {
-      toast.error(language === 'ar' ? '❌ المرجو إدخال الاسم ورقم الهاتف' : '❌ Please enter your Name and Phone Number');
+      toast.error(t('errNameAndPhoneRequired'));
       return;
     }
     // Advance to choices
@@ -86,11 +86,7 @@ export function OfferCard({ offer }: OfferCardProps) {
       setPlacedOrderId(orderId);
       setCheckoutStep('success');
       setQuantity(1);
-      toast.success(
-        language === 'ar'
-          ? '🎉 تم إرسال طلبك نقداً بنجاح! تم تنبيه البائع فورا.'
-          : '🎉 Cash order placed directly! Real-time dashboard updated.'
-      );
+      toast.success(t('cashOrderPlacedToast'));
     }
   };
 
@@ -105,15 +101,15 @@ export function OfferCard({ offer }: OfferCardProps) {
 
     // Form validations
     if (cardNumber.replace(/\s/g, '').length < 16) {
-      setPaymentError(language === 'ar' ? 'رقم بطاقة غير صالح: يجب أن يتكون من 16 رقماً' : 'Invalid Card Number: Must contain 16 digits');
+      setPaymentError(t('errInvalidCardNumber'));
       return;
     }
     if (!/^\d{2}\/\d{2}$/.test(cardExpiry)) {
-      setPaymentError(language === 'ar' ? 'تاريخ غير صالح: يجب أن يكون بصيغة شهر/سنة MM/YY' : 'Invalid Expiration Format: Must be MM/YY');
+      setPaymentError(t('errInvalidExpiry'));
       return;
     }
     if (cardCVV.length < 3) {
-      setPaymentError(language === 'ar' ? 'رمز حماية غير صالح: يجب أن يتكون من 3 أو 4 أرقام' : 'Invalid Security Code: Must contain 3 or 4 digits');
+      setPaymentError(t('errInvalidCvv'));
       return;
     }
 
@@ -122,12 +118,8 @@ export function OfferCard({ offer }: OfferCardProps) {
     setTimeout(async () => {
       if (simulateCardDecline) {
         setCheckoutStep('online_payment');
-        setPaymentError(
-          language === 'ar' 
-            ? '🚨 تم رفض المعاملة: رصيد غير كافٍ أو بطاقة مرفوضة. (محاكاة الرفض)' 
-            : '🚨 Transaction Declined: Insufficient funds or invalid card signature. (Simulated decline)'
-        );
-        toast.error(language === 'ar' ? '❌ فشل الدفع: تم تفعيل محاكاة رفض البطاقة.' : '❌ Payment Failed: Simulated Card decline verified.');
+        setPaymentError(t('transactionDeclinedError'));
+        toast.error(t('paymentDeclinedToast'));
         return;
       }
 
@@ -144,7 +136,7 @@ export function OfferCard({ offer }: OfferCardProps) {
         setPlacedOrderId(orderId);
         setCheckoutStep('success');
         setQuantity(1);
-        toast.success(language === 'ar' ? '💳 تم الدفع بنجاح وحجز الضمان!' : '💳 Payment successful! Escrow activated.');
+        toast.success(t('paymentSuccessEscrowToast'));
       }
     }, 2200);
   };

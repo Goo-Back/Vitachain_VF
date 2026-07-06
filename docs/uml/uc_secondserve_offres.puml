@@ -1,0 +1,129 @@
+@startuml UC_SecondServe_Gestion_Offres
+!theme plain
+skinparam actorStyle awesome
+skinparam usecase {
+  BackgroundColor #EDE7F6
+  BorderColor #4527A0
+  FontSize 13
+}
+skinparam actor {
+  BackgroundColor #D1C4E9
+  BorderColor #4527A0
+}
+skinparam rectangle {
+  BackgroundColor #F3E5F5
+  BorderColor #4527A0
+}
+skinparam note {
+  BackgroundColor #FFFDE7
+  BorderColor #F9A825
+}
+
+title Diagramme de Cas d'Utilisation — Gestion des Offres (Module SecondServe)
+
+actor "Partenaire\n(Restaurant)" as Partner
+actor "Consommateur" as Consumer
+actor "Administrateur" as Admin
+actor "Supabase\nRealtime" as Realtime <<system>>
+
+rectangle "Module SecondServe — Gestion des Offres" {
+
+  ' --- Partenaire
+  usecase "Créer une offre\nanti-gaspillage" as UC_CREATE
+  usecase "Modifier une offre" as UC_UPDATE
+  usecase "Supprimer une offre" as UC_DELETE
+  usecase "Consulter ses offres" as UC_LIST_OWN
+
+  ' --- Consommateur
+  usecase "Parcourir le catalogue\ndes offres" as UC_BROWSE
+  usecase "Consulter le détail\nd'une offre" as UC_DETAIL
+  usecase "Filtrer par ville\nou type de commerce" as UC_FILTER
+
+  ' --- Admin
+  usecase "Lister toutes les offres" as UC_ADMIN_LIST
+  usecase "Approuver un partenaire" as UC_APPROVE
+  usecase "Supprimer une offre\n(modération)" as UC_MOD_DELETE
+
+  ' --- Système
+  usecase "Diffuser les mises à jour\nen temps réel" as UC_REALTIME
+
+  ' --- Inclusions / Extensions
+  usecase "Vérification partenaire\napprouvé + non banni" as UC_PARTNER_AUTH <<include>>
+  usecase "Décrémentation stock\n(ss_place_order RPC)" as UC_STOCK_DEC <<include>>
+  usecase "Snapshot offre\nau moment de commande" as UC_SNAPSHOT <<include>>
+  usecase "Upload photo offre" as UC_PHOTO <<extend>>
+
+  note right of UC_CREATE
+    Champs obligatoires :
+    - nom, description
+    - prix original / réduit (MAD)
+    - quantité disponible
+    - heure limite (HH:MM)
+    - ville : Casablanca | Mohammedia
+    - type commerce
+    Option : isSurpriseBox
+  end note
+
+  note right of UC_BROWSE
+    Visibilité uniquement si
+    partenaire approuvé = true
+    ET a un commerce_type défini.
+    Tri côté client.
+  end note
+
+  note right of UC_APPROVE
+    Admin valide le partenaire :
+    approved → true
+    Tant que non approuvé,
+    les offres restent invisibles
+    dans le catalogue.
+  end note
+
+  note bottom of UC_REALTIME
+    ss_offers en Realtime Full.
+    Les clients reçoivent les
+    UPDATE de quantité sans polling.
+  end note
+}
+
+' Relations Partenaire
+Partner --> UC_CREATE
+Partner --> UC_UPDATE
+Partner --> UC_DELETE
+Partner --> UC_LIST_OWN
+
+' Relations Consommateur
+Consumer --> UC_BROWSE
+Consumer --> UC_DETAIL
+Consumer --> UC_FILTER
+
+' Relations Admin
+Admin --> UC_ADMIN_LIST
+Admin --> UC_APPROVE
+Admin --> UC_MOD_DELETE
+Admin --> UC_DETAIL
+
+' Relations Système
+Realtime --> UC_REALTIME
+
+' Inclusions — Partenaire
+UC_CREATE ..> UC_PARTNER_AUTH : <<include>>
+UC_UPDATE ..> UC_PARTNER_AUTH : <<include>>
+UC_DELETE ..> UC_PARTNER_AUTH : <<include>>
+
+' Extension — Photo
+UC_CREATE ..> UC_PHOTO : <<extend>>
+UC_UPDATE ..> UC_PHOTO : <<extend>>
+
+' Inclusion — Filtrage
+UC_BROWSE ..> UC_FILTER : <<include>>
+
+' Inclusions — Côté commande (déclenchées depuis UC Commandes)
+UC_STOCK_DEC ..> UC_SNAPSHOT : <<include>>
+
+' Realtime déclenché par toute écriture sur ss_offers
+UC_CREATE ..> UC_REALTIME : <<extend>>
+UC_UPDATE ..> UC_REALTIME : <<extend>>
+UC_DELETE ..> UC_REALTIME : <<extend>>
+
+@enduml

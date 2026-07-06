@@ -1,0 +1,110 @@
+@startuml UC_Admin_Gestion_Utilisateurs
+!theme plain
+skinparam actorStyle awesome
+skinparam usecase {
+  BackgroundColor #ECEFF1
+  BorderColor #37474F
+  FontSize 13
+}
+skinparam actor {
+  BackgroundColor #CFD8DC
+  BorderColor #37474F
+}
+skinparam rectangle {
+  BackgroundColor #F5F7F8
+  BorderColor #37474F
+}
+skinparam note {
+  BackgroundColor #FFFDE7
+  BorderColor #F9A825
+}
+
+title Diagramme de Cas d'Utilisation — Gestion des Utilisateurs (Module Admin)
+
+actor "Administrateur" as Admin
+actor "Supabase Auth\n(service_role)" as SupaAuth <<system>>
+actor "Trigger Supabase\n(immutabilité)" as Trigger <<system>>
+
+rectangle "Module Admin — Gestion des Utilisateurs" {
+
+  ' --- Consultation
+  usecase "Lister tous les\nutilisateurs" as UC_LIST
+  usecase "Rechercher un utilisateur\n(nom / e-mail)" as UC_SEARCH
+  usecase "Filtrer par rôle\nou statut" as UC_FILTER
+  usecase "Consulter le profil\nd'un utilisateur" as UC_VIEW
+
+  ' --- Modification
+  usecase "Changer le rôle\nd'un utilisateur" as UC_ROLE
+  usecase "Bannir / Débannir\nun utilisateur" as UC_BAN
+
+  ' --- Gardes système
+  usecase "Blocage auto-modification\n(rôle / ban sur soi-même)" as UC_SELF_GUARD <<include>>
+  usecase "Révocation des sessions\nactives (ban_duration)" as UC_SESSION_REVOKE <<include>>
+  usecase "Mise à jour\nprofiles.banned" as UC_MIRROR_BAN <<include>>
+  usecase "Écriture protégée\n(trigger immutabilité mig 0005/0049)" as UC_TRIGGER_GUARD <<include>>
+
+  note right of UC_LIST
+    Endpoint : GET /api/v1/admin/users
+    Tri : created_at DESC
+    Pagination : 20 / page
+    Filtres : rôle, statut (actif / banni)
+    Bypass RLS via service_client()
+  end note
+
+  note right of UC_ROLE
+    Rôles VitaChain :
+    FARMER | RESTAURANT | CITIZEN | ADMIN
+    Seul le service_role JWT peut
+    écrire profiles.role (trigger 0005).
+    Interdit sur son propre compte
+    → HTTP 409 cannot_change_own_role
+  end note
+
+  note right of UC_BAN
+    Double effet :
+    1. Supabase Auth : ban_duration = 876000h
+       (≈ permanent) / "none" pour lever
+    2. Mirror : profiles.banned = true/false
+    Sessions existantes révoquées.
+    Interdit sur son propre compte
+    → HTTP 409 cannot_ban_self
+  end note
+
+  note bottom of UC_TRIGGER_GUARD
+    Trigger enforce_profile_immutability :
+    n'admet que le JWT service_role.
+    Protège role, verification_status,
+    banned contre toute écriture directe
+    par un utilisateur authentifié.
+  end note
+}
+
+' Relations Admin
+Admin --> UC_LIST
+Admin --> UC_SEARCH
+Admin --> UC_FILTER
+Admin --> UC_VIEW
+Admin --> UC_ROLE
+Admin --> UC_BAN
+
+' Inclusions — Recherche / Filtre
+UC_SEARCH ..> UC_LIST   : <<include>>
+UC_FILTER ..> UC_LIST   : <<include>>
+
+' Garde — auto-modification bloquée
+UC_ROLE ..> UC_SELF_GUARD : <<include>>
+UC_BAN  ..> UC_SELF_GUARD : <<include>>
+
+' Inclusions — Ban
+UC_BAN ..> UC_SESSION_REVOKE : <<include>>
+UC_BAN ..> UC_MIRROR_BAN     : <<include>>
+
+' Inclusions — Écriture protégée
+UC_ROLE         ..> UC_TRIGGER_GUARD : <<include>>
+UC_MIRROR_BAN   ..> UC_TRIGGER_GUARD : <<include>>
+
+' Relations système
+SupaAuth --> UC_SESSION_REVOKE
+Trigger  --> UC_TRIGGER_GUARD
+
+@enduml

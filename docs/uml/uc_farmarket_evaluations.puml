@@ -1,0 +1,97 @@
+@startuml UC_FarMarket_Gestion_Evaluations
+!theme plain
+skinparam actorStyle awesome
+skinparam usecase {
+  BackgroundColor #FCE4EC
+  BorderColor #880E4F
+  FontSize 13
+}
+skinparam actor {
+  BackgroundColor #F8BBD9
+  BorderColor #880E4F
+}
+skinparam rectangle {
+  BackgroundColor #FFF5F8
+  BorderColor #880E4F
+}
+skinparam note {
+  BackgroundColor #FFFDE7
+  BorderColor #F9A825
+}
+
+title Diagramme de Cas d'Utilisation — Gestion des Évaluations (Module FarMarket)
+
+actor "Restaurant\n(Acheteur)" as Restaurant
+actor "Agriculteur\n(Vérifié)" as Farmer
+actor "Administrateur" as Admin
+
+rectangle "Module FarMarket — Gestion des Évaluations" {
+
+  ' --- Restaurant
+  usecase "Vérifier mon éligibilité\nà évaluer" as UC_CHECK_ELIGIBILITY
+  usecase "Soumettre une évaluation\n(1-5 étoiles)" as UC_SUBMIT
+  usecase "Modifier son évaluation" as UC_EDIT
+
+  ' --- Agriculteur / Public
+  usecase "Consulter les évaluations\nd'un agriculteur" as UC_LIST_PUBLIC
+  usecase "Consulter le profil public\nd'un agriculteur" as UC_FARMER_PROFILE
+
+  ' --- Admin
+  usecase "Consulter toutes les évaluations" as UC_ADMIN_LIST
+
+  ' --- Inclusions
+  usecase "Vérification acheteur\nvérifié (article DELIVERED)" as UC_BUYER_GATE <<include>>
+  usecase "Calcul moyenne & comptage\n(rating_avg, rating_count)" as UC_STATS <<include>>
+
+  note right of UC_SUBMIT
+    Contrainte : UNIQUE(farmer_id, restaurant_id)
+    → un seul avis modifiable par paire.
+    Commentaire optionnel (≤1000 chars).
+    reviewer_name dénormalisé au moment
+    de l'écriture.
+  end note
+
+  note right of UC_CHECK_ELIGIBILITY
+    can_rate = true si :
+    (1) évaluation existante, OU
+    (2) au moins un article DELIVERED
+        de cet agriculteur
+  end note
+
+  note right of UC_EDIT
+    Pas de re-vérification acheteur
+    pour la modification.
+    Seul le détenteur de l'avis
+    peut modifier (RLS).
+  end note
+
+  note bottom of UC_FARMER_PROFILE
+    Expose :
+    - Profil public (id, prénom, région)
+    - rating_avg, rating_count
+    - Nombre d'annonces actives
+    Jamais l'identité complète.
+  end note
+}
+
+' Relations Restaurant
+Restaurant --> UC_CHECK_ELIGIBILITY
+Restaurant --> UC_SUBMIT
+Restaurant --> UC_EDIT
+Restaurant --> UC_LIST_PUBLIC
+Restaurant --> UC_FARMER_PROFILE
+
+' Relations Agriculteur
+Farmer --> UC_LIST_PUBLIC
+Farmer --> UC_FARMER_PROFILE
+
+' Relations Admin
+Admin --> UC_ADMIN_LIST
+Admin --> UC_FARMER_PROFILE
+
+' Inclusions
+UC_SUBMIT ..> UC_BUYER_GATE : <<include>>
+UC_LIST_PUBLIC    ..> UC_STATS : <<include>>
+UC_FARMER_PROFILE ..> UC_STATS : <<include>>
+
+@enduml

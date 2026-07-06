@@ -229,6 +229,7 @@ export function NumberTicker({
   className = "",
   suffix = "",
   prefix = "",
+  locale = "fr-MA",
 }: {
   value: number;
   decimals?: number;
@@ -236,12 +237,15 @@ export function NumberTicker({
   className?: string;
   suffix?: string;
   prefix?: string;
+  /** Intl/BCP-47 tag for number formatting — pass the resolved page locale;
+   *  defaults to "fr-MA" only as a fallback for callers that omit it. */
+  locale?: string;
 }) {
   const ref = useRef<HTMLSpanElement>(null);
   const inView = useInView(ref, { once: true, margin: "-40px" });
   const mv = useMotionValue(0);
   const text = useTransform(mv, (v) =>
-    `${prefix}${v.toLocaleString("fr-FR", {
+    `${prefix}${v.toLocaleString(locale, {
       minimumFractionDigits: decimals,
       maximumFractionDigits: decimals,
     })}${suffix}`,

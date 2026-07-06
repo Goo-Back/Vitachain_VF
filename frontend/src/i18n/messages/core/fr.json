@@ -1,0 +1,133 @@
+{
+  "common": {
+    "appName": "VitaChain"
+  },
+  "nav": {
+    "openMenu": "Ouvrir la navigation",
+    "closeMenu": "Fermer la navigation",
+    "expandMenu": "Agrandir la navigation",
+    "collapseMenu": "Réduire la navigation",
+    "mainNav": "Navigation principale",
+    "account": "Mon compte",
+    "farmer": {
+      "overview": "Vue d'ensemble",
+      "parcels": "Mes parcelles",
+      "ads": "Mes annonces",
+      "orders": "Commandes",
+      "weather": "Météo",
+      "satellite": "Satellite",
+      "settings": "Paramètres",
+      "logout": "Déconnexion",
+      "newParcel": "Nouvelle parcelle"
+    },
+    "restaurant": {
+      "overview": "Vue d'ensemble",
+      "catalog": "Catalogue",
+      "favorites": "Favoris",
+      "cart": "Panier",
+      "orders": "Mes commandes",
+      "help": "Aide",
+      "notifications": "Notifications",
+      "settings": "Paramètres",
+      "logout": "Déconnexion",
+      "farmarketSection": "FarMarket",
+      "secondserveSection": "SecondServe",
+      "publishSurplus": "Publier des invendus",
+      "viewCart": "Voir le panier"
+    },
+    "citizen": {
+      "home": "Accueil",
+      "marketplace": "Annonces FarMarket",
+      "logout": "Déconnexion",
+      "farmarketSection": "FarMarket",
+      "secondserveSection": "SecondServe",
+      "surplusMeals": "Repas anti-gaspi"
+    },
+    "admin": {
+      "verifications": "Vérifications KYC",
+      "users": "Utilisateurs",
+      "farmarket": "FarMarket",
+      "secondserve": "SecondServe"
+    }
+  },
+  "landing": {
+    "nav": {
+      "modules": "Modules",
+      "howItWorks": "Fonctionnement",
+      "impact": "Impact",
+      "login": "Connexion",
+      "start": "Commencer",
+      "menu": "Menu"
+    }
+  },
+  "auth": {
+    "shell": {
+      "defaultBadge": "Suite VitaChain",
+      "footer": "Écosystème anti-gaspillage",
+      "rightPanelBadge": "Écosystème anti-gaspillage agro-alimentaire",
+      "headingStart": "Du champ à l'assiette,",
+      "headingHighlight": "zéro maillon perdu",
+      "paragraph": "Une seule plateforme relie chaque maillon de la chaîne agro-alimentaire — du suivi des cultures à la redistribution des surplus.",
+      "soon": "Bientôt",
+      "modules": {
+        "katara": "Suivi IoT du sol",
+        "farmarket": "Place de marché",
+        "botaba9a": "Chaîne du froid",
+        "secondserve": "Anti-gaspillage"
+      },
+      "statCard": "Près d'un tiers de la nourriture produite est perdue. VitaChain reconnecte la filière pour en perdre moins, à chaque étape.",
+      "verifiedFooter": "Comptes vérifiés · chaîne tracée de bout en bout"
+    },
+    "login": {
+      "badge": "Connexion",
+      "title": "Bon retour.",
+      "subtitle": "Connectez-vous pour reprendre la main sur votre filière.",
+      "emailLabel": "Email",
+      "passwordLabel": "Mot de passe",
+      "remember": "Rester connecté sur cet appareil",
+      "submit": "Se connecter",
+      "or": "ou",
+      "noAccount": "Pas encore de compte ?",
+      "createAccount": "Créer mon compte",
+      "secondserveCta": "Vous cherchez des repas anti-gaspi ?",
+      "secondserveLink": "Accéder à SecondServe →"
+    },
+    "register": {
+      "badge": "Créer un compte",
+      "title": "Bienvenue dans VitaChain.",
+      "subtitle": "Choisissez votre rôle et accédez à toute la chaîne — du suivi des cultures à la lutte contre le gaspillage.",
+      "fullNameLabel": "Nom complet",
+      "emailLabel": "Email",
+      "passwordLabel": "Mot de passe",
+      "roleLabel": "Je suis…",
+      "languageLabel": "Langue",
+      "termsPrefix": "J'accepte les",
+      "termsLink": "conditions d'utilisation",
+      "termsSuffix": "et la politique de confidentialité.",
+      "submit": "Créer mon compte",
+      "alreadyRegistered": "Déjà inscrit ?",
+      "login": "Connexion",
+      "secondserveCta": "Vous cherchez uniquement des repas anti-gaspi ?",
+      "secondserveLink": "Inscrivez-vous directement sur SecondServe →",
+      "errors": {
+        "email_taken": "Un compte existe déjà avec cet email.",
+        "weak_password": "Mot de passe trop faible — au moins 10 caractères, avec majuscule, minuscule et chiffre.",
+        "rate_limited": "Trop de tentatives. Veuillez réessayer dans une heure.",
+        "invalid_input": "Données invalides — vérifiez les champs.",
+        "network": "Connexion impossible. Vérifiez votre réseau et réessayez.",
+        "unknown": "Une erreur inattendue est survenue. Notre équipe a été notifiée."
+      }
+    }
+  },
+  "dashboardRoot": {
+    "unknownAccountTitle": "Compte non reconnu sur VitaChain",
+    "unknownAccountBody": "Ce compte ({email}) n'a pas de profil VitaChain. Il appartient peut-être à une autre application (SecondServe). Connectez-vous avec un compte VitaChain, ou déconnectez-vous.",
+    "logout": "Déconnexion",
+    "greeting": "Bonjour, {name}",
+    "profileUnavailable": "Profil indisponible ({message}). Réessayez plus tard.",
+    "role": "Rôle",
+    "status": "Statut",
+    "language": "Langue",
+    "otherModules": "Les autres modules seront branchés dans les phases suivantes."
+  }
+}

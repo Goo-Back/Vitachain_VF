@@ -1,0 +1,133 @@
+@startuml UC_Admin_Moderation_Annonces
+!theme plain
+skinparam actorStyle awesome
+skinparam usecase {
+  BackgroundColor #FBE9E7
+  BorderColor #BF360C
+  FontSize 13
+}
+skinparam actor {
+  BackgroundColor #FFCCBC
+  BorderColor #BF360C
+}
+skinparam rectangle {
+  BackgroundColor #FFF5F3
+  BorderColor #BF360C
+}
+skinparam note {
+  BackgroundColor #FFFDE7
+  BorderColor #F9A825
+}
+
+title Diagramme de Cas d'Utilisation — Modération des Annonces (Module Admin)
+
+actor "Administrateur" as Admin
+actor "Agriculteur\n(FarMarket)" as Farmer
+actor "Partenaire\n(SecondServe)" as Partner
+actor "Cron Nightly" as Cron <<system>>
+
+rectangle "Module Admin — Modération des Annonces" {
+
+  ' ── FarMarket ──────────────────────────────────────────────────────────────
+  usecase "Lister toutes les\nannonces FarMarket\n(tous statuts / agriculteurs)" as UC_FM_LIST
+  usecase "Filtrer annonces\n(statut, région, type produit)" as UC_FM_FILTER
+  usecase "Mettre en avant\nune annonce (featured)" as UC_FM_FEATURE
+  usecase "Supprimer une\nannonce FarMarket" as UC_FM_DELETE
+
+  ' ── SecondServe ────────────────────────────────────────────────────────────
+  usecase "Lister toutes les\noffres SecondServe" as UC_SS_LIST
+  usecase "Approuver un\npartenaire (restaurant)" as UC_SS_APPROVE
+  usecase "Supprimer une\noffre SecondServe" as UC_SS_DELETE
+
+  ' ── Commun ─────────────────────────────────────────────────────────────────
+  usecase "Consulter le détail\nd'une annonce / offre" as UC_DETAIL
+  usecase "Surveillance des\nannonces expirées" as UC_EXPIRE
+
+  ' ── Inclusions / Gardes ────────────────────────────────────────────────────
+  usecase "Bypass RLS\n(service_client, AUTH-05)" as UC_RLS_BYPASS <<include>>
+  usecase "Visibilité offres\nconditionné à l'approbation" as UC_VISIBILITY <<include>>
+  usecase "Déclenchement\nexpiration nightly" as UC_CRON_EXPIRE <<include>>
+
+  note right of UC_FM_LIST
+    GET /api/v1/admin/farmarket/ads
+    Bypass RLS : tous les agriculteurs,
+    tous les statuts (ACTIVE, EXPIRED,
+    DELETED, PENDING).
+    Filtres : statut, région, product_type
+    Tri : created_at DESC, 20/page.
+  end note
+
+  note right of UC_FM_FEATURE
+    PATCH /api/v1/admin/farmarket/ads/{id}/feature
+    Toggle is_featured (NOT actuel).
+    Idempotent : double-appel restaure l'état.
+    Effet : annonce remontée en tête
+    du catalogue pour les restaurants.
+  end note
+
+  note right of UC_SS_APPROVE
+    PATCH ss_profiles → approved = true
+    via service_role JWT.
+    Pré-requis pour que les offres
+    du partenaire soient visibles
+    dans le catalogue Meals.
+    Nécessite aussi commerce_type défini.
+  end note
+
+  note right of UC_EXPIRE
+    Cron nightly :
+    m2_farmarket_ads :
+    ACTIVE → EXPIRED si expires_at < now()
+    Valeur par défaut : +7 jours.
+    Action automatique, sans intervention
+    admin (sauf override manuel status).
+  end note
+
+  note bottom of UC_RLS_BYPASS
+    AUTH-05 : seul le préfixe
+    routers/admin/ est autorisé
+    à appeler service_client().
+    Chaque site porte un commentaire
+    # JUSTIFICATION: pour audit.
+  end note
+}
+
+' Relations Agriculteur (FarMarket — soumission normale)
+Farmer --> UC_FM_LIST : consulte ses propres\nannonces (hors scope admin)
+
+' Relations Partenaire (SecondServe — soumission normale)
+Partner --> UC_SS_LIST : consulte ses propres\noffres (hors scope admin)
+
+' Relations Admin — FarMarket
+Admin --> UC_FM_LIST
+Admin --> UC_FM_FILTER
+Admin --> UC_FM_FEATURE
+Admin --> UC_FM_DELETE
+Admin --> UC_DETAIL
+
+' Relations Admin — SecondServe
+Admin --> UC_SS_LIST
+Admin --> UC_SS_APPROVE
+Admin --> UC_SS_DELETE
+
+' Relations Cron
+Cron --> UC_EXPIRE
+
+' Inclusions — Bypass RLS
+UC_FM_LIST    ..> UC_RLS_BYPASS : <<include>>
+UC_SS_LIST    ..> UC_RLS_BYPASS : <<include>>
+UC_FM_FEATURE ..> UC_RLS_BYPASS : <<include>>
+UC_FM_DELETE  ..> UC_RLS_BYPASS : <<include>>
+UC_SS_APPROVE ..> UC_RLS_BYPASS : <<include>>
+UC_SS_DELETE  ..> UC_RLS_BYPASS : <<include>>
+
+' Inclusions — Filtre
+UC_FM_FILTER ..> UC_FM_LIST : <<include>>
+
+' Inclusions — Visibilité
+UC_SS_APPROVE ..> UC_VISIBILITY : <<include>>
+
+' Inclusions — Expiration
+UC_EXPIRE ..> UC_CRON_EXPIRE : <<include>>
+
+@enduml

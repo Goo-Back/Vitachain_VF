@@ -1,0 +1,737 @@
+{
+  "farmer": {
+    "common": {
+      "breadcrumbHome": "مزرعتي",
+      "breadcrumbAriaLabel": "مسار التنقل",
+      "weather": {
+        "unavailableTitle": "الطقس غير متاح",
+        "unavailableShort": "—",
+        "sunTitle": "الطقس: مثالي",
+        "sunShort": "مشمس",
+        "rainTitle": "الطقس: ممطر",
+        "rainShort": "ممطر",
+        "stormTitle": "الطقس: عاصف",
+        "stormShort": "عاصف",
+        "snowTitle": "الطقس: ثلجي",
+        "snowShort": "ثلجي",
+        "fogTitle": "الطقس: ضبابي",
+        "fogShort": "ضبابي",
+        "cloudTitle": "الطقس: غائم",
+        "cloudShort": "غائم"
+      },
+      "relativeTime": {
+        "justNow": "الآن",
+        "minutesAgo": "{count, plural, zero {قبل أقل من دقيقة} one {قبل دقيقة واحدة} two {قبل دقيقتين} few {قبل # دقائق} many {قبل # دقيقة} other {قبل # دقيقة}}",
+        "hoursAgo": "{count, plural, zero {قبل أقل من ساعة} one {قبل ساعة واحدة} two {قبل ساعتين} few {قبل # ساعات} many {قبل # ساعة} other {قبل # ساعة}}",
+        "daysAgo": "{count, plural, zero {اليوم} one {قبل يوم واحد} two {قبل يومين} few {قبل # أيام} many {قبل # يومًا} other {قبل # يوم}}"
+      },
+      "ndviBands": {
+        "veryDense": {
+          "label": "كثيف جدًا",
+          "advice": "غطاء نباتي قوي — متابعة روتينية."
+        },
+        "dense": {
+          "label": "كثيف",
+          "advice": "قوة نمو جيدة بالنسبة للموسم."
+        },
+        "moderate": {
+          "label": "معتدل",
+          "advice": "غطاء نباتي أضعف من المتوقع — تحققوا من الري والتسميد."
+        },
+        "low": {
+          "label": "ضعيف / متعثر",
+          "advice": "يُحتمل وجود إجهاد مائي أو تأخر في الإنبات — قارنوا ذلك ببيانات المستشعرات."
+        },
+        "bare": {
+          "label": "تربة عارية / ماء",
+          "advice": "لم يتم رصد أي غطاء نباتي على القطعة."
+        }
+      }
+    },
+    "overview": {
+      "eyebrow": "نظرة عامة",
+      "greetingMorning": "صباح الخير",
+      "greetingAfternoon": "طاب يومك",
+      "greetingEvening": "مساء الخير",
+      "subtitle": "نظرة حية على مزرعتك: المستشعرات، رطوبة التربة، وحالة القطع الزراعية.",
+      "myParcelsTitle": "قطعي الزراعية",
+      "parcelsCount": "{count, plural, zero {لا توجد قطع أرض مسجلة} one {قطعة أرض واحدة مسجلة} two {قطعتا أرض مسجلتان} few {# قطع أرض مسجلة} many {# قطعة أرض مسجلة} other {# قطعة أرض مسجلة}}",
+      "addParcel": "+ إضافة",
+      "empty": {
+        "firstStep": "الخطوة الأولى",
+        "welcomeTitle": "مرحبًا بك في <katara>Katara</katara>.",
+        "welcomeBody": "لم تسجّل بعد أي قطعة أرض. أنشئ واحدة لربط مستشعر ESP32 وابدأ مراقبة تربتك مباشرة.",
+        "ctaCreateFirst": "إنشاء أول قطعة أرض",
+        "featureParcelTitle": "أدخل بيانات القطعة",
+        "featureParcelDesc": "الاسم، المحصول، والمساحة. 30 ثانية فقط.",
+        "featureSensorTitle": "وصّل المستشعر",
+        "featureSensorDesc": "الإقران برمز مكوّن من 6 أرقام.",
+        "featureAdviceTitle": "احصل على أولى نصائحك",
+        "featureAdviceDesc": "تشخيص بالذكاء الاصطناعي منذ أول قراءة.",
+        "freeTrial": "مجاني لمدة 30 يومًا",
+        "noCommitment": "دون أي التزام",
+        "verificationRequired": "التحقق من الهوية ضروري لإقران مستشعر.",
+        "previewBadge": "معاينة — متاحة بعد إنشاء أول قطعة أرض",
+        "previewLiveMonitoring": "مراقبة مباشرة",
+        "previewYourParcels": "قطعك الزراعية",
+        "previewSoilMoisture": "رطوبة التربة",
+        "previewCropHealth": "صحة المحاصيل",
+        "previewSatelliteImagery": "صور الأقمار الصناعية"
+      },
+      "kpi": {
+        "ariaLabel": "مؤشرات المزرعة",
+        "parcelsTile": "القطع الزراعية",
+        "totalSurfaceSub": "{value} هكتار إجماليًا",
+        "activeSensorsTile": "المستشعرات النشطة",
+        "offlineCount": "{count} غير متصل",
+        "pendingCount": "{count} قيد الانتظار",
+        "unlinkedCount": "{count, plural, zero {لا شيء منفصل} one {مستشعر واحد منفصل} two {مستشعران منفصلان} few {# مستشعرات منفصلة} many {# مستشعرًا منفصلاً} other {# مستشعر منفصل}}",
+        "allOperational": "كل شيء يعمل بشكل طبيعي",
+        "forecastTile": "التوقعات",
+        "weatherUnavailable": "الطقس غير متاح",
+        "alertsTile": "التنبيهات المفتوحة",
+        "parcelsToVerify": "{count, plural, zero {لا قطع تحتاج للمراجعة} one {قطعة واحدة تحتاج للمراجعة} two {قطعتان تحتاجان للمراجعة} few {# قطع تحتاج للمراجعة} many {# قطعة تحتاج للمراجعة} other {# قطعة تحتاج للمراجعة}}",
+        "noThresholdExceeded": "لم يتجاوز أي عتبة",
+        "toVerifyBadge": "للمراجعة",
+        "surfaceTile": "المساحة",
+        "surfacePerParcel": "~{value} هكتار / قطعة",
+        "surfaceNoParcel": "—"
+      },
+      "quickActions": {
+        "ariaLabel": "إجراءات سريعة",
+        "parcelsLabel": "قطعي الزراعية",
+        "parcelsSub": "المستشعرات وتتبّع إنترنت الأشياء",
+        "adsLabel": "إعلاناتي",
+        "adsSub": "FarMarket · بيع عبر الإنترنت",
+        "satelliteLabel": "عرض الأقمار الصناعية",
+        "satelliteSub": "NDVI · Sentinel Hub"
+      },
+      "status": {
+        "ariaLabel": "حالة المزرعة",
+        "weatherUnavailableDetail": "لا توجد قطعة محددة الموقع، أو خدمة الطقس غير متاحة.",
+        "sensorsOk": "المستشعرات: تعمل بشكل طبيعي",
+        "noSensors": "لا يوجد مستشعر مُقترن",
+        "sensorsAlert": "المستشعرات: تنبيه",
+        "noSensorsDetail": "أضف مستشعر إنترنت الأشياء إلى قطعك لبدء المتابعة.",
+        "troubledDetail": "{troubled, plural, zero {لا مستشعرات} one {مستشعر واحد} two {مستشعران} few {# مستشعرات} many {# مستشعرًا} other {# مستشعر}} غير متصل أو قيد الانتظار — {parcelCount, plural, zero {لا قطع مراقَبة} one {قطعة واحدة مراقَبة} two {قطعتان مراقَبتان} few {# قطع مراقَبة} many {# قطعة مراقَبة} other {# قطعة مراقَبة}}.",
+        "okDetail": "{active, plural, zero {لا مستشعرات نشطة} one {مستشعر واحد نشط} two {مستشعران نشطان} few {# مستشعرات نشطة} many {# مستشعرًا نشطًا} other {# مستشعر نشط}} على {parcelCount, plural, zero {لا قطع} one {قطعة واحدة} two {قطعتين} few {# قطع} many {# قطعة} other {# قطعة}}.",
+        "favorable": "مواتٍ",
+        "ok": "جيد",
+        "critical": "حرِج",
+        "dash": "—"
+      },
+      "trend": {
+        "title": "الاتجاه",
+        "moisture": "رطوبة التربة",
+        "temperature": "درجة الحرارة",
+        "precip": "التساقطات المطرية",
+        "forecast5d": "توقعات 5 أيام",
+        "tabsAriaLabel": "اختيار المؤشر",
+        "noPrecipData": "توقعات التساقطات المطرية غير متاحة.",
+        "noSensorData": "لا توجد بيانات مستشعرات كافية بعد لرسم اتجاه."
+      },
+      "satelliteCard": {
+        "title": "الخرائط · الأقمار الصناعية المباشرة",
+        "viewAll": "عرض الكل",
+        "altText": "صورة NDVI من Sentinel-2 — {name}",
+        "unavailable": "غير متاح"
+      },
+      "parcelCard": {
+        "statusHealthy": "سليمة",
+        "statusSensorOffline": "المستشعر غير متصل",
+        "statusThresholdExceeded": "تم تجاوز العتبة",
+        "openAriaLabel": "فتح القطعة {name}",
+        "soilMoisture": "رطوبة التربة",
+        "optimal": "مثالية",
+        "tooLow": "منخفضة جدًا",
+        "tooHigh": "مرتفعة جدًا",
+        "sparklineDays": "7 أيام",
+        "noMeasurement": "لا توجد قراءة بعد",
+        "active": "نشطة",
+        "offline": "غير متصلة",
+        "pending": "قيد الانتظار",
+        "vigor": "قوة النمو",
+        "sensorHealth": "سلامة المستشعرات"
+      },
+      "parcelGrid": {
+        "ariaLabel": "قطعي الزراعية"
+      },
+      "error": {
+        "title": "حدثت مشكلة في هذه الصفحة",
+        "body": "تعذّر تحميل بعض البيانات. يمكنك إعادة المحاولة، أو العودة لاحقًا إذا استمرت المشكلة.",
+        "retry": "إعادة المحاولة"
+      },
+      "loading": {
+        "srLoading": "جارٍ التحميل…"
+      }
+    },
+    "parcels": {
+      "common": {
+        "breadcrumb": "قطعي الزراعية"
+      },
+      "list": {
+        "parcelsCount": "{count, plural, zero {لا توجد قطع أرض مسجلة} one {قطعة أرض واحدة مسجلة} two {قطعتا أرض مسجلتان} few {# قطع أرض مسجلة} many {# قطعة أرض مسجلة} other {# قطعة أرض مسجلة}}",
+        "subtitle": "انقر على قطعة لعرض بياناتها ورصدها وعتباتها وتشخيصها.",
+        "newParcel": "قطعة جديدة",
+        "unverifiedTitle": "التحقق المهني مطلوب.",
+        "unverifiedBody": "يجب عليك أولاً التحقق من مستنداتك قبل تسجيل قطعة أرض.",
+        "submitDocuments": "إرسال مستنداتي",
+        "emptyTitle": "لا توجد قطع أرض حتى الآن.",
+        "emptyBody": "أنشئ أول قطعة أرض لتفعيل استيعاب بيانات إنترنت الأشياء.",
+        "createParcel": "إنشاء قطعة أرض",
+        "openAriaLabel": "فتح القطعة {name}",
+        "activeBadge": "قطعة نشطة",
+        "createdOn": "أُنشئت في {date}",
+        "clickToView": "انقر لعرض البيانات والمستشعرات والتشخيص بالذكاء الاصطناعي."
+      },
+      "new": {
+        "backToParcels": "← قطعي الزراعية",
+        "title": "قطعة جديدة",
+        "subtitle": "أدخل خصائص القطعة. سيُستخدم مضلع GeoJSON من قبل وحدتي الري والتنبيه.",
+        "form": {
+          "errors": {
+            "name_required": "اسم القطعة إلزامي.",
+            "crop_type_required": "نوع المحصول إلزامي.",
+            "surface_area_invalid": "يجب أن تكون المساحة رقمًا موجبًا تمامًا.",
+            "geojson_syntax": "مضلع غير صالح — ارسم 3 نقاط على الأقل على الخريطة.",
+            "verification_required": "لم يتم التحقق من حسابك بعد. أرسل مستنداتك للمتابعة.",
+            "role_not_allowed": "يمكن فقط لحسابات المزارعين تسجيل قطعة أرض.",
+            "parcel_create_failed": "فشل الحفظ على الخادم. حاول مجددًا خلال لحظات.",
+            "unexpected": "خطأ غير متوقع ({code}). حاول مجددًا."
+          },
+          "nameLabel": "اسم القطعة",
+          "namePlaceholder": "القطعة الشمالية",
+          "cropTypeLabel": "نوع المحصول",
+          "cropTypePlaceholder": "— اختر نوع المحصول —",
+          "cropTypeOther": "آخر (حدّده)",
+          "cropTypeOtherPlaceholder": "حدد نوع المحصول…",
+          "surfaceLabel": "المساحة (بالهكتار)",
+          "computeFromPolygon": "⟳ احتساب من المضلع (~{value} هكتار)",
+          "delimitLabel": "حدّد قطعتك",
+          "delimitHelp": "انقر على الخريطة لوضع رؤوس المضلع. 3 نقاط على الأقل.",
+          "undoPoint": "↩ التراجع عن آخر نقطة",
+          "reset": "إعادة التعيين",
+          "pointsCount": "{count, plural, zero {لا نقاط} one {نقطة واحدة} two {نقطتان} few {# نقاط} many {# نقطة} other {# نقطة}}",
+          "clickMap": " — انقر على الخريطة",
+          "morePointsNeeded": " — بحاجة إلى {count} نقاط إضافية للرسم",
+          "polygonReady": " ✓ المضلع جاهز",
+          "submitting": "جارٍ الحفظ…",
+          "submit": "حفظ القطعة"
+        }
+      },
+      "detail": {
+        "page": {
+          "eyebrow": "القطعة",
+          "modify": "تعديل",
+          "thresholdExceeded": "تم تجاوز العتبة",
+          "sensorOffline": "المستشعر غير متصل",
+          "allGood": "كل شيء على ما يرام",
+          "createdOn": "أُنشئت في {date}"
+        },
+        "switcher": {
+          "ariaLabel": "التنقل بين قطعي الزراعية",
+          "thresholdExceeded": "تم تجاوز العتبة"
+        },
+        "tabs": {
+          "navAriaLabel": "التنقل داخل القطعة",
+          "data": "البيانات",
+          "sensors": "المستشعرات",
+          "diagnostic": "التشخيص بالذكاء الاصطناعي",
+          "satellite": "الأقمار الصناعية",
+          "telemetryUnavailable": "بيانات القياس عن بعد غير متاحة.",
+          "viewAllOnSatellite": "عرض جميع القطع في صفحة الأقمار الصناعية ←"
+        },
+        "devices": {
+          "title": "مستشعرات ESP32",
+          "associate": "+ إقران مستشعر",
+          "unverifiedTitle": "التحقق المهني مطلوب.",
+          "unverifiedBody": "يجب عليك أولاً التحقق من مستنداتك قبل إقران مستشعر بقطعة أرض.",
+          "emptyTitle": "لا يوجد مستشعر مُقترن بهذه القطعة.",
+          "emptyBody": "قم بإقران جهاز ESP32 الخاص بك لتفعيل استيعاب بيانات القياس عن بعد (KAT-03).",
+          "keyLabel": "المفتاح: vk_…{last4}",
+          "addedOn": "أُضيف في {date} · {lastSeen}",
+          "lastPing": "آخر اتصال {date}",
+          "noTelemetry": "لم يتم استلام أي بيانات بعد",
+          "regenerateKey": "إعادة توليد المفتاح",
+          "deleting": "جارٍ الحذف…",
+          "delete": "حذف",
+          "deleteTitle": "حذف نهائي — ممكن فقط قبل أول قراءة.",
+          "detach": "فصل",
+          "detachTitle": "فصل المستشعر عن هذه القطعة. يبقى السجل محفوظًا.",
+          "unlinkedNotice": "تم فصل هذا المستشعر عن القطعة. يبقى سجله متاحًا للاطّلاع. أقرنه بقطعة أخرى من صفحته لإعادة تفعيله.",
+          "confirmHardUnpair": "هل تريد حذف المستشعر {deviceId}؟ هذا الإجراء نهائي (لم تُرسَل أي قراءة بعد).",
+          "status": {
+            "pending": "قيد الانتظار",
+            "active": "متصل",
+            "offline": "غير متصل",
+            "unlinked": "منفصل"
+          },
+          "errors": {
+            "pair": {
+              "device_already_paired": "يوجد بالفعل مستشعر مُقترن بهذه القطعة. افصله قبل إضافة آخر.",
+              "parcel_not_found": "القطعة غير موجودة.",
+              "verification_required": "يجب التحقق من حسابك المهني لإقران مستشعر.",
+              "role_not_allowed": "يمكن فقط لمزارع تم التحقق منه إقران مستشعر.",
+              "generic": "خطأ: {detail}"
+            },
+            "unpair": {
+              "device_has_telemetry": "أرسل هذا المستشعر بيانات بالفعل. سيتوفر حذف السجل في إصدار قادم (KAT-12).",
+              "device_not_found": "المستشعر غير موجود (ربما تم فصله بالفعل؟).",
+              "generic": "خطأ: {detail}"
+            },
+            "unlink": {
+              "device_not_found": "المستشعر غير موجود.",
+              "device_already_unlinked": "هذا المستشعر منفصل بالفعل.",
+              "role_not_allowed": "هذا الإجراء مخصص للمزارعين فقط.",
+              "generic": "خطأ: {detail}"
+            }
+          },
+          "pairDialog": {
+            "title": "إقران مستشعر ESP32",
+            "idLabel": "معرّف المستشعر",
+            "idPlaceholder": "ESP-KAT-001",
+            "idHelp": "المعرّف مطبوع على هيكل المستشعر (بالتنسيق {format}).",
+            "cancel": "إلغاء",
+            "submitting": "جارٍ الإقران…",
+            "submit": "إقران"
+          },
+          "reveal": {
+            "title": "مفتاح API للمستشعر {deviceId}",
+            "body": "انسخ هذا المفتاح الآن وقم بتحميله في برنامج ESP32 الثابت.",
+            "warning": "لن تتمكن من عرضه مرة أخرى بعد ذلك.",
+            "copy": "نسخ إلى الحافظة",
+            "copied": "✓ تم النسخ",
+            "confirmCheckbox": "أؤكد أنني حفظت المفتاح. أفهم أنه لن يُعرض مجددًا.",
+            "finish": "إنهاء"
+          },
+          "rotateDialog": {
+            "title": "إعادة توليد مفتاح API",
+            "body": "سيتم توليد مفتاح جديد للمستشعر {deviceId}.",
+            "warning": "سيتوقف المفتاح القديم عن العمل فورًا.",
+            "note": "ستحتاج إلى إعادة تحميل البرنامج الثابت بالقيمة الجديدة.",
+            "ack": "أفهم أن المفتاح القديم سيتم إبطاله.",
+            "cancel": "إلغاء",
+            "submitting": "جارٍ إعادة التوليد…",
+            "submit": "إعادة التوليد"
+          },
+          "unlinkDialog": {
+            "title": "فصل المستشعر {deviceId}",
+            "body": "سيتم فصل المستشعر عن القطعة {parcelName}. وهذا يعني عمليًا:",
+            "bullet1": "<strong>يتوقف مفتاح API القديم عن العمل</strong> بمجرد أول إرسال تالٍ من ESP32.",
+            "bullet2": "يبقى سجل القراءات محفوظًا ضمن هذه القطعة.",
+            "bullet3": "لإعادة استخدام هذا المستشعر في قطعة أخرى، افتح صفحته وانقر على «إقران مستشعر» مستخدمًا نفس المعرّف {deviceId} — سيتم توليد مفتاح جديد.",
+            "ack": "أفهم أن مفتاح API الخاص بالمستشعر سيصبح غير صالح.",
+            "cancel": "إلغاء",
+            "submitting": "جارٍ الفصل…",
+            "submit": "فصل المستشعر"
+          }
+        },
+        "diagnostic": {
+          "title": "التشخيص بالذكاء الاصطناعي",
+          "subtitle": "تحليل بيانات مستشعراتك والطقس والأقمار الصناعية بواسطة الذكاء الاصطناعي الزراعي.",
+          "requesting": "جارٍ الإرسال…",
+          "request": "طلب تشخيص بالذكاء الاصطناعي",
+          "disabledUnverified": "الحساب غير موثّق",
+          "disabledNoData": "لا توجد بيانات مستشعرات متاحة",
+          "disabledInFlight": "يوجد تشخيص قيد التنفيذ بالفعل",
+          "status": {
+            "pending": "قيد الانتظار",
+            "processing": "قيد المعالجة…",
+            "completed": "مكتمل",
+            "failed": "فشل"
+          },
+          "errors": {
+            "diagnostic_already_in_progress": "يوجد بالفعل تشخيص قيد التنفيذ لهذه القطعة.",
+            "diagnostic_rate_limit_exceeded": "تم بلوغ الحد اليومي (3 تشخيصات / 24 ساعة).",
+            "verification_required": "يجب التحقق من حسابك لطلب تشخيص.",
+            "role_not_allowed": "يمكن فقط للمزارعين طلب تشخيص.",
+            "not_authenticated": "انتهت الجلسة — يرجى إعادة تسجيل الدخول.",
+            "generic": "حدث خطأ. يرجى المحاولة مجددًا."
+          },
+          "viewResult": "عرض النتيجة",
+          "failedRetry": "فشل التشخيص. يمكنك طلب تشخيص جديد."
+        },
+        "telemetry": {
+          "title": "المستشعرات — القراءات",
+          "requestDiagnosticDisabledTitle": "متاح قريبًا (KAT-07)",
+          "requestDiagnostic": "طلب تشخيص بالذكاء الاصطناعي",
+          "windows": {
+            "24h": "24 ساعة",
+            "7d": "7 أيام",
+            "30d": "30 يومًا"
+          },
+          "history": "السجل",
+          "filteredOneSensor": " · مُصفّى على مستشعر واحد",
+          "windowAriaLabel": "النافذة الزمنية",
+          "pointsCount": "{count} نقطة · فترة {granularity}",
+          "loadingSuffix": " · جارٍ التحميل…",
+          "metrics": {
+            "soilMoisture": "رطوبة التربة (%)",
+            "soilTemperature": "درجة حرارة التربة (°C)",
+            "soilPh": "درجة حموضة التربة (pH)",
+            "conductivity": "الموصلية (µS/cm)"
+          },
+          "noData": "لا توجد بيانات.",
+          "ptsSuffix": "{count} نقطة",
+          "chartAriaLabel": "{title}، آخر قيمة {value}{unit}",
+          "latestTile": {
+            "soilMoisture": "رطوبة التربة",
+            "soilTemperature": "درجة حرارة التربة",
+            "soilPh": "درجة حموضة التربة",
+            "conductivity": "الموصلية"
+          },
+          "unlinkedBadge": "المستشعر منفصل",
+          "unlinkedDetail": "آخر قراءة من المستشعر{deviceLabel}",
+          "unlinkedAtSuffix": "، تم فصله {relative}.",
+          "unlinkedNoSuffix": ".",
+          "battery": "البطارية {level}٪",
+          "lastReading": "آخر قراءة {relative}",
+          "emptyHasHistoryTitle": "المستشعر منفصل — لا توجد بيانات حديثة.",
+          "emptyHasHistoryBody": "يبقى سجل القراءات متاحًا للاطّلاع عبر بطاقة «سجل المستشعرات» أدناه. لاستئناف جمع البيانات، أقرن مستشعر ESP32 جديدًا بهذه القطعة.",
+          "emptyNoHistoryTitle": "لا توجد بيانات مستشعرات حتى الآن.",
+          "emptyNoHistoryBody": "إذا قمت للتو بإقران جهاز ESP32، فستصل أول قراءة خلال 15 دقيقة. تحقق من إقران المستشعر أعلاه.",
+          "relative": {
+            "seconds": "{count, plural, zero {قبل أقل من ثانية} one {قبل ثانية واحدة} two {قبل ثانيتين} few {قبل # ثوانٍ} many {قبل # ثانية} other {قبل # ثانية}}",
+            "minutes": "{count, plural, zero {قبل أقل من دقيقة} one {قبل دقيقة واحدة} two {قبل دقيقتين} few {قبل # دقائق} many {قبل # دقيقة} other {قبل # دقيقة}}",
+            "hours": "{count, plural, zero {قبل أقل من ساعة} one {قبل ساعة واحدة} two {قبل ساعتين} few {قبل # ساعات} many {قبل # ساعة} other {قبل # ساعة}}",
+            "days": "{count, plural, zero {اليوم} one {قبل يوم واحد} two {قبل يومين} few {قبل # أيام} many {قبل # يومًا} other {قبل # يوم}}",
+            "dash": "—"
+          },
+          "deviceHistory": {
+            "title": "سجل المستشعرات",
+            "viewAll": "عرض جميع المستشعرات",
+            "paired": "مُقترن",
+            "readingsCount": "{count, plural, zero {لا قراءات} one {قراءة واحدة} two {قراءتان} few {# قراءات} many {# قراءة} other {# قراءة}}",
+            "detached": "انفصل {relative}",
+            "filterActive": "التصفية مفعّلة",
+            "filterGraph": "تصفية الرسم البياني",
+            "status": {
+              "pending": "قيد الانتظار",
+              "active": "نشط",
+              "offline": "غير متصل",
+              "unlinked": "منفصل"
+            },
+            "dash": "—",
+            "recently": "مؤخرًا"
+          }
+        },
+        "thresholds": {
+          "title": "عتبات التنبيه",
+          "unverifiedNotice": "يجب أن يكون حسابك موثّقًا لحفظ العتبات. تبقى المعاينة متاحة.",
+          "metricHeader": "المؤشر",
+          "minHeader": "الحد الأدنى",
+          "maxHeader": "الحد الأقصى",
+          "enabledHeader": "مفعّل",
+          "metrics": {
+            "soil_moisture": "رطوبة التربة",
+            "soil_temperature": "درجة حرارة التربة",
+            "soil_ph": "درجة حموضة التربة",
+            "soil_conductivity": "الموصلية",
+            "battery_level": "البطارية"
+          },
+          "minAriaLabel": "الحد الأدنى لـ {label}",
+          "maxAriaLabel": "الحد الأقصى لـ {label}",
+          "enableAriaLabel": "تفعيل {label}",
+          "helpText": "اترك الحد الأدنى أو الأقصى فارغًا لتعطيل ذلك الجانب. تُرسَل التنبيهات مرة واحدة على الأكثر كل 24 ساعة لكل مؤشر.",
+          "saving": "جارٍ الحفظ…",
+          "save": "حفظ",
+          "errorVerificationRequired": "يجب أن يكون حسابك موثّقًا لحفظ العتبات.",
+          "errorGeneric": "حدث خطأ ({error}).",
+          "saved": "تم حفظ العتبات."
+        },
+        "deleteButton": {
+          "delete": "حذف",
+          "confirmPrompt": "هل تريد الحذف نهائيًا؟",
+          "cancel": "إلغاء",
+          "deleting": "جارٍ الحذف…",
+          "confirm": "تأكيد",
+          "failed": "فشل الحذف. حاول مجددًا."
+        }
+      },
+      "edit": {
+        "eyebrow": "القطعة",
+        "breadcrumbModify": "تعديل",
+        "modifyTitle": "تعديل \"{name}\"",
+        "form": {
+          "errors": {
+            "name_required": "اسم القطعة إلزامي.",
+            "crop_type_required": "نوع المحصول إلزامي.",
+            "surface_area_invalid": "يجب أن تكون المساحة رقمًا موجبًا تمامًا.",
+            "geojson_syntax": "مضلع غير صالح — ارسم 3 نقاط على الأقل على الخريطة.",
+            "network_error": "خطأ في الشبكة. تحقق من اتصالك وحاول مجددًا.",
+            "parcel_create_failed": "فشل التحديث على الخادم. حاول مجددًا.",
+            "unexpected": "خطأ غير متوقع ({code}). حاول مجددًا."
+          },
+          "nameLabel": "اسم القطعة",
+          "namePlaceholder": "القطعة الشمالية",
+          "cropTypeLabel": "نوع المحصول",
+          "cropTypePlaceholder": "— اختر نوع المحصول —",
+          "cropTypeOther": "آخر (حدّده)",
+          "cropTypeOtherPlaceholder": "حدد نوع المحصول…",
+          "surfaceLabel": "المساحة (بالهكتار)",
+          "computeFromPolygon": "⟳ احتساب من المضلع (~{value} هكتار)",
+          "delimitLabel": "حدّد قطعتك",
+          "delimitHelp": "انقر على الخريطة لإعادة وضع الرؤوس. 3 نقاط على الأقل.",
+          "undoPoint": "↩ التراجع عن آخر نقطة",
+          "reset": "إعادة التعيين",
+          "pointsCount": "{count, plural, zero {لا نقاط} one {نقطة واحدة} two {نقطتان} few {# نقاط} many {# نقطة} other {# نقطة}}",
+          "clickMap": " — انقر على الخريطة",
+          "morePointsNeeded": " — بحاجة إلى {count} نقاط إضافية للرسم",
+          "polygonReady": " ✓ المضلع جاهز",
+          "submitting": "جارٍ الحفظ…",
+          "submit": "حفظ التعديلات"
+        }
+      }
+    },
+    "ads": {
+      "list": {
+        "breadcrumb": "إعلاناتي",
+        "eyebrow": "FarMarket",
+        "adsCount": "{count, plural, zero {لا توجد إعلانات} one {إعلان واحد} two {إعلانان} few {# إعلانات} many {# إعلانًا} other {# إعلان}}",
+        "subtitle": "أدر إعلانات البيع الخاصة بك في السوق الزراعي بين الشركات.",
+        "newAd": "إعلان جديد",
+        "unverifiedTitle": "التحقق المهني مطلوب.",
+        "unverifiedBody": "يجب عليك أولاً التحقق من مستنداتك قبل نشر إعلان.",
+        "submitDocuments": "إرسال مستنداتي",
+        "emptyTitle": "لا توجد إعلانات حتى الآن.",
+        "emptyBody": "انشر أول إعلان لك ليصبح مرئيًا لأصحاب المطاعم.",
+        "createAd": "إنشاء إعلان",
+        "status": {
+          "ACTIVE": "نشط",
+          "EXPIRED": "منتهي الصلاحية",
+          "DELETED": "محذوف"
+        },
+        "available": "متاح",
+        "expiresIn": "{count, plural, zero {ينتهي اليوم} one {ينتهي بعد يوم واحد} two {ينتهي بعد يومين} few {ينتهي بعد # أيام} many {ينتهي بعد # يومًا} other {ينتهي بعد # يوم}}",
+        "expiresToday": "ينتهي اليوم",
+        "edit": "تعديل",
+        "delete": "حذف"
+      },
+      "new": {
+        "backToAds": "← إعلاناتي",
+        "title": "إعلان جديد",
+        "subtitle": "انشر منتجك على FarMarket. تنتهي صلاحية الإعلان تلقائيًا بعد 7 أيام ويمكن تجديده.",
+        "form": {
+          "errors": {
+            "title_required": "العنوان إلزامي.",
+            "description_required": "الوصف إلزامي.",
+            "product_type_required": "نوع المنتج إلزامي.",
+            "price_invalid": "يجب أن يكون السعر أكبر من 0.",
+            "quantity_invalid": "يجب أن تكون الكمية أكبر من 0.",
+            "region_required": "الجهة إلزامية.",
+            "not_authenticated": "انتهت الجلسة. يرجى إعادة تسجيل الدخول.",
+            "network_error": "خطأ في الشبكة. تحقق من اتصالك وحاول مجددًا.",
+            "verification_required": "لم يتم التحقق من حسابك بعد. أرسل مستنداتك للمتابعة.",
+            "role_not_allowed": "يمكن فقط لحسابات المزارعين نشر إعلان.",
+            "too_many_photos": "الحد الأقصى {max} صور مسموح بها.",
+            "photo_too_large": "إحدى الصور تتجاوز الحد الأقصى البالغ 2 ميغابايت.",
+            "invalid_photo_type": "الصور فقط مقبولة (JPEG، PNG، WebP…).",
+            "unexpected": "خطأ غير متوقع ({code}). حاول مجددًا."
+          },
+          "titleLabel": "عنوان الإعلان",
+          "titlePlaceholder": "مثال: طماطم عضوية من سوس — الفئة A",
+          "descriptionLabel": "الوصف",
+          "descriptionPlaceholder": "صِف منتجك: الصنف، ظروف الزراعة، التغليف…",
+          "productTypeLabel": "نوع المنتج",
+          "productTypePlaceholder": "مثال: طماطم، زيتون، قمح صلب…",
+          "regionLabel": "الجهة",
+          "regionPlaceholder": "— اختر جهة —",
+          "priceLabel": "السعر (درهم / كغ)",
+          "quantityLabel": "الكمية المتاحة (كغ)",
+          "photosLabel": "الصور",
+          "photosOptional": "(اختياري — الحد الأقصى {max}، بحجم {size} ميغابايت لكل صورة)",
+          "photoAlt": "صورة {index}",
+          "removePhotoAriaLabel": "حذف الصورة {index}",
+          "addPhotos": "إضافة صور",
+          "submitting": "جارٍ النشر…",
+          "submit": "نشر الإعلان",
+          "tooManyPhotos": "الحد الأقصى {max} صور مسموح بها.",
+          "photoTooLarge": "\"{name}\" يتجاوز {size} ميغابايت.",
+          "notAnImage": "\"{name}\" ليس صورة."
+        }
+      },
+      "edit": {
+        "breadcrumbEdit": "تعديل",
+        "eyebrow": "FarMarket",
+        "title": "تعديل الإعلان",
+        "form": {
+          "errors": {
+            "no_fields_to_update": "عدّل حقلاً واحدًا على الأقل قبل الحفظ.",
+            "ad_not_found": "الإعلان غير موجود.",
+            "not_ad_owner": "لست مالك هذا الإعلان.",
+            "not_editable": "يمكن تعديل الإعلانات النشطة فقط.",
+            "too_many_photos": "الحد الأقصى 5 صور مسموح بها.",
+            "photo_too_large": "يجب ألا تتجاوز كل صورة 2 ميغابايت.",
+            "invalid_photo_type": "الصور فقط مقبولة.",
+            "network_error": "خطأ في الشبكة. تحقق من اتصالك وحاول مجددًا.",
+            "not_authenticated": "انتهت الجلسة. أعد تسجيل الدخول.",
+            "generic": "خطأ: {error}"
+          },
+          "titleLabel": "عنوان الإعلان",
+          "descriptionLabel": "الوصف",
+          "productTypeLabel": "نوع المنتج",
+          "priceLabel": "السعر (درهم/كغ)",
+          "quantityLabel": "الكمية (كغ)",
+          "regionLabel": "الجهة",
+          "photosLabel": "الصور (اتركها فارغة للاحتفاظ بالصور الحالية)",
+          "photoAlt": "صورة {index}",
+          "newPhotosNotice": "{count, plural, zero {لا صور جديدة} one {صورة جديدة واحدة} two {صورتان جديدتان} few {# صور جديدة} many {# صورة جديدة} other {# صورة جديدة}} — ستحل محل جميع الصور الحالية.",
+          "photosHelp": "5 صور كحد أقصى · 2 ميغابايت لكل صورة · صيغ الصور فقط",
+          "cancel": "إلغاء",
+          "saving": "جارٍ الحفظ…",
+          "save": "حفظ التعديلات"
+        }
+      }
+    },
+    "orders": {
+      "list": {
+        "breadcrumb": "الطلبات",
+        "eyebrow": "FarMarket",
+        "title": "الطلبات الواردة",
+        "subtitle": "هوية أصحاب المطاعم مجهّلة — لا ترى سوى معرّف غير مباشر وجهة التسليم. تتولى VitaChain تنسيق اللوجستيك.",
+        "pendingBadge": "{count} قيد الانتظار",
+        "ordersCountBadge": "{count, plural, zero {لا طلبات} one {طلب واحد} two {طلبان} few {# طلبات} many {# طلبًا} other {# طلب}}",
+        "columns": {
+          "resto": "المطعم (مجهّل)",
+          "ad": "الإعلان",
+          "quantity": "الكمية",
+          "total": "المجموع",
+          "region": "الجهة",
+          "status": "الحالة",
+          "actions": "الإجراءات"
+        },
+        "kpi": {
+          "revenueDelivered": "الإيرادات المُسلَّمة",
+          "revenueSub": "سطور بحالة \"تم التسليم\"",
+          "activeLines": "السطور النشطة",
+          "activeSub": "قيد المعالجة",
+          "kgDelivered": "الكيلوغرامات المُسلَّمة",
+          "kgSub": "إجمالي الحجم المشحون",
+          "pending": "قيد الانتظار",
+          "pendingSubAction": "قرارات مطلوبة",
+          "pendingSubNone": "لا حاجة لأي إجراء"
+        },
+        "emptyTitle": "لا توجد طلبات حتى الآن.",
+        "emptyBody": "عندما يقوم أحد أصحاب المطاعم بطلب من إعلاناتك، سيظهر هنا.",
+        "manageAds": "إدارة إعلاناتي",
+        "scrollHint": "مرّر أفقيًا على الهاتف لعرض جميع الأعمدة."
+      },
+      "row": {
+        "status": {
+          "PENDING": "قيد الانتظار",
+          "ACCEPTED": "مقبول",
+          "REJECTED": "مرفوض",
+          "PICKED_UP": "تم الاستلام",
+          "IN_TRANSIT": "قيد النقل",
+          "DELIVERED": "تم التسليم"
+        },
+        "rejectReasonPlaceholder": "السبب (اختياري، لا تُدرج بيانات الاتصال)",
+        "confirmReject": "تأكيد الرفض",
+        "cancel": "إلغاء",
+        "accept": "قبول",
+        "reject": "رفض",
+        "markPickedUp": "تحديد كمُستلَم",
+        "markInTransit": "قيد النقل",
+        "markDelivered": "تحديد كمُسلَّم",
+        "dash": "—"
+      }
+    },
+    "weather": {
+      "breadcrumb": "الطقس",
+      "eyebrow": "الطقس المحلي",
+      "title": "الأحوال الحالية والتوقعات.",
+      "subtitle": "بيانات OpenWeatherMap، محتسبة عند مركز مضلع القطعة المحددة. ذاكرة تخزين مؤقت للخادم لمدة 3 ساعات.",
+      "parcelPickerAriaLabel": "اختيار القطعة",
+      "parcelLabel": "القطعة",
+      "now": "الآن · {city}",
+      "feelsLike": "الإحساس الحراري {value}°",
+      "updatedAt": "آخر تحديث في {time}",
+      "minMax": "الأدنى / الأقصى",
+      "airHumidity": "رطوبة الهواء",
+      "wind": "الرياح",
+      "rain3h": "أمطار 3 ساعات",
+      "next24h": "الـ 24 ساعة القادمة",
+      "nowShort": "الآن",
+      "today": "اليوم",
+      "weekdaysShort": ["أحد", "إثن", "ثلا", "أرب", "خمي", "جمع", "سبت"],
+      "daysForecastTitle": "الأيام الـ {count} القادمة",
+      "source": "المصدر: OpenWeatherMap · تحديث تلقائي",
+      "noParcelsTitle": "لا توجد قطع لعرضها",
+      "noParcelsBody": "أنشئ قطعة أرض مع مضلع GeoJSON الخاص بها لتفعيل الطقس المحلي.",
+      "createParcel": "إنشاء قطعة أرض",
+      "unavailableTitle": "بيانات الطقس غير متاحة",
+      "unavailableBody": "الخادم غير قابل للوصول، أو أن OpenWeatherMap أعاد خطأ، أو أن مفتاح API غير مُهيأ من جانب الخادم (متغيّر البيئة <code>OPENWEATHERMAP_API_KEY</code>)."
+    },
+    "satellite": {
+      "page": {
+        "breadcrumb": "الأقمار الصناعية",
+        "eyebrow": "صور الأقمار الصناعية",
+        "title": "عرض Sentinel-2 وقوة النمو النباتي.",
+        "subtitle": "مؤشر NDVI محتسب من أحدث صورة خالية من الغيوم لـ Sentinel-2، مقصوصة على مضلع القطعة. ذاكرة تخزين مؤقت للخادم لمدة 12 ساعة.",
+        "parcelPickerAriaLabel": "اختيار القطعة",
+        "parcelLabel": "القطعة",
+        "noParcelsTitle": "لا توجد قطع لعرضها",
+        "noParcelsBody": "أنشئ قطعة أرض مع مضلع GeoJSON الخاص بها لتفعيل صور الأقمار الصناعية.",
+        "createParcel": "إنشاء قطعة أرض"
+      },
+      "panel": {
+        "scaleTitle": "مقياس قوة النمو النباتي",
+        "scaleBare": "تربة عارية / ماء",
+        "scaleModerate": "معتدل",
+        "scaleDense": "كثيف جدًا",
+        "vigorTitle": "قوة النمو النباتي",
+        "acquisition": "تاريخ الالتقاط · {date}",
+        "sentinel2L2A": "Sentinel-2 L2A",
+        "imageAlt": "صورة NDVI من Sentinel-2 مقصوصة على القطعة",
+        "expand": "تكبير ↗",
+        "imageUnavailable": "صورة NDVI غير متاحة لهذه الفترة. لا يزال المتوسط محتسبًا من آخر تركيبة خالية من الغيوم.",
+        "copernicus": "Copernicus / Sentinel Hub",
+        "resolution": "دقة 512×512 · ذاكرة تخزين مؤقت 12 ساعة",
+        "cropLabel": "المحصول",
+        "surfaceLabel": "المساحة",
+        "revisitLabel": "دورة زيارة Sentinel-2",
+        "revisitValue": "~5 أيام",
+        "unavailableTitle": "بيانات الأقمار الصناعية غير متاحة",
+        "unavailableBody": "لم يتم العثور على صورة خالية من الغيوم من Sentinel-2 لهذه الفترة، أو أن الخادم غير قابل للوصول، أو أن بيانات اعتماد Sentinel Hub OAuth غير مُهيأة من جانب الخادم (متغيّرا البيئة <code1>SENTINEL_HUB_CLIENT_ID</code1> / <code2>SENTINEL_HUB_CLIENT_SECRET</code2>). تُحدَّث بيانات Sentinel-2 كل 5 أيام تقريبًا."
+      }
+    },
+    "settings": {
+      "page": {
+        "breadcrumb": "الإعدادات",
+        "eyebrow": "الإعدادات",
+        "title": "حسابك.",
+        "subtitle": "معلومات الملف الشخصي وحالة التحقق.",
+        "profileSection": "الملف الشخصي",
+        "email": "البريد الإلكتروني",
+        "role": "الدور",
+        "language": "اللغة",
+        "verificationSection": "التحقق من الهوية",
+        "verified": "الحساب موثّق",
+        "verificationPending": "التحقق قيد المعالجة",
+        "verificationNeeded": "التحقق مطلوب",
+        "verifiedBody": "يمكنك إقران المستشعرات وتسجيل القطع الزراعية.",
+        "unverifiedBody": "يتطلب إقران مستشعر وإنشاء قطعة أرض التحقق من هويتك.",
+        "submitDocuments": "إرسال مستنداتي",
+        "sessionSection": "الجلسة",
+        "signOut": "تسجيل الخروج",
+        "dash": "—"
+      },
+      "profileForm": {
+        "firstName": "الاسم الشخصي",
+        "lastName": "الاسم العائلي",
+        "region": "جهة الاستغلالية الفلاحية",
+        "regionNotSet": "— غير محددة —",
+        "regionHelp": "هذه المعلومات مرئية للمطاعم على إعلاناتك.",
+        "saved": "تم حفظ الملف الشخصي",
+        "saving": "جارٍ الحفظ…",
+        "save": "حفظ"
+      },
+      "actions": {
+        "sessionExpired": "انتهت الجلسة. أعد تسجيل الدخول.",
+        "nameTooLong": "يجب أن يكون الاسم الشخصي والعائلي أقل من 80 حرفًا.",
+        "invalidRegion": "جهة غير صالحة.",
+        "saveFailed": "فشل الحفظ. حاول مجددًا."
+      }
+    }
+  }
+}

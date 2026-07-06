@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import {
   Leaf,
   Recycle,
@@ -9,8 +9,9 @@ import {
   Store,
   type LucideIcon,
 } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 
-import { Logo } from "./dashboard/farmer/_ui/Logo";
+import { Logo } from "./[locale]/dashboard/farmer/_ui/Logo";
 import {
   AnimatedGradientText,
   BlurFade,
@@ -30,29 +31,32 @@ import {
  * lg so the form stays vertically centred on phones.
  */
 
-const MODULES: {
+const MODULE_DEFS: {
   icon: LucideIcon;
   name: string;
-  tag: string;
+  tagKey: "katara" | "farmarket" | "botaba9a" | "secondserve";
   soon?: boolean;
 }[] = [
-  { icon: Sprout, name: "Katara", tag: "Suivi IoT du sol" },
-  { icon: Store, name: "FarMarket", tag: "Place de marché" },
-  { icon: Snowflake, name: "Botaba9a", tag: "Chaîne du froid", soon: true },
-  { icon: Recycle, name: "SecondServe", tag: "Anti-gaspillage" },
+  { icon: Sprout, name: "Katara", tagKey: "katara" },
+  { icon: Store, name: "FarMarket", tagKey: "farmarket" },
+  { icon: Snowflake, name: "Botaba9a", tagKey: "botaba9a", soon: true },
+  { icon: Recycle, name: "SecondServe", tagKey: "secondserve" },
 ];
 
-export function AuthShell({
+export async function AuthShell({
   children,
   title,
   subtitle,
-  badge = "Suite VitaChain",
+  badge,
 }: {
   children: React.ReactNode;
   title: string;
   subtitle?: string;
   badge?: string;
 }) {
+  const t = await getTranslations("auth.shell");
+  const resolvedBadge = badge ?? t("defaultBadge");
+  const MODULES = MODULE_DEFS.map((m) => ({ ...m, tag: t(`modules.${m.tagKey}`) }));
   return (
     <div className="grid min-h-screen lg:grid-cols-[1.05fr_1fr]">
       {/* LEFT — form column */}
@@ -71,7 +75,7 @@ export function AuthShell({
           <FloatIn delay={0.04}>
             <span className="inline-flex items-center gap-1.5 rounded-full bg-leaf-50 px-3 py-1 text-xs font-medium text-leaf-700 ring-1 ring-leaf-100">
               <Sparkles size={12} />
-              {badge}
+              {resolvedBadge}
             </span>
           </FloatIn>
 
@@ -95,7 +99,7 @@ export function AuthShell({
         </div>
 
         <p className="text-center text-xs text-neutral-400">
-          © {new Date().getFullYear()} VitaChain · Écosystème anti-gaspillage
+          © {new Date().getFullYear()} VitaChain · {t("footer")}
         </p>
       </div>
 
@@ -114,19 +118,19 @@ export function AuthShell({
 
         <div className="relative z-10 flex h-full flex-col justify-between p-12 text-white">
           <span className="inline-flex w-fit items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs ring-1 ring-white/20 backdrop-blur">
-            <Leaf size={12} /> Écosystème anti-gaspillage agro-alimentaire
+            <Leaf size={12} /> {t("rightPanelBadge")}
           </span>
 
           <div>
             <BlurFade delay={0.1}>
               <h2 className="max-w-md text-[2rem] font-semibold leading-tight">
-                Du champ à l&apos;assiette,{" "}
+                {t("headingStart")}{" "}
                 <AnimatedGradientText
                   from="oklch(0.95 0.06 152)"
                   via="white"
                   to="oklch(0.9 0.1 152)"
                 >
-                  zéro maillon perdu
+                  {t("headingHighlight")}
                 </AnimatedGradientText>
                 .
               </h2>
@@ -134,16 +138,14 @@ export function AuthShell({
 
             <BlurFade delay={0.18}>
               <p className="mt-3 max-w-md text-sm leading-relaxed text-white/80">
-                Une seule plateforme relie chaque maillon de la chaîne
-                agro-alimentaire — du suivi des cultures à la redistribution des
-                surplus.
+                {t("paragraph")}
               </p>
             </BlurFade>
 
             {/* The four modules — VitaChain is the ecosystem, not one product. */}
             <div className="mt-7 grid max-w-md grid-cols-2 gap-3">
               {MODULES.map((m, i) => (
-                <ModuleCard key={m.name} {...m} delay={0.24 + i * 0.07} />
+                <ModuleCard key={m.name} {...m} soonLabel={t("soon")} delay={0.24 + i * 0.07} />
               ))}
             </div>
           </div>
@@ -151,13 +153,11 @@ export function AuthShell({
           <BlurFade delay={0.3}>
             <div className="max-w-md rounded-2xl bg-white/10 p-5 ring-1 ring-white/15 backdrop-blur">
               <p className="text-sm leading-relaxed text-white/90">
-                Près d&apos;<span className="font-semibold">un tiers</span> de la
-                nourriture produite est perdue. VitaChain reconnecte la filière
-                pour en perdre moins, à chaque étape.
+                {t("statCard")}
               </p>
               <p className="mt-3 inline-flex items-center gap-2 text-xs text-white/70">
                 <ShieldCheck size={13} className="text-leaf-200" />
-                Comptes vérifiés · chaîne tracée de bout en bout
+                {t("verifiedFooter")}
               </p>
             </div>
           </BlurFade>
@@ -172,12 +172,14 @@ function ModuleCard({
   name,
   tag,
   soon,
+  soonLabel,
   delay,
 }: {
   icon: LucideIcon;
   name: string;
   tag: string;
   soon?: boolean;
+  soonLabel: string;
   delay: number;
 }) {
   return (
@@ -191,7 +193,7 @@ function ModuleCard({
             <p className="text-sm font-semibold leading-none">{name}</p>
             {soon ? (
               <span className="rounded-full bg-sun-500/30 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-sun-50 ring-1 ring-sun-500/30">
-                Bientôt
+                {soonLabel}
               </span>
             ) : null}
           </div>

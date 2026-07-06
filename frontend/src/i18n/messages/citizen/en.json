@@ -1,0 +1,75 @@
+{
+  "citizen": {
+    "home": {
+      "greeting": {
+        "morning": "Good morning",
+        "afternoon": "Good afternoon",
+        "evening": "Good evening"
+      },
+      "heroTitle": "What would you like to discover today?",
+      "viewFarmarketAds": "View FarMarket listings",
+      "surplusMeals": "Anti-waste meals",
+      "tiles": {
+        "availableAds": "Available listings",
+        "featured": "Featured",
+        "regions": "Regions represented"
+      },
+      "featuredSection": {
+        "title": "Featured listings",
+        "subtitle": "A selection of local producers right now.",
+        "viewAll": "View all",
+        "empty": "No listings available at the moment."
+      },
+      "secondServePromo": {
+        "tag": "Anti-waste",
+        "title": "Save meals, save money",
+        "description": "Partner restaurants list today's surplus food at a reduced price on SecondServe.",
+        "cta": "Open SecondServe"
+      }
+    },
+    "marketplace": {
+      "tag": "FarMarket",
+      "description": "Discover local producers. Orders are placed through partner restaurants.",
+      "empty": {
+        "title": "No listings found.",
+        "subtitle": "Try widening your search filters."
+      },
+      "pagination": {
+        "previous": "Previous",
+        "next": "Next",
+        "page": "Page {page}"
+      }
+    },
+    "adCard": {
+      "soldOut": "Sold out",
+      "featured": "Featured",
+      "outOfStock": "Out of stock",
+      "kgAvailable": "{qty} kg available"
+    },
+    "adDetail": {
+      "breadcrumbCatalog": "Catalog",
+      "description": "Description",
+      "noDescription": "No description provided by the producer.",
+      "otherAds": "Other listings from this producer",
+      "reviews": "Reviews of this producer",
+      "featured": "Featured",
+      "productType": "Product type",
+      "stock": "Available stock",
+      "stockValue": "{qty} kg",
+      "region": "Region of origin",
+      "validUntil": "Listing valid until {date}.",
+      "howToOrderTitle": "How do I order?",
+      "howToOrderBody": "FarMarket orders are placed through partner restaurants. This page lets you discover local producers and their products."
+    },
+    "farmerProfile": {
+      "breadcrumbCatalog": "Catalog",
+      "eyebrow": "Producer",
+      "verified": "Verified producer",
+      "memberSince": "Member since",
+      "activeAds": "Active listings",
+      "adsTitle": "Listings from this producer",
+      "noAds": "No active listings at the moment.",
+      "reviewsTitle": "Reviews from restaurants"
+    }
+  }
+}

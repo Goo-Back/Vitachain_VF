@@ -1,0 +1,104 @@
+@startuml Acteurs_Global_VitaChain
+!theme plain
+skinparam actorStyle awesome
+skinparam usecase {
+  BackgroundColor #EFF6FF
+  BorderColor     #2563EB
+  FontSize 13
+}
+skinparam actor {
+  BackgroundColor #DBEAFE
+  BorderColor     #2563EB
+}
+skinparam rectangle {
+  BackgroundColor #F8FAFF
+  BorderColor     #2563EB
+}
+skinparam note {
+  BackgroundColor #FFFDE7
+  BorderColor     #F9A825
+}
+
+title Diagramme des Acteurs — Plateforme VitaChain v3
+
+' ── Acteurs humains ──────────────────────────────────────
+actor "Agriculteur\n(FARMER)"      as Farmer     #DBEAFE
+actor "Restaurateur\n(RESTAURANT)" as Resto      #DCFCE7
+actor "Citoyen\n(CITIZEN)"         as Citizen    #FEF9C3
+actor "Administrateur\n(ADMIN)"    as Admin      #FAE8FF
+
+' ── Acteurs systèmes (stéréotype avant la couleur) ──────
+actor "Dispositif\nESP32"          as ESP32      <<device>>  #F1F5F9
+actor "Worker IA\n(Gemini)"        as AIWorker   <<system>>  #F3E5F5
+actor "Worker Email\n(Brevo)"      as MailWorker <<system>>  #FFF3E0
+actor "Cron Nightly"               as Cron       <<system>>  #F5F5F5
+
+' ── Modules ──────────────────────────────────────────────
+rectangle "Module Katara\n(Surveillance IoT)" as Katara {
+  usecase "Gérer parcelles\n& dispositifs" as KAT1
+  usecase "Visualiser télémétrie\n& alertes" as KAT2
+  usecase "Diagnostics IA\n& Météo/NDVI"   as KAT3
+}
+
+rectangle "Module FarMarket\n(Marketplace Agricole)" as FarMarket {
+  usecase "Publier annonces"       as FAR1
+  usecase "Passer commandes"       as FAR2
+  usecase "Évaluer agriculteur"    as FAR3
+  usecase "Expirer annonces\n(nightly)" as FAR4
+}
+
+rectangle "Module SecondServe\n(Anti-gaspillage)" as SecondServe {
+  usecase "Publier offres surplus" as SS1
+  usecase "Commander offre surplus" as SS2
+}
+
+rectangle "Administration\n& KYC" as Admin_mod {
+  usecase "Vérification KYC"       as ADM1
+  usecase "Gestion utilisateurs"   as ADM2
+  usecase "Modération annonces"    as ADM3
+}
+
+' ── Relations acteurs → cas d'utilisation ────────────────
+Farmer      --> KAT1
+Farmer      --> KAT2
+Farmer      --> KAT3
+Farmer      --> FAR1
+
+Resto       --> FAR2
+Resto       --> FAR3
+Resto       --> SS1
+
+Citizen     --> SS2
+
+Admin       --> ADM1
+Admin       --> ADM2
+Admin       --> ADM3
+
+ESP32       --> KAT2
+
+AIWorker    --> KAT3
+MailWorker  --> KAT2
+MailWorker  --> ADM1
+Cron        --> FAR4
+
+' ── Notes ────────────────────────────────────────────────
+note right of Farmer
+  Statut requis : VERIFIED
+  (KYC approuvé) pour créer
+  des parcelles et des annonces
+end note
+
+note right of Resto
+  Statut requis : VERIFIED
+  pour passer des commandes
+  FarMarket. SecondServe
+  accessible sans vérification.
+end note
+
+note left of ESP32
+  Authentification par
+  X-Device-Id + X-Device-Api-Key
+  (bcrypt). Pas de JWT.
+end note
+
+@enduml

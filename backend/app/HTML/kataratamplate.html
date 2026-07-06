@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+
+<html class="light" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AgriManager - Tableau de Bord</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .filled-icon {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #f9faf2; /* theme.colors.background */
+            -webkit-font-smoothing: antialiased;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(8px);
+            border: 1px solid #e0e4e0;
+        }
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 24px;
+        }
+    </style>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-secondary-container": "#795950",
+                    "surface-variant": "#e2e3dc",
+                    "inverse-on-surface": "#f0f1ea",
+                    "secondary-fixed-dim": "#e7bdb1",
+                    "secondary-container": "#fed3c7",
+                    "on-surface-variant": "#42493e",
+                    "secondary": "#77574d",
+                    "on-primary-fixed": "#002201",
+                    "on-primary-container": "#9dd090",
+                    "secondary-fixed": "#ffdbd0",
+                    "tertiary-container": "#00595d",
+                    "on-primary": "#ffffff",
+                    "inverse-surface": "#2e312c",
+                    "on-tertiary-container": "#85ced2",
+                    "on-secondary-fixed": "#2c160e",
+                    "background": "#f9faf2",
+                    "surface-container-highest": "#e2e3dc",
+                    "surface-container-high": "#e7e9e1",
+                    "on-background": "#191c18",
+                    "error-container": "#ffdad6",
+                    "on-tertiary-fixed-variant": "#004f53",
+                    "on-error-container": "#93000a",
+                    "outline": "#72796e",
+                    "on-secondary": "#ffffff",
+                    "on-tertiary": "#ffffff",
+                    "tertiary": "#004043",
+                    "tertiary-fixed": "#a6eff3",
+                    "primary-container": "#2d5a27",
+                    "surface-bright": "#f9faf2",
+                    "tertiary-fixed-dim": "#8ad3d7",
+                    "on-surface": "#191c18",
+                    "on-primary-fixed-variant": "#23501e",
+                    "primary-fixed": "#bcf0ae",
+                    "inverse-primary": "#a1d494",
+                    "surface-container-low": "#f3f4ed",
+                    "on-error": "#ffffff",
+                    "surface": "#f9faf2",
+                    "on-secondary-fixed-variant": "#5d4037",
+                    "surface-dim": "#d9dbd3",
+                    "error": "#ba1a1a",
+                    "on-tertiary-fixed": "#002021",
+                    "surface-container": "#edefe7",
+                    "surface-tint": "#3b6934",
+                    "surface-container-lowest": "#ffffff",
+                    "primary-fixed-dim": "#a1d494",
+                    "primary": "#154212",
+                    "outline-variant": "#c2c9bb"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "unit": "8px",
+                    "container-margin-desktop": "40px",
+                    "stack-md": "16px",
+                    "container-margin-mobile": "16px",
+                    "gutter": "24px",
+                    "touch-target-min": "48px",
+                    "stack-sm": "8px",
+                    "stack-lg": "32px"
+            },
+            "fontFamily": {
+                    "headline-md": ["Lexend"],
+                    "headline-lg-mobile": ["Lexend"],
+                    "headline-lg": ["Lexend"],
+                    "kpi-value": ["Lexend"],
+                    "body-lg": ["Inter"],
+                    "body-md": ["Inter"],
+                    "display-lg": ["Lexend"],
+                    "label-md": ["Inter"]
+            },
+            "fontSize": {
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "500"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                    "kpi-value": ["28px", {"lineHeight": "32px", "fontWeight": "700"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "display-lg": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+</head>
+<body class="bg-background text-on-surface">
+<!-- Sidebar (Shared Component SideNavBar mapping) -->
+<aside class="h-screen w-64 fixed left-0 top-0 bg-surface-container-low border-r border-outline-variant hidden md:flex flex-col py-stack-lg z-50">
+<div class="px-6 mb-stack-lg">
+<h1 class="font-headline-md text-headline-md font-bold text-primary">AgriManager</h1>
+<p class="font-label-md text-label-md text-on-surface-variant opacity-70">Green Valley Farm</p>
+</div>
+<nav class="flex-1 space-y-2">
+<!-- Dashboard (Active) -->
+<a class="flex items-center gap-4 bg-primary-container text-on-primary-container rounded-lg px-4 py-3 mx-2 transition-opacity active:opacity-80" href="#">
+<span class="material-symbols-outlined notranslate filled-icon" translate="no">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<!-- Parcels -->
+<a class="flex items-center gap-4 text-on-surface-variant px-4 py-3 mx-2 hover:bg-surface-container-high rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined notranslate" translate="no">map</span>
+<span class="font-label-md text-label-md">Parcels</span>
+</a>
+<!-- Sensors -->
+<a class="flex items-center gap-4 text-on-surface-variant px-4 py-3 mx-2 hover:bg-surface-container-high rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined notranslate" translate="no">sensors</span>
+<span class="font-label-md text-label-md">Sensors</span>
+</a>
+<!-- Market -->
+<a class="flex items-center gap-4 text-on-surface-variant px-4 py-3 mx-2 hover:bg-surface-container-high rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined notranslate" translate="no">storefront</span>
+<span class="font-label-md text-label-md">Market</span>
+</a>
+<!-- Tasks -->
+<a class="flex items-center gap-4 text-on-surface-variant px-4 py-3 mx-2 hover:bg-surface-container-high rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined notranslate" translate="no">assignment_turned_in</span>
+<span class="font-label-md text-label-md">Tasks</span>
+</a>
+</nav>
+<div class="px-4 mb-stack-lg">
+<button class="w-full bg-primary text-on-primary font-label-md py-3 rounded-xl flex items-center justify-center gap-2 shadow-sm hover:opacity-90 active:scale-95 transition-all">
+<span class="material-symbols-outlined notranslate" translate="no">add</span>
+                Add New Task
+            </button>
+</div>
+<div class="border-t border-outline-variant pt-4">
+<a class="flex items-center gap-4 text-on-surface-variant px-4 py-3 mx-2 hover:bg-surface-container-high rounded-lg" href="#">
+<span class="material-symbols-outlined notranslate" translate="no">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+<a class="flex items-center gap-4 text-on-surface-variant px-4 py-3 mx-2 hover:bg-surface-container-high rounded-lg" href="#">
+<span class="material-symbols-outlined notranslate" translate="no">help</span>
+<span class="font-label-md text-label-md">Support</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="md:ml-64 p-container-margin-mobile md:p-container-margin-desktop min-h-screen">
+<!-- Header (Shared Component TopNavBar mapping) -->
+<header class="flex justify-between items-center mb-stack-lg w-full">
+<div>
+<h2 class="font-headline-lg text-headline-lg font-bold text-primary">Tableau de bord</h2>
+<p class="font-body-md text-on-surface-variant">Bienvenue, Green Valley Farm</p>
+</div>
+<div class="flex items-center gap-4">
+<div class="hidden lg:flex bg-surface-container-low px-4 py-2 rounded-full border border-outline-variant items-center gap-2">
+<span class="material-symbols-outlined notranslate text-on-surface-variant" translate="no">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm w-48" placeholder="Rechercher..." type="text"/>
+</div>
+<button class="p-2 rounded-full hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined notranslate" translate="no">notifications</span>
+</button>
+<div class="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center">
+<span class="material-symbols-outlined notranslate text-on-secondary-container filled-icon" translate="no">account_circle</span>
+</div>
+</div>
+</header>
+<!-- Status Area: The prominent green/red indicators -->
+<section class="mb-stack-lg">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-stack-md">
+<!-- Weather Indicator -->
+<div class="bg-white border border-outline-variant rounded-xl p-stack-md flex items-center justify-between shadow-sm">
+<div class="flex items-center gap-4">
+<div class="w-16 h-16 rounded-full bg-primary-container flex items-center justify-center">
+<span class="material-symbols-outlined notranslate text-on-primary-container text-4xl" translate="no">wb_sunny</span>
+</div>
+<div>
+<h3 class="font-headline-md text-headline-md">Météo : Optimale</h3>
+<p class="font-body-md text-on-surface-variant">Ciel dégagé, 24°C. Idéal pour les semis.</p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-4 h-4 rounded-full bg-primary animate-pulse"></span>
+<span class="font-label-md text-primary">FAVORABLE</span>
+</div>
+</div>
+<!-- Sensor Health -->
+<div class="bg-white border border-outline-variant rounded-xl p-stack-md flex items-center justify-between shadow-sm">
+<div class="flex items-center gap-4">
+<div class="w-16 h-16 rounded-full bg-error-container flex items-center justify-center">
+<span class="material-symbols-outlined notranslate text-error text-4xl" translate="no">sensors_off</span>
+</div>
+<div>
+<h3 class="font-headline-md text-headline-md">Capteurs : Alerte</h3>
+<p class="font-body-md text-on-surface-variant">2 capteurs hors ligne sur la Parcelle B.</p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-4 h-4 rounded-full bg-error"></span>
+<span class="font-label-md text-error">CRITIQUE</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Primary Action Cards: Large, icon-based navigation -->
+<section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-stack-md mb-stack-lg">
+<!-- Add Task -->
+<button class="group flex flex-col items-center justify-center gap-4 bg-primary text-on-primary p-12 rounded-xl transition-all hover:shadow-lg active:scale-95">
+<span class="material-symbols-outlined notranslate text-6xl group-hover:scale-110 transition-transform" translate="no">add_task</span>
+<span class="font-headline-md text-headline-md">Ajouter une Tâche</span>
+</button>
+<!-- Check Weather -->
+<button class="group flex flex-col items-center justify-center gap-4 bg-tertiary-container text-on-tertiary-container p-12 rounded-xl transition-all hover:shadow-lg active:scale-95">
+<span class="material-symbols-outlined notranslate text-6xl group-hover:scale-110 transition-transform" translate="no">cloud_sync</span>
+<span class="font-headline-md text-headline-md">Consulter Météo</span>
+</button>
+<!-- View Map -->
+<button class="group flex flex-col items-center justify-center gap-4 bg-secondary-container text-on-secondary-container p-12 rounded-xl transition-all hover:shadow-lg active:scale-95">
+<span class="material-symbols-outlined notranslate text-6xl group-hover:scale-110 transition-transform" translate="no">explore</span>
+<span class="font-headline-md text-headline-md">Voir la Carte</span>
+</button>
+</section>
+<!-- Insights Bento Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-stack-md">
+<!-- Parcel Monitoring Map -->
+<div class="lg:col-span-8 bg-white border border-outline-variant rounded-xl overflow-hidden shadow-sm relative min-h-[400px]">
+<div class="absolute top-4 left-4 z-10 bg-white/90 backdrop-blur p-4 rounded-lg border border-outline-variant">
+<h4 class="font-label-md text-primary">SURVEILLANCE EN DIRECT</h4>
+<p class="font-headline-md text-headline-md">Secteur Nord-Est</p>
+</div>
+<div class="w-full h-full bg-cover bg-center" data-alt="A sophisticated satellite mapping interface showing lush green agricultural parcels from a high-altitude perspective. The image features data overlays with subtle glowing borders around specific fields, indicating soil moisture and health. The aesthetic is clean, professional, and data-driven with a palette of deep earth greens and soft whites under bright daylight." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDOc_tPAffftd0l8NybDQ9jZboWhazHCuX138ifMNwXM27GQfpVFuzn71CZkCRq9uorJhWrIsqGBAjw2VmpZoZTygWbnp4Uu4FXEwnOQSlcltJU-4fgcb-z0IqeG72frMFDZi2MaEmj9sqphtP2cwdGvDHxsjrYCCof6DhbxQO4JDEV7Sgu-xb3rkxvPDhJU3XYWjuRWkVVF8hODLxtFIyJr2v5LeVAJjvqAbRr7mWZGoAdhF3eIlhAxi4Bed_LoG8SZcixpSPwQJM')"></div>
+<div class="absolute bottom-4 right-4 flex gap-2">
+<button class="bg-white p-3 rounded-full shadow hover:bg-surface-container-low transition-colors"><span class="material-symbols-outlined notranslate" translate="no">zoom_in</span></button>
+<button class="bg-white p-3 rounded-full shadow hover:bg-surface-container-low transition-colors"><span class="material-symbols-outlined notranslate" translate="no">zoom_out</span></button>
+</div>
+</div>
+<!-- KPI Sidebar -->
+<div class="lg:col-span-4 flex flex-col gap-stack-md">
+<!-- Soil Moisture KPI -->
+<div class="bg-white border border-outline-variant rounded-xl p-6 shadow-sm">
+<div class="flex justify-between items-start mb-4">
+<span class="material-symbols-outlined notranslate text-primary text-3xl" translate="no">water_drop</span>
+<span class="bg-primary-fixed text-on-primary-fixed-variant px-3 py-1 rounded-full text-xs font-bold">+5% vs hier</span>
+</div>
+<p class="text-on-surface-variant font-label-md uppercase tracking-wider">Humidité du Sol</p>
+<p class="font-kpi-value text-kpi-value mt-1">68.2 <span class="text-lg font-medium opacity-60">%</span></p>
+<div class="w-full bg-surface-container-high h-2 rounded-full mt-4">
+<div class="bg-primary h-2 rounded-full w-[68%]"></div>
+</div>
+</div>
+<!-- Crop Health KPI -->
+<div class="bg-white border border-outline-variant rounded-xl p-6 shadow-sm">
+<div class="flex justify-between items-start mb-4">
+<span class="material-symbols-outlined notranslate text-tertiary text-3xl" translate="no">psychology</span>
+<span class="bg-tertiary-fixed text-on-tertiary-fixed-variant px-3 py-1 rounded-full text-xs font-bold">Stable</span>
+</div>
+<p class="text-on-surface-variant font-label-md uppercase tracking-wider">Santé des Cultures</p>
+<p class="font-kpi-value text-kpi-value mt-1">94.1 <span class="text-lg font-medium opacity-60">NDVI</span></p>
+<div class="flex gap-1 mt-4">
+<div class="h-1 flex-1 bg-primary rounded-full"></div>
+<div class="h-1 flex-1 bg-primary rounded-full"></div>
+<div class="h-1 flex-1 bg-primary rounded-full"></div>
+<div class="h-1 flex-1 bg-primary rounded-full"></div></div></div></div></div></main></body></html>

@@ -1,0 +1,133 @@
+{
+  "common": {
+    "appName": "VitaChain"
+  },
+  "nav": {
+    "openMenu": "Open navigation",
+    "closeMenu": "Close navigation",
+    "expandMenu": "Expand navigation",
+    "collapseMenu": "Collapse navigation",
+    "mainNav": "Main navigation",
+    "account": "My account",
+    "farmer": {
+      "overview": "Overview",
+      "parcels": "My plots",
+      "ads": "My listings",
+      "orders": "Orders",
+      "weather": "Weather",
+      "satellite": "Satellite",
+      "settings": "Settings",
+      "logout": "Log out",
+      "newParcel": "New plot"
+    },
+    "restaurant": {
+      "overview": "Overview",
+      "catalog": "Catalog",
+      "favorites": "Favorites",
+      "cart": "Cart",
+      "orders": "My orders",
+      "help": "Help",
+      "notifications": "Notifications",
+      "settings": "Settings",
+      "logout": "Log out",
+      "farmarketSection": "FarMarket",
+      "secondserveSection": "SecondServe",
+      "publishSurplus": "List surplus stock",
+      "viewCart": "View cart"
+    },
+    "citizen": {
+      "home": "Home",
+      "marketplace": "FarMarket listings",
+      "logout": "Log out",
+      "farmarketSection": "FarMarket",
+      "secondserveSection": "SecondServe",
+      "surplusMeals": "Anti-waste meals"
+    },
+    "admin": {
+      "verifications": "KYC verifications",
+      "users": "Users",
+      "farmarket": "FarMarket",
+      "secondserve": "SecondServe"
+    }
+  },
+  "landing": {
+    "nav": {
+      "modules": "Modules",
+      "howItWorks": "How it works",
+      "impact": "Impact",
+      "login": "Log in",
+      "start": "Get started",
+      "menu": "Menu"
+    }
+  },
+  "auth": {
+    "shell": {
+      "defaultBadge": "VitaChain Suite",
+      "footer": "Anti-waste ecosystem",
+      "rightPanelBadge": "Anti-waste agri-food ecosystem",
+      "headingStart": "From field to plate,",
+      "headingHighlight": "zero link lost",
+      "paragraph": "One platform connects every link of the agri-food chain — from crop monitoring to surplus redistribution.",
+      "soon": "Coming soon",
+      "modules": {
+        "katara": "Soil IoT monitoring",
+        "farmarket": "Marketplace",
+        "botaba9a": "Cold chain",
+        "secondserve": "Anti-waste"
+      },
+      "statCard": "Nearly a third of all food produced is lost. VitaChain reconnects the supply chain to lose less at every step.",
+      "verifiedFooter": "Verified accounts · fully traced chain"
+    },
+    "login": {
+      "badge": "Log in",
+      "title": "Welcome back.",
+      "subtitle": "Log in to get back in control of your operation.",
+      "emailLabel": "Email",
+      "passwordLabel": "Password",
+      "remember": "Stay signed in on this device",
+      "submit": "Log in",
+      "or": "or",
+      "noAccount": "Don't have an account yet?",
+      "createAccount": "Create my account",
+      "secondserveCta": "Looking for anti-waste meals?",
+      "secondserveLink": "Go to SecondServe →"
+    },
+    "register": {
+      "badge": "Create an account",
+      "title": "Welcome to VitaChain.",
+      "subtitle": "Choose your role and get access to the whole chain — from crop monitoring to fighting food waste.",
+      "fullNameLabel": "Full name",
+      "emailLabel": "Email",
+      "passwordLabel": "Password",
+      "roleLabel": "I am…",
+      "languageLabel": "Language",
+      "termsPrefix": "I accept the",
+      "termsLink": "terms of use",
+      "termsSuffix": "and the privacy policy.",
+      "submit": "Create my account",
+      "alreadyRegistered": "Already registered?",
+      "login": "Log in",
+      "secondserveCta": "Only looking for anti-waste meals?",
+      "secondserveLink": "Sign up directly on SecondServe →",
+      "errors": {
+        "email_taken": "An account already exists with this email.",
+        "weak_password": "Password too weak — at least 10 characters, with an uppercase letter, a lowercase letter and a digit.",
+        "rate_limited": "Too many attempts. Please try again in an hour.",
+        "invalid_input": "Invalid data — please check the fields.",
+        "network": "Could not connect. Check your network and try again.",
+        "unknown": "An unexpected error occurred. Our team has been notified."
+      }
+    }
+  },
+  "dashboardRoot": {
+    "unknownAccountTitle": "Account not recognized on VitaChain",
+    "unknownAccountBody": "This account ({email}) has no VitaChain profile. It may belong to another app (SecondServe). Sign in with a VitaChain account, or sign out.",
+    "logout": "Log out",
+    "greeting": "Hello, {name}",
+    "profileUnavailable": "Profile unavailable ({message}). Please try again later.",
+    "role": "Role",
+    "status": "Status",
+    "language": "Language",
+    "otherModules": "Other modules will be plugged in during the next phases."
+  }
+}

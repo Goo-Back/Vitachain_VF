@@ -1,0 +1,82 @@
+@startuml UC_Katara_Gestion_Parcelles
+!theme plain
+skinparam actorStyle awesome
+skinparam usecase {
+  BackgroundColor #EAF4EA
+  BorderColor #2D6A2D
+  FontSize 13
+}
+skinparam actor {
+  BackgroundColor #D6EAD6
+  BorderColor #2D6A2D
+}
+skinparam rectangle {
+  BackgroundColor #F7FFF7
+  BorderColor #2D6A2D
+}
+skinparam note {
+  BackgroundColor #FFFDE7
+  BorderColor #F9A825
+}
+
+title Diagramme de Cas d'Utilisation — Gestion des Parcelles (Module Katara)
+
+actor "Agriculteur\n(Vérifié)" as Farmer
+actor "Agriculteur\n(Non vérifié)" as UnverifiedFarmer
+actor "Administrateur" as Admin
+
+rectangle "Module Katara — Gestion des Parcelles" {
+
+  usecase "Consulter la liste\ndes parcelles" as UC_LIST
+  usecase "Consulter le détail\nd'une parcelle" as UC_DETAIL
+  usecase "Créer une parcelle" as UC_CREATE
+  usecase "Modifier une parcelle" as UC_EDIT
+  usecase "Supprimer une parcelle" as UC_DELETE
+  usecase "Dessiner le périmètre\nGeoJSON (Polygon)" as UC_GEO
+  usecase "Consulter le tableau\nde bord global (KPI)" as UC_OVERVIEW
+
+  usecase "Vérification du\nstatut agriculteur" as UC_AUTH <<include>>
+  usecase "Dissocier les appareils\navant suppression" as UC_UNLINK_FIRST <<include>>
+
+  note right of UC_CREATE
+    Champs requis :
+    - Nom de la parcelle
+    - Type de culture
+    - Surface (ha)
+    - Périmètre GeoJSON
+    Statut vérifié obligatoire
+  end note
+
+  note right of UC_DELETE
+    Échoue (409) si des
+    appareils IoT sont encore
+    associés à la parcelle
+  end note
+}
+
+' Agriculteur vérifié
+Farmer --> UC_LIST
+Farmer --> UC_DETAIL
+Farmer --> UC_CREATE
+Farmer --> UC_EDIT
+Farmer --> UC_DELETE
+Farmer --> UC_OVERVIEW
+
+' Agriculteur non vérifié
+UnverifiedFarmer --> UC_LIST
+UnverifiedFarmer --> UC_DETAIL
+UnverifiedFarmer --> UC_OVERVIEW
+
+' Admin
+Admin --> UC_LIST
+Admin --> UC_OVERVIEW
+
+' Inclusions
+UC_CREATE ..> UC_AUTH : <<include>>
+UC_EDIT   ..> UC_AUTH : <<include>>
+UC_DELETE ..> UC_AUTH : <<include>>
+UC_CREATE ..> UC_GEO  : <<include>>
+UC_EDIT   ..> UC_GEO  : <<extend>>
+UC_DELETE ..> UC_UNLINK_FIRST : <<include>>
+
+@enduml

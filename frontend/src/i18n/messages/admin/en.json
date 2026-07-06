@@ -1,0 +1,384 @@
+{
+  "admin": {
+    "shell": {
+      "signOut": "Sign out",
+      "badge": "Admin"
+    },
+    "overview": {
+      "title": "Admin console",
+      "subtitle": "Overview of the platform's management tools.",
+      "open": "Open →",
+      "cards": {
+        "kyc": {
+          "title": "KYC verifications",
+          "description": "Review submitted documents and approve or reject them.",
+          "metricLabel": "pending"
+        },
+        "users": {
+          "title": "Users",
+          "description": "Search accounts, change roles, ban or reactivate.",
+          "metricLabel": "accounts"
+        },
+        "farmarket": {
+          "title": "FarMarket",
+          "description": "Listings, orders, and COD payment reconciliation.",
+          "metricLabel": "orders"
+        },
+        "secondserve": {
+          "title": "SecondServe",
+          "description": "Partners, users, orders, and anti-waste support.",
+          "metricLabel": "accounts"
+        }
+      }
+    },
+    "verifications": {
+      "docType": {
+        "RC": "Trade register",
+        "CIN": "National ID card",
+        "AGRI_CARD": "Farmer's card",
+        "OTHER": "Other"
+      },
+      "unknownError": "Unknown error",
+      "title": "KYC verifications",
+      "subtitle": "Documents awaiting verification",
+      "pendingCount": "{count} pending",
+      "fetchError": "Could not load submissions: {error}",
+      "empty": "No documents pending. All caught up!",
+      "statusBadge": "Pending",
+      "fields": {
+        "type": "Type",
+        "format": "Format",
+        "size": "Size",
+        "submittedAt": "Submitted on"
+      },
+      "viewDocument": "View document",
+      "review": {
+        "pending": "Working…",
+        "approve": "Approve",
+        "reject": "Reject",
+        "rejectPlaceholder": "Reason for rejection (optional)",
+        "confirmReject": "Confirm rejection",
+        "cancel": "Cancel"
+      },
+      "actions": {
+        "missingId": "Missing identifier.",
+        "genericError": "Error {status}{detail}"
+      }
+    },
+    "users": {
+      "roleOptions": {
+        "all": "All roles",
+        "FARMER": "Farmer",
+        "RESTAURANT": "Restaurant",
+        "CITIZEN": "Citizen",
+        "ADMIN": "Admin"
+      },
+      "statusOptions": {
+        "all": "All statuses",
+        "active": "Active",
+        "banned": "Banned"
+      },
+      "unknownError": "Unknown error",
+      "title": "Users",
+      "subtitle": "Manage platform accounts, roles, and access.",
+      "accountCount": "{count, plural, one {# account} other {# accounts}}",
+      "form": {
+        "searchLabel": "Search",
+        "searchPlaceholder": "Name or email…",
+        "roleLabel": "Role",
+        "statusLabel": "Status",
+        "submit": "Filter"
+      },
+      "fetchError": "Could not load users: {error}",
+      "empty": "No user matches these criteria.",
+      "table": {
+        "user": "User",
+        "kyc": "KYC",
+        "role": "Role",
+        "joined": "Joined",
+        "status": "Status",
+        "action": "Action"
+      },
+      "pagination": {
+        "page": "Page {page} / {totalPages}",
+        "previous": "Previous",
+        "next": "Next"
+      },
+      "row": {
+        "you": "you",
+        "verif": {
+          "VERIFIED": "Verified",
+          "PENDING": "Pending",
+          "UNVERIFIED": "Unverified",
+          "REJECTED": "Rejected"
+        },
+        "confirmPending": "…",
+        "confirm": "OK",
+        "banned": "Banned",
+        "active": "Active",
+        "banPending": "Working…",
+        "reactivate": "Reactivate",
+        "ban": "Ban"
+      },
+      "actions": {
+        "missingData": "Missing data.",
+        "cannotChangeSelfRole": "You cannot change your own role.",
+        "genericError": "Error {status}{detail}",
+        "missingId": "Missing identifier.",
+        "cannotBanSelf": "You cannot ban yourself."
+      }
+    },
+    "farmarket": {
+      "adminView": {
+        "title": "FarMarket",
+        "subtitle": "Operator view — B2B agricultural marketplace listings and payment reconciliation.",
+        "tabs": {
+          "dashboard": "Dashboard",
+          "orders": "Orders",
+          "ads": "Listings",
+          "cod": "COD reconciliation",
+          "reports": "Reports"
+        },
+        "featured": "★ Featured",
+        "table": {
+          "title": "Title",
+          "typeRegion": "Type / Region",
+          "price": "Price",
+          "status": "Status",
+          "pinned": "Pinned?",
+          "actions": "Actions"
+        },
+        "empty": "No listings.",
+        "pinnedYes": "Yes ★",
+        "pinnedNo": "No",
+        "togglePending": "…",
+        "unpin": "Unpin",
+        "pin": "Pin"
+      },
+      "codReconciliation": {
+        "stats": {
+          "pendingOrders": "Pending COD orders",
+          "cashToReconcile": "Cash to reconcile",
+          "oldestDays": "Oldest (days)"
+        },
+        "bestPractices": {
+          "label": "Best practices:",
+          "before": "Only mark an order",
+          "after": "once the cash has been physically deposited in the till. Every override must include an explicit reason (deposit reference, incident number, etc.) — every transition is logged in the audit trail."
+        },
+        "table": {
+          "reference": "Reference",
+          "restaurant": "Restaurant",
+          "region": "Region",
+          "amount": "Amount",
+          "age": "Age",
+          "orderStatus": "Order status",
+          "actions": "Actions"
+        },
+        "ageUnit": "d",
+        "empty": "No pending COD orders — cash reconciled.",
+        "markPaid": "Mark as paid",
+        "markFailed": "Mark as failed",
+        "audit": "Audit",
+        "override": {
+          "reasonTooShort": "The reason must be at least 3 characters long.",
+          "titlePaid": "Mark the order as PAID",
+          "titleFailed": "Mark the payment as FAILED",
+          "titleReopen": "Reopen the payment (DUE)",
+          "reference": "Reference:",
+          "amount": "Amount:",
+          "reasonLabel": "Reason (required — will be logged in the audit trail)",
+          "placeholderPaid": "E.g. Cash deposited in the till on 05/28/2026 — deposit slip #BD-2026-152.",
+          "placeholderFailed": "E.g. PSP chargeback, ref TXN-9921. Order refunded.",
+          "placeholderReopen": "E.g. Payment cancelled following a restaurant request — ticket #438.",
+          "cancel": "Cancel",
+          "saving": "Saving…",
+          "confirm": "Confirm",
+          "networkError": "Network error. Please try again."
+        },
+        "auditDialog": {
+          "httpError": "HTTP error {status}",
+          "networkError": "Network error",
+          "title": "Audit trail · {ref}",
+          "subtitle": "All payment_status transitions for this order.",
+          "empty": "No transition logged for this order.",
+          "actor": "actor",
+          "reasonQuote": "“{reason}”",
+          "close": "Close"
+        },
+        "errors": {
+          "alreadyStatus": "The requested status is already the current status.",
+          "orderNotFound": "Order not found.",
+          "overrideFailed": "The override failed on the backend. Check permissions.",
+          "auditInsertFailed": "Audit not recorded — the override was cancelled. Please try again.",
+          "fallback": "Error ({code})."
+        }
+      },
+      "ordersManagement": {
+        "filters": {
+          "all": "All",
+          "PENDING": "Pending",
+          "ACCEPTED": "Confirmed",
+          "IN_PROGRESS": "Shipped",
+          "DELIVERED": "Delivered",
+          "CANCELLED": "Cancelled",
+          "RETURNED": "Returned"
+        },
+        "table": {
+          "reference": "Reference",
+          "client": "Client",
+          "phone": "Phone",
+          "cityRegion": "City / Region",
+          "amount": "Amount",
+          "payment": "Payment",
+          "status": "Status",
+          "actions": "Actions"
+        },
+        "empty": "No orders in this filter.",
+        "paymentBankTransfer": "Bank transfer",
+        "expanded": {
+          "address": "Address:",
+          "restaurantId": "Restaurant (UUID):",
+          "subtotalLogistics": "Subtotal / logistics:",
+          "deliveryNotes": "Delivery notes:"
+        },
+        "busy": "…",
+        "networkError": "Network error. Please try again.",
+        "errors": {
+          "invalidTransition": "This status transition is not allowed for this order.",
+          "alreadyStatus": "The order is already in this status.",
+          "orderNotFound": "Order not found.",
+          "updateFailed": "The update failed on the backend. Please try again.",
+          "fallback": "Error ({code})."
+        }
+      },
+      "reports": {
+        "unavailable": "Reports unavailable at the moment.",
+        "cards": {
+          "sales": "Sales (booked revenue)",
+          "delivered": "Delivered orders",
+          "cancelled": "Cancelled orders",
+          "returnRate": "Return rate"
+        },
+        "cancelledSub": "{pct} of total",
+        "returnedSub": "{count, plural, one {# returned} other {# returned}}",
+        "distributionTitle": "Order breakdown by status",
+        "footer": "{count, plural, one {Total: # order.} other {Total: # orders.}} Cancellation rate {cancelRate} · return rate {returnRate}."
+      },
+      "stats": {
+        "unavailable": "Statistics unavailable at the moment.",
+        "kpis": {
+          "ordersTotal": "Orders (total)",
+          "revenueBooked": "Booked revenue",
+          "revenueCollected": "Collected (paid)",
+          "codOutstanding": "COD to collect",
+          "productsSold": "Products sold (delivered)",
+          "delivered": "Delivered orders"
+        },
+        "revenueBookedHint": "Excludes cancelled / rejected / returned"
+      },
+      "orderStatus": {
+        "status": {
+          "PENDING": "Pending",
+          "PARTIALLY_ACCEPTED": "Partially accepted",
+          "ACCEPTED": "Confirmed",
+          "REJECTED": "Rejected",
+          "IN_PROGRESS": "Shipped",
+          "DELIVERED": "Delivered",
+          "CANCELLED": "Cancelled",
+          "RETURNED": "Returned"
+        },
+        "transitionAction": {
+          "ACCEPTED": "Confirm",
+          "IN_PROGRESS": "Mark shipped",
+          "DELIVERED": "Mark delivered",
+          "CANCELLED": "Cancel",
+          "RETURNED": "Mark returned",
+          "PENDING": "Set back to pending",
+          "PARTIALLY_ACCEPTED": "Partially accepted",
+          "REJECTED": "Reject"
+        }
+      }
+    },
+    "secondserve": {
+      "confirmDeleteUser": "Permanently delete this SecondServe account? This action cannot be undone.",
+      "confirmCancelOrder": "Cancel this order?",
+      "errorStatus": "Error {status}",
+      "networkError": "Network error",
+      "resolveNeedsResponse": "Enter a response before resolving.",
+      "title": "SecondServe",
+      "subtitle": "Centralized management of the SecondServe anti-waste marketplace.",
+      "kpis": {
+        "accounts": "Accounts",
+        "partners": "Partners",
+        "orders": "Orders",
+        "revenue": "Revenue (MAD)"
+      },
+      "tabs": {
+        "dashboard": "Dashboard",
+        "partners": "Partners",
+        "users": "Users",
+        "orders": "Orders",
+        "support": "Support"
+      },
+      "dashboard": {
+        "active": "Active",
+        "completed": "Completed",
+        "cancelled": "Cancelled",
+        "cancellationRate": "Cancellation rate",
+        "topProducts": "Most rescued products",
+        "mealsRescued": "{count, plural, one {# meal rescued in total.} other {# meals rescued in total.}}",
+        "noSales": "No sales recorded yet.",
+        "units": "{count, plural, one {# unit} other {# units}}"
+      },
+      "partners": {
+        "pendingApproval": "Pending approval",
+        "noPending": "No pending requests.",
+        "approved": "Approved partners",
+        "noApproved": "No approved partners.",
+        "busy": "…",
+        "approve": "Approve",
+        "suspend": "Suspend"
+      },
+      "users": {
+        "table": {
+          "user": "User",
+          "role": "Role",
+          "city": "City",
+          "status": "Status",
+          "actions": "Actions"
+        },
+        "empty": "No users.",
+        "banned": "Banned",
+        "active": "Active",
+        "busy": "…",
+        "unban": "Unban",
+        "ban": "Ban",
+        "delete": "Delete"
+      },
+      "orders": {
+        "table": {
+          "refDate": "Ref / Date",
+          "client": "Client",
+          "partner": "Partner",
+          "meal": "Meal",
+          "amount": "Amount",
+          "status": "Status",
+          "action": "Action"
+        },
+        "empty": "No orders.",
+        "busy": "…",
+        "cancel": "Cancel"
+      },
+      "support": {
+        "empty": "No support tickets.",
+        "resolved": "Resolved",
+        "pending": "Pending",
+        "responseLabel": "Response: ",
+        "replyPlaceholder": "Response from administration…",
+        "busy": "…",
+        "resolve": "Reply & resolve"
+      }
+    }
+  }
+}

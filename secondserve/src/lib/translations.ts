@@ -18,6 +18,7 @@ export interface TranslationKeys {
   resetFilters: string;
   category: string;
   type: string;
+  categoryAll: string;
   bakedGoods: string;
   produce: string;
   preparedMeals: string;
@@ -168,6 +169,8 @@ export interface TranslationKeys {
   geolocationTimeout: string;
   geolocationUnsecureWarning: string;
   geolocationSuccess: string;
+  categoryOther: string;
+  gpsAcquiringSignal: string;
   clearGpsMode: string;
   autoDetectLocationBanner: string;
   autoDetectExplanation: string;
@@ -319,9 +322,91 @@ export interface TranslationKeys {
   countdownExpiresIn: string;
   countdownExpired: string;
   cancelOrderConfirmMsg: string;
+
+  // Navbar notifications dropdown
+  realtimeOrdersHeading: string;
+  clearAllNotifBtn: string;
+  notificationsClearedToast: string;
+
+  // AppContext toasts
+  suspendedAccountToast: string;
+  farmerBlockedToast: string;
+  loginToFavoriteToast: string;
+  loginToOrderToast: string;
+  qtyNotAvailableToast: string;
+  offerGoneToast: string;
+  placeOrderGenericErrToast: string;
+  cancelOrderErrToast: string;
+  orderCancelledToast: string;
+  paymentAlreadyConfirmedToast: string;
+  notCodOrderToast: string;
+  confirmPaymentGenericErrToast: string;
+  cashConfirmedToast: string;
+  /** {amount} placeholder, replaced at call site */
+  paymentReleasedToast: string;
+  updateOrderErrToast: string;
+  /** {status} placeholder, replaced at call site */
+  orderMarkedAsToast: string;
+  reviewSubmitErrToast: string;
+  reviewSubmittedToast: string;
+  notificationsClearedBangToast: string;
+  banUserErrToast: string;
+  userBannedToast: string;
+  unbanUserErrToast: string;
+  userUnbannedToast: string;
+  deleteUserErrToast: string;
+  userDeletedToast: string;
+  approvePartnerErrToast: string;
+  partnerApprovedToast: string;
+  rejectPartnerErrToast: string;
+  partnerRejectedToast: string;
+  addTicketErrToast: string;
+  ticketSubmittedToast: string;
+  resolveTicketErrToast: string;
+  ticketResolvedToast: string;
+
+  // OfferCard checkout validation
+  errNameAndPhoneRequired: string;
+  errInvalidCardNumber: string;
+  errInvalidExpiry: string;
+  errInvalidCvv: string;
+  paymentDeclinedToast: string;
+  paymentSuccessEscrowToast: string;
+  cashOrderPlacedToast: string;
+  transactionDeclinedError: string;
+
+  // Consumer Dashboard sidebar nav + support tab
+  navMyOrders: string;
+  navFavorites: string;
+  navHelpSupport: string;
+  navSettings: string;
+  fillAllFieldsToast: string;
+  submitSupportRequestBtn: string;
+  subjectLabel: string;
+  subjectPlaceholder: string;
+  descriptionLabel: string;
+  descriptionPlaceholder: string;
+  submitTicketBtn: string;
+  ticketHistoryHeading: string;
+  noTicketsMsg: string;
+  ticketResolvedBadge: string;
+  ticketPendingBadge: string;
+  adminSolutionLabel: string;
+
+  // Restaurant Dashboard extras
+  offersNotVisibleYet: string;
+  pendingApprovalReason: string;
+  setCommerceTypeReason: string;
+  openBusinessProfileBtn: string;
+  viewFullDetailsBtn: string;
+  businessHelpSupportHeading: string;
+  subjectPlaceholderBiz: string;
+  descriptionPlaceholderBiz: string;
+  ticketHistoryHeadingBiz: string;
+  noTicketsMsgBiz: string;
 }
 
-export const translations: { en: TranslationKeys; ar: TranslationKeys } = {
+export const translations: { en: TranslationKeys; ar: TranslationKeys; fr: TranslationKeys } = {
   en: {
     appName: "SecondServe",
     meals: "Meals & Offers",
@@ -342,6 +427,7 @@ export const translations: { en: TranslationKeys; ar: TranslationKeys } = {
     resetFilters: "Reset Filters",
     category: "Meal Category",
     type: "Commerce Type",
+    categoryAll: "All",
     bakedGoods: "Baked Goods & Pastries",
     produce: "Fresh Produce",
     preparedMeals: "Prepared Meals",
@@ -492,6 +578,8 @@ export const translations: { en: TranslationKeys; ar: TranslationKeys } = {
     geolocationTimeout: "Authorization request timed out. Please click retry to synchronize again.",
     geolocationUnsecureWarning: "Warning: Platform is not running on a secure HTTPS connection. Geolocation APIs may fail or degrade unless running on localhost.",
     geolocationSuccess: "GPS coordinates successfully synchronized! Product road distances and sorting order updated instantly.",
+    categoryOther: "Other",
+    gpsAcquiringSignal: "Acquiring GPS Signal...",
     clearGpsMode: "Reset GPS Mode",
     autoDetectLocationBanner: "Find Meals Right Next To You 📍",
     autoDetectExplanation: "We use your browser's native Geolocation API to instantly calculate exact road distances (in km) to Casablanca & Mohammedia vendors, ensuring you grab the target surplus before they expire.",
@@ -642,7 +730,87 @@ export const translations: { en: TranslationKeys; ar: TranslationKeys } = {
     orderExpiredHint: "Pickup window passed. Cancel to restore stock.",
     countdownExpiresIn: "Expires in",
     countdownExpired: "Expired",
-    cancelOrderConfirmMsg: "Are you sure you want to cancel this order? Stock will be returned to the partner."
+    cancelOrderConfirmMsg: "Are you sure you want to cancel this order? Stock will be returned to the partner.",
+
+    // Navbar notifications dropdown
+    realtimeOrdersHeading: "Real-time Orders",
+    clearAllNotifBtn: "Clear All",
+    notificationsClearedToast: "Notifications cleared",
+
+    // AppContext toasts
+    suspendedAccountToast: "🚨 Your account has been suspended.",
+    farmerBlockedToast: "🚜 Farmer accounts are managed in VitaChain, not SecondServe.",
+    loginToFavoriteToast: "Please login to save favorites",
+    loginToOrderToast: "Please login to place an order",
+    qtyNotAvailableToast: "Requested quantity not available",
+    offerGoneToast: "This offer no longer exists.",
+    placeOrderGenericErrToast: "Could not place the order. Please try again.",
+    cancelOrderErrToast: "Could not cancel order.",
+    orderCancelledToast: "Order cancelled",
+    paymentAlreadyConfirmedToast: "Payment already confirmed.",
+    notCodOrderToast: "This order is not a cash-on-delivery order.",
+    confirmPaymentGenericErrToast: "Could not confirm payment. Please try again.",
+    cashConfirmedToast: "Cash payment confirmed!",
+    paymentReleasedToast: "💳 Payment of {amount} MAD released to Partner!",
+    updateOrderErrToast: "Could not update order.",
+    orderMarkedAsToast: "Order marked as {status}",
+    reviewSubmitErrToast: "Could not submit review.",
+    reviewSubmittedToast: "Review submitted!",
+    notificationsClearedBangToast: "Notifications cleared!",
+    banUserErrToast: "Could not ban user.",
+    userBannedToast: "User banned.",
+    unbanUserErrToast: "Could not unban user.",
+    userUnbannedToast: "User unbanned.",
+    deleteUserErrToast: "Could not delete user.",
+    userDeletedToast: "User deleted.",
+    approvePartnerErrToast: "Could not approve partner.",
+    partnerApprovedToast: "Partner approved.",
+    rejectPartnerErrToast: "Could not reject partner.",
+    partnerRejectedToast: "Partner rejected.",
+    addTicketErrToast: "Could not submit ticket.",
+    ticketSubmittedToast: "Support ticket submitted!",
+    resolveTicketErrToast: "Could not resolve ticket.",
+    ticketResolvedToast: "Ticket resolved.",
+
+    // OfferCard checkout validation
+    errNameAndPhoneRequired: "❌ Please enter your Name and Phone Number",
+    errInvalidCardNumber: "Invalid Card Number: Must contain 16 digits",
+    errInvalidExpiry: "Invalid Expiration Format: Must be MM/YY",
+    errInvalidCvv: "Invalid Security Code: Must contain 3 or 4 digits",
+    paymentDeclinedToast: "❌ Payment Failed: Simulated Card decline verified.",
+    paymentSuccessEscrowToast: "💳 Payment successful! Escrow activated.",
+    cashOrderPlacedToast: "🎉 Cash order placed directly! Real-time dashboard updated.",
+    transactionDeclinedError: "🚨 Transaction Declined: Insufficient funds or invalid card signature. (Simulated decline)",
+
+    // Consumer Dashboard sidebar nav + support tab
+    navMyOrders: "My Orders",
+    navFavorites: "Favorites",
+    navHelpSupport: "Help & Support",
+    navSettings: "Settings",
+    fillAllFieldsToast: "Please fill all fields",
+    submitSupportRequestBtn: "Submit Support Request",
+    subjectLabel: "Subject",
+    subjectPlaceholder: "e.g., Order coordinates incorrect",
+    descriptionLabel: "Description",
+    descriptionPlaceholder: "Provide clear details to facilitate resolution...",
+    submitTicketBtn: "Submit Ticket",
+    ticketHistoryHeading: "Your Ticket History",
+    noTicketsMsg: "No active or past support tickets.",
+    ticketResolvedBadge: "Resolved",
+    ticketPendingBadge: "Pending",
+    adminSolutionLabel: "Admin Solution:",
+
+    // Restaurant Dashboard extras
+    offersNotVisibleYet: "Your offers are not visible to customers yet",
+    pendingApprovalReason: "Your account is pending admin approval.",
+    setCommerceTypeReason: "Set your commerce type in the Business Profile tab.",
+    openBusinessProfileBtn: "Open Business Profile",
+    viewFullDetailsBtn: "View full details",
+    businessHelpSupportHeading: "Business Help & Support",
+    subjectPlaceholderBiz: "e.g., GPS coordinates calibration offset",
+    descriptionPlaceholderBiz: "Provide clear info to expedite validation...",
+    ticketHistoryHeadingBiz: "Ticket History",
+    noTicketsMsgBiz: "No support requests registered yet.",
   },
   ar: {
     appName: "سيكوند سيرف",
@@ -664,6 +832,7 @@ export const translations: { en: TranslationKeys; ar: TranslationKeys } = {
     resetFilters: "إعادة ضبط الفلاتر",
     category: "فئة الوجبة",
     type: "نوع النشاط",
+    categoryAll: "الكل",
     bakedGoods: "مخبوزات وحلويات",
     produce: "منتجات طازجة خضار وفواكه",
     preparedMeals: "وجبات جاهزة",
@@ -814,6 +983,8 @@ export const translations: { en: TranslationKeys; ar: TranslationKeys } = {
     geolocationTimeout: "انتهت مهلة استجابة طلب الموقع الجغرافي. يرجى محاولة النقر لإعادة المحاولة ومزامنة إحداثياتك فورا.",
     geolocationUnsecureWarning: "تحذير: المنصة لا تعمل عبر اتصال آمن مشفر (HTTPS). قد تتعطل خدمات رصد الإحداثيات ما لم تشغل الموقع محلياً على localhost.",
     geolocationSuccess: "تمت مزامنة إحداثيات موقعك الجغرافي بنجاح! تم تحديث ترتيب وحساب مسافات المنتجات الفاصلة عنك في الوقت الحقيقي.",
+    categoryOther: "أخرى",
+    gpsAcquiringSignal: "جاري الرصد والمسح...",
     clearGpsMode: "إعادة تعيين وضع GPS لزيادة الخصوصية",
     autoDetectLocationBanner: "اعثر على الوجبات الأقرب لموقعك الفعلي 📍",
     autoDetectExplanation: "نحن نستخدم واجهة الكشف الجغرافي الذكي المدمجة بالمتصفح لحساب المسافة الدقيقة الفاصلة بينك وبين مخابز الدار البيضاء والمحمدية لضمان استلام طلبك ساخناً وقبل فوات الأوان.",
@@ -964,6 +1135,491 @@ export const translations: { en: TranslationKeys; ar: TranslationKeys } = {
     orderExpiredHint: "انتهت مهلة الاستلام. ألغِ الطلب لاسترجاع الكمية.",
     countdownExpiresIn: "ينتهي خلال",
     countdownExpired: "منتهي",
-    cancelOrderConfirmMsg: "هل أنت متأكد من إلغاء هذا الطلب؟ سيتم إرجاع الكمية إلى الشريك."
+    cancelOrderConfirmMsg: "هل أنت متأكد من إلغاء هذا الطلب؟ سيتم إرجاع الكمية إلى الشريك.",
+
+    // Navbar notifications dropdown
+    realtimeOrdersHeading: "التنبيهات المباشرة",
+    clearAllNotifBtn: "حذف الكل",
+    notificationsClearedToast: "تم مسح التنبيهات",
+
+    // AppContext toasts
+    suspendedAccountToast: "🚨 تم تعليق حسابك.",
+    farmerBlockedToast: "🚜 حسابات المزارعين تُدار في VitaChain وليس في SecondServe.",
+    loginToFavoriteToast: "الرجاء تسجيل الدخول لحفظ المفضلة",
+    loginToOrderToast: "الرجاء تسجيل الدخول لإتمام الطلب",
+    qtyNotAvailableToast: "الكمية المطلوبة غير متوفرة",
+    offerGoneToast: "هذا العرض لم يعد متوفراً.",
+    placeOrderGenericErrToast: "تعذر إتمام الطلب. الرجاء المحاولة مجدداً.",
+    cancelOrderErrToast: "تعذر إلغاء الطلب.",
+    orderCancelledToast: "تم إلغاء الطلب",
+    paymentAlreadyConfirmedToast: "تم تأكيد الدفع مسبقاً.",
+    notCodOrderToast: "هذا الطلب ليس من نوع الدفع عند الاستلام.",
+    confirmPaymentGenericErrToast: "تعذر تأكيد الدفع. الرجاء المحاولة مجدداً.",
+    cashConfirmedToast: "تم تأكيد الدفع النقدي!",
+    paymentReleasedToast: "💳 تم تحويل مبلغ {amount} درهم إلى الشريك!",
+    updateOrderErrToast: "تعذر تحديث الطلب.",
+    orderMarkedAsToast: "تم تحديث حالة الطلب إلى {status}",
+    reviewSubmitErrToast: "تعذر إرسال التقييم.",
+    reviewSubmittedToast: "تم إرسال التقييم!",
+    notificationsClearedBangToast: "تم مسح التنبيهات!",
+    banUserErrToast: "تعذر حظر المستخدم.",
+    userBannedToast: "تم حظر المستخدم.",
+    unbanUserErrToast: "تعذر إلغاء حظر المستخدم.",
+    userUnbannedToast: "تم إلغاء حظر المستخدم.",
+    deleteUserErrToast: "تعذر حذف المستخدم.",
+    userDeletedToast: "تم حذف المستخدم.",
+    approvePartnerErrToast: "تعذر قبول الشريك.",
+    partnerApprovedToast: "تم قبول الشريك.",
+    rejectPartnerErrToast: "تعذر رفض الشريك.",
+    partnerRejectedToast: "تم رفض الشريك.",
+    addTicketErrToast: "تعذر إرسال التذكرة.",
+    ticketSubmittedToast: "تم إرسال تذكرة الدعم!",
+    resolveTicketErrToast: "تعذر حل التذكرة.",
+    ticketResolvedToast: "تم حل التذكرة.",
+
+    // OfferCard checkout validation
+    errNameAndPhoneRequired: "❌ المرجو إدخال الاسم ورقم الهاتف",
+    errInvalidCardNumber: "رقم بطاقة غير صالح: يجب أن يتكون من 16 رقماً",
+    errInvalidExpiry: "تاريخ غير صالح: يجب أن يكون بصيغة شهر/سنة MM/YY",
+    errInvalidCvv: "رمز حماية غير صالح: يجب أن يتكون من 3 أو 4 أرقام",
+    paymentDeclinedToast: "❌ فشل الدفع: تم تفعيل محاكاة رفض البطاقة.",
+    paymentSuccessEscrowToast: "💳 تم الدفع بنجاح وحجز الضمان!",
+    cashOrderPlacedToast: "🎉 تم إرسال طلبك نقداً بنجاح! تم تنبيه البائع فورا.",
+    transactionDeclinedError: "🚨 تم رفض المعاملة: رصيد غير كافٍ أو بطاقة مرفوضة. (محاكاة الرفض)",
+
+    // Consumer Dashboard sidebar nav + support tab
+    navMyOrders: "طلباتي النشطة",
+    navFavorites: "المفضلة",
+    navHelpSupport: "الدعم والمساعدة",
+    navSettings: "حسابي وبياناتي",
+    fillAllFieldsToast: "الرجاء ملء جميع الحقول",
+    submitSupportRequestBtn: "إنشاء تذكرة دعم جديدة",
+    subjectLabel: "الموضوع",
+    subjectPlaceholder: "مثال: مشكلة في استلام الطلب",
+    descriptionLabel: "شرح المشكلة بالتفصيل",
+    descriptionPlaceholder: "يرجى تقديم تفاصيل واضحة لنتمكن من مساعدتك بحسم...",
+    submitTicketBtn: "إرسال التذكرة للإدارة",
+    ticketHistoryHeading: "تذاكرك الحالية",
+    noTicketsMsg: "لا توجد تذاكر دعم مسجلة لديك.",
+    ticketResolvedBadge: "محلولة",
+    ticketPendingBadge: "معالجة جارية",
+    adminSolutionLabel: "رد مسؤول النظام:",
+
+    // Restaurant Dashboard extras
+    offersNotVisibleYet: "عروضك غير مرئية للعملاء بعد",
+    pendingApprovalReason: "حسابك بانتظار موافقة المشرف.",
+    setCommerceTypeReason: "حدّد نوع النشاط التجاري في ملف العمل.",
+    openBusinessProfileBtn: "فتح ملف العمل",
+    viewFullDetailsBtn: "عرض التفاصيل الكاملة",
+    businessHelpSupportHeading: "الدعم الفني والمساعدة للشركاء",
+    subjectPlaceholderBiz: "مثال: خطأ في إحداثيات GPS المحل",
+    descriptionPlaceholderBiz: "يرجى تقديم تفاصيل واضحة لنتمكن من مساعدتك بحسم...",
+    ticketHistoryHeadingBiz: "تذاكر المتجر السابقة",
+    noTicketsMsgBiz: "لا توجد تذاكر دعم مسجلة لديك.",
+  },
+  fr: {
+    appName: "SecondServe",
+    meals: "Repas & Offres",
+    login: "Connexion",
+    signup: "Inscription",
+    myProfile: "Mon profil",
+    logout: "Déconnexion",
+    logoutConfirmTitle: "Confirmation de déconnexion",
+    logoutConfirmMsg: "Êtes-vous sûr de vouloir vous déconnecter de votre session ?",
+    confirm: "Confirmer",
+    cancel: "Annuler",
+    filterByCity: "Choisir une ville",
+    allCities: "Toutes les villes",
+    casablanca: "Casablanca",
+    mohammedia: "Mohammedia",
+    searchPlaceholder: "Recherchez des pâtisseries, repas ou produits frais en surplus...",
+    noProductsFound: "Aucun produit ne correspond à ces filtres. Essayez une autre ville ou réinitialisez la recherche.",
+    resetFilters: "Réinitialiser les filtres",
+    category: "Catégorie de repas",
+    type: "Type de commerce",
+    categoryAll: "Tout",
+    bakedGoods: "Pâtisseries & Boulangerie",
+    produce: "Produits frais",
+    preparedMeals: "Plats préparés",
+    patisserie: "Pâtisserie",
+    superette: "Supérette",
+    buffet: "Buffet à volonté",
+    supermarket: "Supermarché & Épicerie",
+    surpriseBox: "Boîtes surprises uniquement",
+    distanceKm: "km à proximité",
+    getDirections: "Voir les infos du lieu",
+    orderNow: "Commander / Réserver",
+    originalPrice: "Prix d'origine",
+    reducedPrice: "Prix réduit",
+    quantityLeft: "restants",
+    reviewsCount: "avis",
+
+    // Checkout Form
+    checkoutDetails: "Informations client",
+    fullNameLabel: "Nom complet",
+    fullNamePlaceholder: "ex. Jeanne Dupont",
+    phoneLabel: "Numéro de téléphone",
+    phonePlaceholder: "ex. 06 12 34 56 78",
+    optionalMsgLabel: "Message ou note facultative pour le partenaire",
+    optionalMsgPlaceholder: "ex. Je viendrai le récupérer vers 19h30, merci de le garder au frais.",
+    realtimeSyncNote: "Synchronisation instantanée",
+    realtimeSyncDesc: "Vos coordonnées sont transmises et votre commande alerte instantanément le tableau de bord du partenaire dès l'envoi.",
+    continueBtn: "Continuer vers le paiement",
+    checkoutStepTitle: "Détails du client",
+    checkoutStepOf: "Étape 1 sur 3",
+
+    // Settlement Choice
+    settlementMethod: "Mode de règlement",
+    selectSettlementDesc: "Choisissez comment vous souhaitez régler le montant total de",
+    payOnlineTitle: "💳 Payer en ligne en toute sécurité",
+    payOnlineDesc: "Autorisez instantanément le paiement avec une carte bancaire fictive protégée. Les fonds sont conservés en séquestre et ne sont versés au partenaire qu'après la remise de la commande !",
+    escrowBadge: "Séquestre sécurisé",
+    payDeliveryTitle: "🤝 Payer à la livraison / sur place",
+    payDeliveryDesc: "Réservez l'article instantanément sans payer en ligne. Payez en espèces ou par carte au moment du retrait chez le partenaire.",
+    backToDetails: "Retour aux détails",
+
+    // Credit Card Form
+    cardInfo: "Informations bancaires",
+    cardInfoDesc: "Saisissez des informations valides pour autoriser le montant total de",
+    cardNumberLabel: "Numéro de carte bancaire",
+    cardExpiryLabel: "Date d'expiration (MM/AA)",
+    cardCvvLabel: "Code de sécurité (CVV)",
+    bankName: "Passerelle de confiance SecondServe",
+    simulateDeclineLabel: "Simuler un refus de carte",
+    simulateDeclineDesc: "Activez pour tester la réaction du système face à un refus bancaire.",
+    declineStatus: "SIMULATION : REFUSÉ",
+    approvedStatus: "SIMULATION : APPROUVÉ",
+    authorizePaymentBtn: "Autoriser le paiement en ligne",
+    processingMsgTitle: "Sécurisation de la transaction...",
+    processingMsgDesc: "Communication avec le serveur bancaire et mise en séquestre des fonds...",
+
+    // Checkout Success
+    orderPlacedSuccess: "Commande passée avec succès !",
+    orderPlacedDesc: "Les détails de votre achat ont été transmis en toute sécurité directement à",
+    escrowHoldTitle: "Fonds conservés en séquestre (opération réussie)",
+    escrowHoldDesc: "Notre plateforme conserve votre paiement. Il sera automatiquement versé au partenaire dès qu'il confirmera la remise en boutique.",
+    deliveryPaymentTitle: "Paiement sur place enregistré",
+    deliveryPaymentDesc: "Aucun débit n'a été effectué. Prévoyez des espèces ou votre carte pour régler directement sur place.",
+    pickupLocationTitle: "Lieu de retrait",
+    openGpsDirections: "Ouvrir l'itinéraire GPS",
+    returnMarketplace: "Retour aux offres",
+
+    // Notifications
+    newOrderAlertTitle: "🚨 Nouvelle commande instantanée ! 🚨",
+    newOrderAlertDesc: "Votre commerce a reçu une commande en temps réel ! Vérifiez les informations du client, le produit demandé et le mode de paiement.",
+    bellTooltip: "Notifications non lues",
+    noNotifications: "Aucune nouvelle notification",
+    orderPlacedBy: "a reçu une commande de",
+    amountLabel: "Total :",
+    paymentLabel: "Méthode :",
+    notifMethodOnline: "Payé en ligne (séquestre)",
+    notifMethodCash: "Paiement à la livraison (espèces)",
+
+    // Consumer Dashboard
+    consumerDashboardTitle: "Tableau de bord consommateur",
+    myOrdersTab: "Mes commandes & historique",
+    myFavoritesTab: "Mes favoris",
+    profileSettingsTab: "Profil & localisation",
+    noOrdersYet: "Aucune commande passée pour l'instant. Découvrez des produits frais auprès de vendeurs locaux !",
+    orderStatusActive: "En attente de retrait",
+    orderStatusCompleted: "Terminée",
+    orderStatusCancelled: "Annulée",
+    cancelOrderBtn: "Annuler la commande",
+    rateAndReviewTitle: "Notez et commentez votre boîte surprise",
+    reviewCommentPlaceholder: "Votre avis sur la fraîcheur, le goût et la quantité de cette boîte...",
+    submitReviewBtn: "Envoyer l'avis",
+    orderDateLabel: "Passée le",
+
+    // Partner Dashboard
+    partnerDashboardTitle: "Espace du restaurateur & partenaire",
+    myProductsTab: "Mes surplus",
+    manageProductsHeader: "Gérer les offres de surplus actives",
+    customerOrdersTab: "Commandes clients (temps réel)",
+    partnerProfileTab: "Profil géographique de l'établissement",
+    partnerReviewsTab: "Avis clients",
+    addProductBtn: "Ajouter une offre de surplus",
+    editProductBtn: "Modifier",
+    deleteProductBtn: "Supprimer",
+    confirmDeliveryBtn: "Confirmer la remise & débloquer les fonds",
+    cashPaymentNotice: "🤝 Paiement sur place choisi. Encaissez le montant intégral au moment du retrait.",
+    escrowNoticeReleased: "🟢 Les fonds ont été versés en toute sécurité sur le solde de votre établissement.",
+    escrowNoticeHeld: "⏳ Fonds conservés en séquestre. Ils seront automatiquement versés dès que vous cliquerez sur « Confirmer la remise ».",
+    customerMessageTitle: "Note facultative du client :",
+    noReviewsYet: "Aucune note ou avis reçu pour l'instant. Publiez des offres pour recueillir des retours !",
+
+    // Product Add/Edit Dialog
+    productFormTitleAdd: "Publier une nouvelle offre de surplus",
+    productFormTitleEdit: "Modifier l'offre surprise active",
+    inputTitle: "Nom de l'offre / titre de la boîte surprise",
+    inputDescription: "Description du contenu",
+    inputImageUrl: "URL de l'image du produit",
+    timeLimitLabel: "Heure limite de retrait",
+    preciseCoordinatesLabel: "Coordonnées GPS de l'établissement (requises pour l'affichage sur la carte)",
+    autoDetectBtn: "Détecter automatiquement la position GPS",
+    detectingBtn: "Recherche GPS en cours...",
+    saveChangesBtn: "Enregistrer l'offre",
+
+    // Partner Profile Settings
+    businessSettingsTitle: "Profil géographique du partenaire",
+    businessNameLabel: "Nom du commerce / de l'établissement",
+    businessAddressLabel: "Adresse physique de l'établissement",
+    contactMailLabel: "Adresse e-mail de contact",
+    contactPhoneLabel: "Numéro de téléphone professionnel",
+    coordinatesLabel: "Coordonnées GPS de l'établissement",
+    saveProfileBtn: "Mettre à jour le profil et enregistrer les coordonnées",
+    howWeUseLocation: "Pourquoi SecondServe demande l'accès à votre position :",
+    gpsSafetySystem: "Système de sécurité GPS",
+    enablePreciseLocation: "Activer la localisation précise",
+    noThanksManual: "Non merci, je saisis manuellement",
+    grantAutoDetect: "Autoriser & détecter automatiquement",
+
+    // Home Page Additional
+    homeHeroSub: "Sauvez de délicieuses pâtisseries, plats préparés ou surplus d'épicerie avant la fin de la journée. Savoureux, écoresponsable, et jusqu'à 70% moins cher au Maroc.",
+    homeHeroCTA: "Découvrir les surplus près de chez vous",
+    statsRescued: "14 250+",
+    statsCo2: "35 620 kg",
+    statsActivePartners: "240+",
+    statsRescuedLabel: "Repas sauvés",
+    statsCo2Label: "Émissions de CO2 évitées",
+    statsPartnersLabel: "Partenaires actifs",
+    geolocationPermissionRequired: "L'autorisation de localisation du navigateur est requise. Elle est nécessaire pour calculer la distance réelle (en km) jusqu'aux commerces de Casablanca.",
+    geolocationPermissionDeclined: "Merci d'autoriser l'accès à la localisation dans les réglages de votre navigateur ou appareil pour calculer la distance exacte. 📍",
+    geolocationPositionUnavailable: "Position indisponible. Le GPS ou le réseau local n'a pas pu déterminer votre position. Le centre de Casablanca (33.5731, -7.5898) est utilisé par défaut.",
+    geolocationTimeout: "La demande d'autorisation a expiré. Cliquez pour réessayer la synchronisation.",
+    geolocationUnsecureWarning: "Attention : la plateforme ne fonctionne pas sur une connexion HTTPS sécurisée. Les API de géolocalisation peuvent échouer hors de localhost.",
+    geolocationSuccess: "Coordonnées GPS synchronisées avec succès ! Les distances et le tri des produits ont été mis à jour instantanément.",
+    categoryOther: "Autre",
+    gpsAcquiringSignal: "Acquisition du signal GPS...",
+    clearGpsMode: "Réinitialiser le mode GPS",
+    autoDetectLocationBanner: "Trouvez des repas tout près de vous 📍",
+    autoDetectExplanation: "Nous utilisons l'API de géolocalisation native de votre navigateur pour calculer instantanément les distances exactes jusqu'aux commerces de Casablanca et Mohammedia, afin que vous récupériez vos surplus avant qu'ils n'expirent.",
+
+    // Auth page
+    authWelcomeBack: "Content de vous revoir !",
+    authJoinUs: "Rejoignez-nous",
+    authLoginSub: "Connectez-vous pour sauver des repas.",
+    authSignupSub: "Créez un compte pour lutter contre le gaspillage alimentaire.",
+    authTabLogin: "Connexion",
+    authTabSignup: "Inscription",
+    authRoleConsumer: "Particulier",
+    authRoleBusiness: "Professionnel",
+    authFullName: "Nom complet",
+    authBusinessName: "Nom de l'établissement",
+    authFullNamePh: "Jean Dupont",
+    authBusinessNamePh: "Mon restaurant",
+    authBusinessType: "Type de commerce",
+    authEmailLabel: "E-mail",
+    authEmailPh: "vous@exemple.com",
+    authPhoneLabel: "Numéro de téléphone",
+    authPhonePh: "06 00 00 00 00",
+    authCityLabel: "Ville",
+    authSecretCode: "Code secret",
+    authSecretCodePh: "Saisissez le code secret professionnel",
+    authFullAddress: "Adresse complète",
+    authFullAddressPh: "123 nom de la rue...",
+    authPasswordLabel: "Mot de passe",
+    authRememberMe: "Se souvenir de moi",
+    authLoginBtn: "Connexion",
+    authSignupBtn: "Créer un compte",
+    authSigningIn: "Connexion en cours...",
+    authRegistering: "Inscription en cours...",
+    authToastWelcomeBack: "Content de vous revoir",
+    authToastConsumerCreated: "✅ Compte créé avec succès !",
+    authToastPartnerPending: "⏳ Compte créé ! En attente de validation par un administrateur avant la publication de vos offres.",
+    authToastSuspended: "🚨 Votre compte a été suspendu.",
+    authErrEmailInvalid: "Merci de saisir une adresse e-mail valide.",
+    authErrPasswordWeak: "Le mot de passe doit contenir au moins 8 caractères, une majuscule, une minuscule et un chiffre.",
+    authErrSecretInvalid: "Code secret invalide pour une inscription professionnelle.",
+    authErrBusinessTypeInvalid: "Type de commerce sélectionné invalide.",
+    authErrInvalidCreds: "E-mail ou mot de passe incorrect. Veuillez réessayer.",
+    authErrTooManyAttempts: "Trop de tentatives. Merci de patienter un instant avant de réessayer.",
+    authErrEmailInUse: "Cet e-mail est déjà utilisé. Connectez-vous plutôt.",
+    authErrWeakPassword: "Mot de passe trop faible. Choisissez un mot de passe plus robuste.",
+    authErrLoginGeneric: "Échec de la connexion",
+    authErrSignupGeneric: "Échec de l'inscription",
+    authErrFarmerBlocked: "Les comptes agriculteurs sont gérés dans VitaChain et ne peuvent pas se connecter à SecondServe.",
+
+    // Footer
+    footerTagline: "Ensemble, luttons contre le gaspillage alimentaire. Sauvez de délicieux repas à prix réduit à Casablanca et Mohammedia.",
+    footerQuickLinks: "Liens rapides",
+    footerTodaysOffers: "Offres du jour",
+    footerHowItWorks: "Comment ça marche",
+    footerBecomePartner: "Devenir partenaire",
+    footerExplorePartners: "Découvrir les partenaires",
+    footerContact: "Contact",
+    footerLocationMorocco: "Casablanca, Maroc",
+    footerPrivacyPolicy: "Politique de confidentialité",
+    footerTerms: "Conditions d'utilisation",
+    footerPrivacyToast: "La politique de confidentialité est gérée conformément aux normes marocaines de protection des données.",
+    footerTermsToast: "Les conditions d'utilisation sont régies par les accords standard de la marketplace SecondServe.",
+    footerEmailCopiedToast: "✉️ E-mail copié dans le presse-papiers ! Ouverture du client de messagerie...",
+    footerCopyright: "Tous droits réservés.",
+
+    // City selector modal
+    citySelectorTitle: "Où êtes-vous ?",
+    citySelectorDesc: "Choisissez votre ville pour découvrir les offres anti-gaspillage autour de vous.",
+    citySelectorComingSoon: "D'autres villes arrivent bientôt !",
+
+    // Location permission modal extras
+    locModalConsumerB1Title: "Filtrez les douceurs fraîches près de vous :",
+    locModalConsumerB1Desc: "Détecte et met en avant automatiquement les boulangeries et supermarchés de votre quartier à Casablanca ou Mohammedia.",
+    locModalConsumerB2Title: "Affichage des distances et itinéraires :",
+    locModalConsumerB2Desc: "Affiche les distances exactes et les itinéraires directs vers le point de retrait.",
+    locModalConsumerB3Title: "Autocomplétion instantanée de l'adresse :",
+    locModalConsumerB3Desc: "Utilise une recherche inversée sécurisée pour remplir automatiquement votre adresse.",
+    locModalPartnerB1Title: "Attirez des clients locaux :",
+    locModalPartnerB1Desc: "Place une épingle précise de votre commerce sur la grille de recherche du quartier.",
+    locModalPartnerB2Title: "Retraits sans friction :",
+    locModalPartnerB2Desc: "Les clients voient des coordonnées exactes et vérifiées sur Google Maps pour vous trouver facilement.",
+    locModalPartnerB3Title: "Synchronisation du profil de l'établissement :",
+    locModalPartnerB3Desc: "Génère et met à jour automatiquement votre carte intégrée sans erreur.",
+    locModalInsecureTitle: "Avertissement de connexion non sécurisée (HTTP)",
+    locModalInsecureDesc: "Les navigateurs n'autorisent la géolocalisation précise que sur des contextes sécurisés (HTTPS ou localhost). En cas d'échec, saisissez manuellement votre latitude et longitude.",
+    locModalSecureNote: "🔒 Contexte sécurisé certifié : votre position est traitée uniquement dans votre navigateur et n'est jamais partagée sans votre confirmation.",
+    locModalCloseAria: "Fermer la fenêtre",
+
+    // Dashboard labels
+    labelFullName: "Nom complet",
+    labelEmail: "E-mail",
+    labelCity: "Ville",
+    labelPhoneNumber: "Numéro de téléphone",
+    labelStreetAddress: "Adresse",
+    labelLatitude: "Latitude",
+    labelLongitude: "Longitude",
+    labelBusinessName: "Nom de l'établissement",
+    labelBusinessTypeStrict: "Type de commerce (catégories strictes)",
+    labelPhone: "Téléphone",
+    labelMealName: "Nom du repas / sac",
+    labelMealCategory: "Catégorie de repas",
+    labelDescription: "Description",
+    labelOriginalPriceMAD: "Prix d'origine (MAD)",
+    labelDiscountedPriceMAD: "Prix réduit (MAD)",
+    labelAvailableQuantity: "Quantité disponible",
+    labelCollectionDeadline: "Date limite de retrait",
+    labelImageUpload: "Téléverser une image",
+    labelPartnerLocationStrict: "Localisation du partenaire (modifiable)",
+    labelInteractiveLocation: "Localisation interactive et ajustement du repère",
+
+    // Confirm modals
+    confirmYes: "Oui",
+    confirmSaveChangesTitle: "Enregistrer les modifications",
+    confirmSaveProfileMsg: "Voulez-vous vraiment enregistrer les modifications de votre profil ?",
+    confirmUpdateProductTitle: "Mettre à jour le produit",
+    confirmPublishProductTitle: "Publier le produit",
+    confirmUpdateProductMsg: "Voulez-vous vraiment mettre à jour ce produit ?",
+    confirmPublishProductMsg: "Voulez-vous vraiment publier ce produit ?",
+
+    // Pickup receipt + flow
+    receiptPageTitle: "Reçu de retrait",
+    receiptPickupCodeLabel: "Votre code de retrait",
+    receiptShowCodeNote: "Montrez ce code au partenaire lors du retrait de votre commande.",
+    receiptOrderRef: "Référence de commande",
+    receiptPlacedAt: "Passée le",
+    receiptPickupBy: "À retirer avant",
+    receiptExpired: "Ce créneau de retrait a expiré.",
+    receiptStatusBadgeActive: "En attente de retrait",
+    receiptStatusBadgeCompleted: "Retirée",
+    receiptStatusBadgeCancelled: "Annulée",
+    receiptItemsSection: "Articles",
+    receiptPartnerSection: "Lieu de retrait",
+    receiptTotalLabel: "Total à payer en espèces",
+    receiptCallPartner: "Appeler le partenaire",
+    receiptViewMap: "Voir l'itinéraire",
+    receiptCancelBtn: "Annuler la commande",
+    receiptBackToDashboard: "Retour à mes commandes",
+    receiptNotFound: "Commande introuvable.",
+    receiptNotAuthorized: "Vous n'avez pas accès à cette commande.",
+    viewReceiptBtn: "Voir le reçu de retrait",
+    pickupCodeTitle: "Confirmer le retrait",
+    pickupCodeEnterPrompt: "Demandez au client son code de retrait à 4 chiffres et saisissez-le ci-dessous.",
+    pickupCodePlaceholder: "1234",
+    pickupCodeConfirmBtn: "Confirmer le retrait et encaisser",
+    pickupCodeInvalid: "Code incorrect. Merci de vérifier avec le client.",
+    pickupCodeCancelBtn: "Annuler",
+    orderExpiredBadge: "Expirée",
+    orderExpiredHint: "Le créneau de retrait est passé. Annulez pour restituer le stock.",
+    countdownExpiresIn: "Expire dans",
+    countdownExpired: "Expiré",
+    cancelOrderConfirmMsg: "Voulez-vous vraiment annuler cette commande ? Le stock sera restitué au partenaire.",
+
+    // Navbar notifications dropdown
+    realtimeOrdersHeading: "Commandes en temps réel",
+    clearAllNotifBtn: "Tout effacer",
+    notificationsClearedToast: "Notifications effacées",
+
+    // AppContext toasts
+    suspendedAccountToast: "🚨 Votre compte a été suspendu.",
+    farmerBlockedToast: "🚜 Les comptes agriculteurs sont gérés dans VitaChain, pas dans SecondServe.",
+    loginToFavoriteToast: "Connectez-vous pour enregistrer des favoris",
+    loginToOrderToast: "Connectez-vous pour passer une commande",
+    qtyNotAvailableToast: "Quantité demandée non disponible",
+    offerGoneToast: "Cette offre n'existe plus.",
+    placeOrderGenericErrToast: "Impossible de passer la commande. Veuillez réessayer.",
+    cancelOrderErrToast: "Impossible d'annuler la commande.",
+    orderCancelledToast: "Commande annulée",
+    paymentAlreadyConfirmedToast: "Paiement déjà confirmé.",
+    notCodOrderToast: "Cette commande n'est pas un paiement à la livraison.",
+    confirmPaymentGenericErrToast: "Impossible de confirmer le paiement. Veuillez réessayer.",
+    cashConfirmedToast: "Paiement en espèces confirmé !",
+    paymentReleasedToast: "💳 Paiement de {amount} MAD versé au partenaire !",
+    updateOrderErrToast: "Impossible de mettre à jour la commande.",
+    orderMarkedAsToast: "Commande marquée comme {status}",
+    reviewSubmitErrToast: "Impossible d'envoyer l'avis.",
+    reviewSubmittedToast: "Avis envoyé !",
+    notificationsClearedBangToast: "Notifications effacées !",
+    banUserErrToast: "Impossible de bannir l'utilisateur.",
+    userBannedToast: "Utilisateur banni.",
+    unbanUserErrToast: "Impossible de débannir l'utilisateur.",
+    userUnbannedToast: "Utilisateur débanni.",
+    deleteUserErrToast: "Impossible de supprimer l'utilisateur.",
+    userDeletedToast: "Utilisateur supprimé.",
+    approvePartnerErrToast: "Impossible d'approuver le partenaire.",
+    partnerApprovedToast: "Partenaire approuvé.",
+    rejectPartnerErrToast: "Impossible de rejeter le partenaire.",
+    partnerRejectedToast: "Partenaire rejeté.",
+    addTicketErrToast: "Impossible d'envoyer le ticket.",
+    ticketSubmittedToast: "Ticket de support envoyé !",
+    resolveTicketErrToast: "Impossible de résoudre le ticket.",
+    ticketResolvedToast: "Ticket résolu.",
+
+    // OfferCard checkout validation
+    errNameAndPhoneRequired: "❌ Merci de saisir votre nom et votre numéro de téléphone",
+    errInvalidCardNumber: "Numéro de carte invalide : doit contenir 16 chiffres",
+    errInvalidExpiry: "Format de date invalide : doit être MM/AA",
+    errInvalidCvv: "Code de sécurité invalide : doit contenir 3 ou 4 chiffres",
+    paymentDeclinedToast: "❌ Échec du paiement : refus de carte simulé confirmé.",
+    paymentSuccessEscrowToast: "💳 Paiement réussi ! Séquestre activé.",
+    cashOrderPlacedToast: "🎉 Commande en espèces envoyée avec succès ! Le vendeur a été notifié immédiatement.",
+    transactionDeclinedError: "🚨 Transaction refusée : fonds insuffisants ou signature de carte invalide. (Refus simulé)",
+
+    // Consumer Dashboard sidebar nav + support tab
+    navMyOrders: "Mes commandes",
+    navFavorites: "Favoris",
+    navHelpSupport: "Aide & Support",
+    navSettings: "Paramètres",
+    fillAllFieldsToast: "Merci de remplir tous les champs",
+    submitSupportRequestBtn: "Envoyer une demande de support",
+    subjectLabel: "Sujet",
+    subjectPlaceholder: "ex. Coordonnées de commande incorrectes",
+    descriptionLabel: "Description",
+    descriptionPlaceholder: "Fournissez des détails clairs pour faciliter la résolution...",
+    submitTicketBtn: "Envoyer le ticket",
+    ticketHistoryHeading: "Historique de vos tickets",
+    noTicketsMsg: "Aucun ticket de support actif ou passé.",
+    ticketResolvedBadge: "Résolu",
+    ticketPendingBadge: "En cours",
+    adminSolutionLabel: "Réponse de l'administrateur :",
+
+    // Restaurant Dashboard extras
+    offersNotVisibleYet: "Vos offres ne sont pas encore visibles pour les clients",
+    pendingApprovalReason: "Votre compte est en attente de validation par un administrateur.",
+    setCommerceTypeReason: "Renseignez votre type de commerce dans l'onglet Profil de l'établissement.",
+    openBusinessProfileBtn: "Ouvrir le profil de l'établissement",
+    viewFullDetailsBtn: "Voir tous les détails",
+    businessHelpSupportHeading: "Aide & Support professionnel",
+    subjectPlaceholderBiz: "ex. Décalage de calibration des coordonnées GPS",
+    descriptionPlaceholderBiz: "Fournissez des informations claires pour accélérer la validation...",
+    ticketHistoryHeadingBiz: "Historique des tickets",
+    noTicketsMsgBiz: "Aucune demande de support enregistrée pour l'instant.",
   }
 };

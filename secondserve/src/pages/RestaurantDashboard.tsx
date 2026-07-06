@@ -387,7 +387,7 @@ export function RestaurantDashboard() {
                 activeTab === 'support' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-300 hover:text-white'
               }`}
             >
-              {language === 'ar' ? 'الدعم والمساعدة' : 'Help & Support'}
+              {t('navHelpSupport')}
             </button>
           </div>
         </div>
@@ -401,14 +401,14 @@ export function RestaurantDashboard() {
             <AlertTriangle className="h-6 w-6 text-amber-600 flex-shrink-0 mt-0.5" />
             <div className="flex-grow">
               <p className="font-bold text-amber-900 text-sm">
-                {language === 'ar' ? 'عروضك غير مرئية للعملاء بعد' : 'Your offers are not visible to customers yet'}
+                {t('offersNotVisibleYet')}
               </p>
               <ul className="text-xs text-amber-800 mt-1.5 space-y-1 font-semibold list-disc list-inside">
                 {user.approved === false && (
-                  <li>{language === 'ar' ? 'حسابك بانتظار موافقة المشرف.' : 'Your account is pending admin approval.'}</li>
+                  <li>{t('pendingApprovalReason')}</li>
                 )}
                 {!user.commerceType && (
-                  <li>{language === 'ar' ? 'حدّد نوع النشاط التجاري في ملف العمل.' : 'Set your commerce type in the Business Profile tab.'}</li>
+                  <li>{t('setCommerceTypeReason')}</li>
                 )}
               </ul>
               {!user.commerceType && (
@@ -417,7 +417,7 @@ export function RestaurantDashboard() {
                   className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-xl font-bold transition-all text-xs"
                 >
                   <Settings className="h-3.5 w-3.5" />
-                  {language === 'ar' ? 'فتح ملف العمل' : 'Open Business Profile'}
+                  {t('openBusinessProfileBtn')}
                 </button>
               )}
             </div>
@@ -713,7 +713,7 @@ export function RestaurantDashboard() {
                         to={`/restaurant/orders/${order.id}`}
                         className="block w-full text-center px-3 py-2 rounded-xl text-[11px] font-bold bg-gray-50 hover:bg-gray-100 text-gray-700 uppercase tracking-wider transition-colors"
                       >
-                        {language === 'ar' ? 'عرض التفاصيل الكاملة' : 'View full details'}
+                        {t('viewFullDetailsBtn')}
                       </Link>
                     </div>
 
@@ -982,7 +982,7 @@ export function RestaurantDashboard() {
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 text-right" dir={language === 'ar' ? 'rtl' : 'ltr'}>
             <div className="mb-8 text-right">
               <h2 className="text-2xl font-display font-black text-gray-900">
-                {language === 'ar' ? 'الدعم الفني والمساعدة للشركاء' : 'Business Help & Support'}
+                {t('businessHelpSupportHeading')}
               </h2>
               <p className="text-xs font-semibold text-gray-500 mt-1 leading-relaxed">
                 {language === 'ar' 
@@ -996,7 +996,7 @@ export function RestaurantDashboard() {
               <form onSubmit={(e) => {
                 e.preventDefault();
                 if (!ticketSubject.trim() || !ticketMessage.trim()) {
-                  toast.error(language === 'ar' ? 'الرجاء ملء جميع الحقول' : 'Please fill all fields');
+                  toast.error(t('fillAllFieldsToast'));
                   return;
                 }
                 addSupportTicket(ticketSubject, ticketMessage);
@@ -1004,33 +1004,33 @@ export function RestaurantDashboard() {
                 setTicketMessage('');
               }} className="space-y-4 bg-gray-50 p-6 rounded-2xl border border-gray-100">
                 <h3 className="font-extrabold text-sm text-gray-900 uppercase tracking-wide">
-                  {language === 'ar' ? 'إنشاء تذكرة دعم جديدة' : 'Submit Support Request'}
+                  {t('submitSupportRequestBtn')}
                 </h3>
                 
                 <div>
                   <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5 text-right">
-                    {language === 'ar' ? 'الموضوع' : 'Subject'}
+                    {t('subjectLabel')}
                   </label>
                   <input
                     type="text"
                     required
                     value={ticketSubject}
                     onChange={(e) => setTicketSubject(e.target.value)}
-                    placeholder={language === 'ar' ? 'مثال: خطأ في إحداثيات GPS المحل' : 'e.g., GPS coordinates calibration offset'}
+                    placeholder={t('subjectPlaceholderBiz')}
                     className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none bg-white text-sm font-semibold text-right"
                   />
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5 text-right">
-                    {language === 'ar' ? 'شرح مشكلة المتجر بالتفصيل' : 'Description'}
+                    {t('descriptionLabel')}
                   </label>
                   <textarea
                     required
                     rows={4}
                     value={ticketMessage}
                     onChange={(e) => setTicketMessage(e.target.value)}
-                    placeholder={language === 'ar' ? 'يرجى تقديم تفاصيل واضحة لنتمكن من مساعدتك بحسم...' : 'Provide clear info to expedite validation...'}
+                    placeholder={t('descriptionPlaceholderBiz')}
                     className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none bg-white text-sm font-medium resize-none text-right"
                   />
                 </div>
@@ -1039,19 +1039,19 @@ export function RestaurantDashboard() {
                   type="submit"
                   className="w-full bg-gray-950 hover:bg-primary text-white py-3 rounded-xl font-bold transition-all text-xs cursor-pointer shadow-sm uppercase tracking-wide"
                 >
-                  {language === 'ar' ? 'إرسال التذكرة للإدارة' : 'Submit Ticket'}
+                  {t('submitTicketBtn')}
                 </button>
               </form>
 
               {/* Existing Tickets list */}
               <div className="space-y-4">
                 <h3 className="font-extrabold text-xs text-gray-400 uppercase tracking-widest block text-right">
-                  {language === 'ar' ? 'تذاكر المتجر السابقة' : 'Ticket History'}
+                  {t('ticketHistoryHeadingBiz')}
                 </h3>
 
                 {supportTickets.filter(t => t.userId === user.id).length === 0 ? (
                   <div className="border border-dashed border-gray-200 rounded-2xl p-6 text-center text-xs font-bold text-gray-400">
-                    {language === 'ar' ? 'لا توجد تذاكر دعم مسجلة لديك.' : 'No support requests registered yet.'}
+                    {t('noTicketsMsgBiz')}
                   </div>
                 ) : (
                   supportTickets.filter(t => t.userId === user.id).map(ticket => (
@@ -1063,7 +1063,7 @@ export function RestaurantDashboard() {
                             ? 'bg-emerald-50 text-emerald-800' 
                             : 'bg-rose-50 text-rose-800'
                         }`}>
-                          {ticket.status === 'resolved' ? (language === 'ar' ? 'محلولة' : 'Resolved') : (language === 'ar' ? 'معالجة جارية' : 'Pending')}
+                          {ticket.status === 'resolved' ? t('ticketResolvedBadge') : t('ticketPendingBadge')}
                         </span>
                       </div>
                       
@@ -1073,7 +1073,7 @@ export function RestaurantDashboard() {
 
                       {ticket.status === 'resolved' && (
                         <div className="bg-emerald-50/50 p-3 rounded-lg border border-emerald-100 text-emerald-950 text-right mt-2 text-xs">
-                          <p className="font-black mb-1">🛡️ {language === 'ar' ? 'رد مسؤول النظام:' : 'Admin Solution:'}</p>
+                          <p className="font-black mb-1">🛡️ {t('adminSolutionLabel')}</p>
                           <p className="font-semibold text-emerald-800 leading-relaxed font-sans">{ticket.response}</p>
                         </div>
                       )}

@@ -58,7 +58,7 @@ async def get_farmer_overview(
             "device_active_count, device_offline_count, "
             "device_pending_count, device_unlinked_count, "
             "last_reading_at, last_soil_moisture, "
-            "has_open_threshold_breach"
+            "has_open_threshold_breach, open_alert_count"
         )
         # Defense-in-depth: explicit filter alongside the RLS on the view
         # (migration 0030 adds security_invoker=true; this catches any
@@ -87,6 +87,7 @@ async def get_farmer_overview(
         parcels_with_open_breach=sum(
             1 for p in parcels if p.has_open_threshold_breach
         ),
+        open_alert_count=sum(p.open_alert_count for p in parcels),
     )
 
     response.headers["Cache-Control"] = _CACHE_CONTROL

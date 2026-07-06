@@ -1,0 +1,101 @@
+@startuml UC_Katara_Diagnostic_IA
+!theme plain
+skinparam actorStyle awesome
+skinparam usecase {
+  BackgroundColor #F3E5F5
+  BorderColor #6A1B9A
+  FontSize 13
+}
+skinparam actor {
+  BackgroundColor #E1BEE7
+  BorderColor #6A1B9A
+}
+skinparam rectangle {
+  BackgroundColor #FCF8FF
+  BorderColor #6A1B9A
+}
+skinparam note {
+  BackgroundColor #FFFDE7
+  BorderColor #F9A825
+}
+
+title Diagramme de Cas d'Utilisation — Diagnostic IA (Module Katara)
+
+actor "Agriculteur\n(Vérifié)" as Farmer
+actor "Agriculteur\n(Non vérifié)" as UnverifiedFarmer
+actor "Worker\nIA (Gemini)" as AIWorker <<system>>
+actor "Administrateur" as Admin
+
+rectangle "Module Katara — Diagnostic IA" {
+
+  ' Côté utilisateur
+  usecase "Demander un\ndiagnostic IA" as UC_REQUEST
+  usecase "Consulter le résultat\ndu diagnostic" as UC_VIEW
+  usecase "Consulter le statut\ndu diagnostic" as UC_STATUS
+
+  ' Côté worker
+  usecase "Agréger les données\nde télémétrie" as UC_AGG_TEL
+  usecase "Récupérer la météo\net le NDVI" as UC_AGG_EXT
+  usecase "Appeler l'API Gemini\n(LLM)" as UC_CALL_AI
+  usecase "Enregistrer le résultat\n(COMPLETED / FAILED)" as UC_SAVE_RESULT
+
+  ' Règles métier / contraintes
+  usecase "Vérifier : pas de\ndiagnostic en cours" as UC_CHECK_INFLIGHT <<include>>
+  usecase "Vérifier : quota\n(max 3 / 24h)" as UC_CHECK_QUOTA <<include>>
+  usecase "Vérification du\nstatut agriculteur" as UC_FARMER_AUTH <<include>>
+
+  note right of UC_REQUEST
+    Pré-conditions :
+    - Statut : VERIFIED
+    - Pas de PENDING / PROCESSING
+    - Moins de 3 diagnostics / 24h
+    Retourne 409 si doublon
+    Retourne 429 si quota dépassé
+  end note
+
+  note right of UC_CALL_AI
+    Cycle de vie du diagnostic :
+    PENDING → PROCESSING
+           → COMPLETED
+           → FAILED
+    Polling toutes 5 secondes
+    côté frontend
+  end note
+
+  note bottom of UC_AGG_EXT
+    Sources externes agrégées :
+    - OpenWeatherMap (météo)
+    - Sentinel-2 (NDVI)
+    - Télémétrie sol (7 derniers jours)
+  end note
+}
+
+' Agriculteur vérifié
+Farmer --> UC_REQUEST
+Farmer --> UC_VIEW
+Farmer --> UC_STATUS
+
+' Agriculteur non vérifié
+UnverifiedFarmer --> UC_VIEW
+UnverifiedFarmer --> UC_STATUS
+
+' Admin
+Admin --> UC_VIEW
+Admin --> UC_STATUS
+
+' Worker IA
+AIWorker --> UC_AGG_TEL
+AIWorker --> UC_AGG_EXT
+AIWorker --> UC_CALL_AI
+AIWorker --> UC_SAVE_RESULT
+
+' Inclusions et dépendances
+UC_REQUEST    ..> UC_FARMER_AUTH    : <<include>>
+UC_REQUEST    ..> UC_CHECK_INFLIGHT : <<include>>
+UC_REQUEST    ..> UC_CHECK_QUOTA    : <<include>>
+
+UC_AGG_TEL   ..> UC_CALL_AI        : <<include>>
+UC_AGG_EXT   ..> UC_CALL_AI        : <<include>>
+UC_CALL_AI   ..> UC_SAVE_RESULT    : <<include>>
+
+@enduml

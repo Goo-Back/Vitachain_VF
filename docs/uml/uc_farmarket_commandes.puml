@@ -1,0 +1,138 @@
+@startuml UC_FarMarket_Gestion_Commandes
+!theme plain
+skinparam actorStyle awesome
+skinparam usecase {
+  BackgroundColor #FFF3E0
+  BorderColor #E65100
+  FontSize 13
+}
+skinparam actor {
+  BackgroundColor #FFE0B2
+  BorderColor #E65100
+}
+skinparam rectangle {
+  BackgroundColor #FFF8F1
+  BorderColor #E65100
+}
+skinparam note {
+  BackgroundColor #FFFDE7
+  BorderColor #F9A825
+}
+
+title Diagramme de Cas d'Utilisation — Gestion des Commandes (Module FarMarket)
+
+actor "Restaurant\n(Acheteur)" as Restaurant
+actor "Agriculteur\n(Vérifié)" as Farmer
+actor "Administrateur" as Admin
+actor "Worker\nNotification" as Worker <<system>>
+
+rectangle "Module FarMarket — Gestion des Commandes" {
+
+  ' --- Restaurant
+  usecase "Passer une commande" as UC_PLACE
+  usecase "Consulter ses commandes" as UC_LIST_MINE
+  usecase "Consulter le détail\nd'une commande" as UC_DETAIL
+  usecase "Annuler une commande" as UC_CANCEL
+  usecase "Confirmer le paiement COD" as UC_PAY_COD
+
+  ' --- Agriculteur
+  usecase "Consulter les articles\nentrantes (anonymisés)" as UC_INCOMING
+  usecase "Accepter un article" as UC_ACCEPT
+  usecase "Rejeter un article" as UC_REJECT
+  usecase "Marquer article\nPICKED_UP" as UC_PICKUP
+  usecase "Marquer article\nIN_TRANSIT" as UC_TRANSIT
+  usecase "Marquer article\nDELIVERED" as UC_DELIVER
+
+  ' --- Admin
+  usecase "Lister toutes les commandes" as UC_ADMIN_LIST
+  usecase "Forcer le statut\nd'une commande" as UC_ADMIN_STATUS
+  usecase "Forcer le statut\nde paiement" as UC_ADMIN_PAY
+  usecase "Consulter la piste\nd'audit paiement" as UC_AUDIT
+  usecase "Consulter les KPI\n(tableau de bord)" as UC_KPI
+
+  ' --- Worker
+  usecase "Notifier l'agriculteur\n(email Brevo)" as UC_NOTIFY
+
+  ' --- Inclusions / Extensions
+  usecase "Snapshot prix\n& calcul frais logistique" as UC_SNAPSHOT <<include>>
+  usecase "Réservation stock\n(décrément quantité_kg)" as UC_STOCK_RESERVE <<include>>
+  usecase "Libération stock\n(idempotente)" as UC_STOCK_RELEASE <<include>>
+  usecase "Dérivation statut\nen-tête commande" as UC_DERIVE_STATUS <<include>>
+  usecase "Anonymisation\n(resto_handle SHA-256)" as UC_ANON <<include>>
+
+  note right of UC_PLACE
+    1-20 articles, ad_ids distincts
+    Méthodes : COD | PSP_TRANSFER
+    Frais logistique :
+    max(50 MAD, 5% sous-total)
+    Statut initial : PENDING
+  end note
+
+  note right of UC_CANCEL
+    Annulation possible
+    uniquement si PENDING.
+    Libère tout le stock réservé.
+  end note
+
+  note right of UC_INCOMING
+    Anonymisation BR-F5 :
+    - Pas d'identité acheteur
+    - Seulement region_livraison
+    - resto_handle = SHA-256
+  end note
+
+  note bottom of UC_ADMIN_STATUS
+    Transitions admin autorisées :
+    PENDING→ACCEPTED/CANCELLED
+    DELIVERED→RETURNED
+  end note
+}
+
+' Relations Restaurant
+Restaurant --> UC_PLACE
+Restaurant --> UC_LIST_MINE
+Restaurant --> UC_DETAIL
+Restaurant --> UC_CANCEL
+Restaurant --> UC_PAY_COD
+
+' Relations Agriculteur
+Farmer --> UC_INCOMING
+Farmer --> UC_ACCEPT
+Farmer --> UC_REJECT
+Farmer --> UC_PICKUP
+Farmer --> UC_TRANSIT
+Farmer --> UC_DELIVER
+
+' Relations Admin
+Admin --> UC_ADMIN_LIST
+Admin --> UC_ADMIN_STATUS
+Admin --> UC_ADMIN_PAY
+Admin --> UC_AUDIT
+Admin --> UC_KPI
+Admin --> UC_DETAIL
+
+' Relations Worker
+Worker --> UC_NOTIFY
+
+' Inclusions — Passer commande
+UC_PLACE   ..> UC_SNAPSHOT      : <<include>>
+UC_PLACE   ..> UC_STOCK_RESERVE : <<include>>
+
+' Inclusions — Annulation & rejet
+UC_CANCEL  ..> UC_STOCK_RELEASE : <<include>>
+UC_REJECT  ..> UC_STOCK_RELEASE : <<include>>
+
+' Inclusions — Changement statut article
+UC_ACCEPT  ..> UC_DERIVE_STATUS : <<include>>
+UC_REJECT  ..> UC_DERIVE_STATUS : <<include>>
+UC_PICKUP  ..> UC_DERIVE_STATUS : <<include>>
+UC_TRANSIT ..> UC_DERIVE_STATUS : <<include>>
+UC_DELIVER ..> UC_DERIVE_STATUS : <<include>>
+
+' Inclusion — Incoming
+UC_INCOMING ..> UC_ANON : <<include>>
+
+' Notification déclenchée après placement
+UC_PLACE ..> UC_NOTIFY : <<extend>>
+
+@enduml

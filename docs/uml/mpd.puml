@@ -1,0 +1,346 @@
+@startuml MPD_VitaChain
+!theme plain
+skinparam linetype ortho
+skinparam class {
+  BackgroundColor #F8FAFC
+  BorderColor     #475569
+  HeaderBackgroundColor #E2E8F0
+  FontSize 11
+}
+skinparam note {
+  BackgroundColor #FFFDE7
+  BorderColor     #F9A825
+  FontSize 10
+}
+skinparam ArrowColor #64748B
+hide empty members
+hide circle
+
+title Modele Physique de Donnees (MPD) — VitaChain v3\n(PostgreSQL 17 · Supabase)
+
+' ══════════════════════════════════════════════════════════
+' SCHEMAS EXTERNES
+' ══════════════════════════════════════════════════════════
+entity "auth.users" as AUTH_USERS <<Supabase Auth>> #EDE9FE {
+  * id : uuid <<PK>>
+  --
+  email : text
+  encrypted_password : text
+  confirmed_at : timestamptz
+  created_at : timestamptz
+}
+
+' ══════════════════════════════════════════════════════════
+' SCHEMA PUBLIC — Auth & KYC
+' ══════════════════════════════════════════════════════════
+entity "profiles" as PROFILES #DBEAFE {
+  * id : uuid <<PK, FK→auth.users>>
+  --
+  email : citext <<UNIQUE>>
+  full_name : text
+  phone : text
+  role : user_role <<ENUM>>
+  verification_status : verification_status <<ENUM>>
+  locale : locale_code <<ENUM>>
+  banned : boolean
+  created_at : timestamptz
+  updated_at : timestamptz
+}
+
+entity "kyc_documents" as KYC #EDE9FE {
+  * id : uuid <<PK>>
+  --
+  # user_id : uuid <<FK→profiles>>
+  document_type : kyc_document_type <<ENUM>>
+  storage_path : text
+  mime_type : text
+  size_bytes : int
+  status : kyc_document_status <<ENUM>>
+  submitted_at : timestamptz
+  reviewed_at : timestamptz
+  # reviewer_id : uuid <<FK→profiles>>
+  reviewer_note : text
+  created_at : timestamptz
+  updated_at : timestamptz
+}
+
+entity "notifications_outbox" as OUTBOX #FEF9C3 {
+  * id : uuid <<PK>>
+  --
+  type : text
+  payload : jsonb
+  processed_at : timestamptz
+  created_at : timestamptz
+}
+
+' ══════════════════════════════════════════════════════════
+' SCHEMA M1 — Katara (IoT)
+' ══════════════════════════════════════════════════════════
+entity "m1_katara_parcels" as PARCELS #DCFCE7 {
+  * id : uuid <<PK>>
+  --
+  # farmer_id : uuid <<FK→profiles>>
+  name : text
+  crop_type : text
+  surface_area_ha : decimal(10,4)
+  geojson : jsonb
+  created_at : timestamptz
+  updated_at : timestamptz
+}
+
+entity "m1_katara_devices" as DEVICES #DCFCE7 {
+  * id : uuid <<PK>>
+  --
+  device_id : text <<UNIQUE (non-UNLINKED)>>
+  # parcel_id : uuid <<FK→m1_katara_parcels>>
+  # farmer_id : uuid <<FK→profiles>>
+  api_key_hash : text
+  status : device_status <<ENUM>>
+  last_seen : timestamptz
+  linked_at : timestamptz
+  created_at : timestamptz
+  updated_at : timestamptz
+}
+
+entity "m1_katara_telemetry" as TELEMETRY #DCFCE7 {
+  * id : uuid <<PK>>
+  --
+  # device_id : uuid <<FK→m1_katara_devices>>
+  # parcel_id : uuid <<FK→m1_katara_parcels>>
+  # farmer_id : uuid <<FK→profiles>>
+  soil_moisture : real [0..100]
+  soil_temperature : real [-20..80]
+  soil_ph : real [0..14]
+  soil_conductivity : real [0..20000]
+  battery_level : smallint [0..100]
+  recorded_at : timestamptz <<UNIQUE(device_id,recorded_at)>>
+  received_at : timestamptz
+}
+
+entity "m1_katara_thresholds" as THRESHOLDS #DCFCE7 {
+  * id : uuid <<PK>>
+  --
+  # parcel_id : uuid <<FK→m1_katara_parcels>>
+  # farmer_id : uuid <<FK→profiles>>
+  metric : text
+  min_value : decimal
+  max_value : decimal
+  enabled : boolean
+  last_alert_at : timestamptz
+  created_at : timestamptz
+  updated_at : timestamptz
+}
+
+entity "m1_katara_diagnostics" as DIAGNOSTICS #DCFCE7 {
+  * id : uuid <<PK>>
+  --
+  # parcel_id : uuid <<FK→m1_katara_parcels>>
+  # farmer_id : uuid <<FK→profiles>>
+  status : text [PENDING|RUNNING|DONE|FAILED]
+  result_text : text
+  error_detail : text
+  weather_snapshot : jsonb
+  telemetry_snapshot : jsonb
+  requested_at : timestamptz
+  started_at : timestamptz
+  completed_at : timestamptz
+}
+
+' ══════════════════════════════════════════════════════════
+' SCHEMA M2 — FarMarket
+' ══════════════════════════════════════════════════════════
+entity "m2_farmarket_ads" as ADS #FEF9C3 {
+  * id : uuid <<PK>>
+  --
+  # farmer_id : uuid <<FK→profiles>>
+  title : text
+  description : text
+  product_type : text
+  price_mad : decimal(10,2)
+  quantity_kg : decimal(10,2)
+  reserved_kg : decimal(10,2)
+  region : m2_farmarket_region <<ENUM>>
+  photo_paths : text[]
+  is_featured : boolean
+  status : text [ACTIVE|EXPIRED|DELETED]
+  expires_at : timestamptz
+  created_at : timestamptz
+  updated_at : timestamptz
+}
+
+entity "m2_farmarket_orders" as ORDERS #FEF9C3 {
+  * id : uuid <<PK>>
+  --
+  # restaurant_id : uuid <<FK→profiles>>
+  status : m2_farmarket_order_status <<ENUM>>
+  delivery_region : m2_farmarket_region <<ENUM>>
+  delivery_notes : text
+  subtotal_mad : numeric(12,2)
+  logistics_fee_mad : numeric(12,2)
+  total_mad : numeric(12,2)
+  payment_method : text
+  payment_status : text
+  delivery_contact_name : text
+  delivery_contact_phone : text
+  created_at : timestamptz
+  updated_at : timestamptz
+}
+
+entity "m2_farmarket_order_items" as ORDER_ITEMS #FEF9C3 {
+  * id : uuid <<PK>>
+  --
+  # order_id : uuid <<FK→m2_farmarket_orders>>
+  # ad_id : uuid <<FK→m2_farmarket_ads>>
+  # farmer_id : uuid <<FK→profiles>>
+  quantity_kg : decimal(10,2)
+  unit_price_snapshot : decimal(10,2)
+  line_total_mad : decimal(10,2)
+  status : text
+  producer_note : text
+  created_at : timestamptz
+  updated_at : timestamptz
+}
+
+entity "m2_farmarket_farmer_ratings" as RATINGS #FEF9C3 {
+  * id : uuid <<PK>>
+  --
+  # farmer_id : uuid <<FK→profiles>>
+  # restaurant_id : uuid <<FK→profiles>>
+  # order_id : uuid <<FK→m2_farmarket_orders>>
+  rating : int [1..5]
+  review : text
+  reviewer_name : text
+  created_at : timestamptz
+  updated_at : timestamptz
+}
+
+' ══════════════════════════════════════════════════════════
+' SCHEMA SS — SecondServe
+' ══════════════════════════════════════════════════════════
+entity "ss_profiles" as SS_PROFILES #FFEDD5 {
+  * id : uuid <<PK, FK→auth.users>>
+  --
+  role : text [partner|consumer]
+  email : text
+  name : text
+  city : text
+  commerce_type : text
+  approved : boolean
+  banned : boolean
+  address : text
+  phone : text
+  map_link : text
+  created_at : timestamptz
+}
+
+entity "ss_offers" as SS_OFFERS #FFEDD5 {
+  * id : uuid <<PK>>
+  --
+  # restaurant_id : uuid <<FK→ss_profiles>>
+  restaurant_name : text
+  name : text
+  description : text
+  quantity : integer
+  image : text
+  time_limit : text
+  city : text
+  commerce_type : text
+  meal_category : text
+  is_surprise_box : boolean
+  address : text
+  map_link : text
+  original_price : numeric
+  reduced_price : numeric
+  created_at : timestamptz
+}
+
+entity "ss_orders" as SS_ORDERS #FFEDD5 {
+  * id : uuid <<PK>>
+  --
+  # offer_id : uuid <<FK→ss_offers>>
+  # consumer_id : uuid <<FK→ss_profiles>>
+  consumer_name : text
+  consumer_phone : text
+  # restaurant_id : uuid <<FK→ss_profiles>>
+  quantity : integer
+  status : text
+  offer_snapshot : jsonb
+  payment_method : text
+  payment_status : text
+  customer_message : text
+  pickup_code : text
+  expires_at : timestamptz
+  created_at : timestamptz
+}
+
+entity "ss_reviews" as SS_REVIEWS #FFEDD5 {
+  * id : uuid <<PK>>
+  --
+  # offer_id : uuid <<FK→ss_offers>>
+  # consumer_id : uuid <<FK→ss_profiles>>
+  consumer_name : text
+  # restaurant_id : uuid <<FK→ss_profiles>>
+  rating : integer [1..5]
+  comment : text
+  created_at : timestamptz
+}
+
+' ══════════════════════════════════════════════════════════
+' RELATIONS
+' ══════════════════════════════════════════════════════════
+
+AUTH_USERS  ||--o{ PROFILES      : "1:1"
+AUTH_USERS  ||--o{ SS_PROFILES   : "1:1"
+
+PROFILES    ||--o{ KYC           : "user_id"
+PROFILES    ||--o{ PARCELS       : "farmer_id"
+PROFILES    ||--o{ DEVICES       : "farmer_id"
+PROFILES    ||--o{ TELEMETRY     : "farmer_id"
+PROFILES    ||--o{ THRESHOLDS    : "farmer_id"
+PROFILES    ||--o{ DIAGNOSTICS   : "farmer_id"
+PROFILES    ||--o{ ADS           : "farmer_id"
+PROFILES    ||--o{ ORDERS        : "restaurant_id"
+PROFILES    ||--o{ RATINGS       : "farmer_id"
+
+PARCELS     ||--o{ DEVICES       : "parcel_id"
+PARCELS     ||--o{ TELEMETRY     : "parcel_id"
+PARCELS     ||--o{ THRESHOLDS    : "parcel_id"
+PARCELS     ||--o{ DIAGNOSTICS   : "parcel_id"
+
+DEVICES     ||--o{ TELEMETRY     : "device_id"
+
+ORDERS      ||--o{ ORDER_ITEMS   : "order_id"
+ADS         ||--o{ ORDER_ITEMS   : "ad_id"
+ORDERS      ||--o{ RATINGS       : "order_id"
+
+SS_PROFILES ||--o{ SS_OFFERS     : "restaurant_id"
+SS_PROFILES ||--o{ SS_ORDERS     : "consumer_id"
+SS_PROFILES ||--o{ SS_REVIEWS    : "consumer_id"
+SS_OFFERS   ||--o{ SS_ORDERS     : "offer_id"
+SS_OFFERS   ||--o{ SS_REVIEWS    : "offer_id"
+
+note right of TELEMETRY
+  UNIQUE(device_id, recorded_at)
+  ON CONFLICT DO NOTHING
+  FORCE RLS activee
+end note
+
+note right of DEVICES
+  UNIQUE partiel sur device_id
+  WHERE status <> 'UNLINKED'
+  (BR-K1 : 1 ESP32 par parcelle)
+end note
+
+note right of KYC
+  CHECK : reviewed_at IS NULL
+  si status='PENDING' (coherence)
+  Bucket : kyc-documents (RLS prive)
+end note
+
+note bottom of SS_PROFILES
+  Independant de public.profiles.
+  Partage auth.users via Supabase.
+  Handoff via OTP Magic Link.
+end note
+
+@enduml

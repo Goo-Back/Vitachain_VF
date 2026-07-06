@@ -1,0 +1,2295 @@
+% ============================================================
+%  VitaChain — Rapport de Projet de Fin d'Études
+%  Compilé avec XeLaTeX ou pdfLaTeX sur Overleaf
+% ============================================================
+\documentclass[12pt,a4paper]{report}
+
+% ── Encodage & langue ─────────────────────────────────────
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+
+% ── Mise en page ──────────────────────────────────────────
+\usepackage[top=2.5cm,bottom=2.5cm,left=3cm,right=2.5cm]{geometry}
+\usepackage{setspace}
+\onehalfspacing
+
+% ── Typographie ───────────────────────────────────────────
+\usepackage{lmodern}
+\usepackage{microtype}
+
+% ── Maths & symboles ──────────────────────────────────────
+\usepackage{amssymb}   % \checkmark, \square
+
+% ── Diagrammes TikZ & Gantt ───────────────────────────────
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric,arrows.meta,positioning,calc,patterns}
+\usepackage{pgfgantt}
+\usepackage{pgf-pie}
+
+% ── Couleurs ──────────────────────────────────────────────
+\usepackage[table]{xcolor}
+\definecolor{vitaBlue}{RGB}{37,99,235}
+\definecolor{vitaGreen}{RGB}{22,163,74}
+\definecolor{codeGray}{RGB}{248,248,250}
+\definecolor{codeBorder}{RGB}{200,200,210}
+\definecolor{rowHead}{RGB}{219,234,254}
+
+% ── Hyperliens (bordure rouge comme dans le modèle) ───────
+\usepackage[colorlinks=false,
+            pdfborder={0 0 1},
+            linkbordercolor={1 0 0},
+            urlbordercolor={0 0 1},
+            pdftitle={VitaChain -- Rapport PFE},
+            pdfauthor={Yasser}]{hyperref}
+
+% ── Figures ───────────────────────────────────────────────
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{caption}
+\captionsetup{font=small,labelfont=bf,margin=12pt}
+
+% ── Tableaux ──────────────────────────────────────────────
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{multirow}
+\usepackage{array}
+\renewcommand{\arraystretch}{1.35}
+
+% ── Code source ───────────────────────────────────────────
+\usepackage{listings}
+\lstdefinestyle{sql}{
+  language        = SQL,
+  basicstyle      = \ttfamily\small,
+  backgroundcolor = \color{codeGray},
+  frame           = single,
+  rulecolor       = \color{codeBorder},
+  breaklines      = true,
+  keepspaces      = true,
+  showstringspaces= false,
+  tabsize         = 2,
+  numbers         = left,
+  numberstyle     = \tiny\color{gray},
+  numbersep       = 8pt,
+  keywordstyle    = \color{vitaBlue}\bfseries,
+  stringstyle     = \color{vitaGreen},
+  commentstyle    = \color{gray}\itshape,
+  morekeywords    = {RETURNS,LANGUAGE,SECURITY,DEFINER,PERFORM,RAISE,
+                     EXCEPTION,NOTIFY,DECLARE,BEGIN,END,UUID,
+                     TIMESTAMPTZ,NUMERIC,JSONB,TEXT,BOOLEAN},
+}
+\lstdefinestyle{json}{
+  basicstyle      = \ttfamily\small,
+  backgroundcolor = \color{codeGray},
+  frame           = single,
+  rulecolor       = \color{codeBorder},
+  breaklines      = true,
+  showstringspaces= false,
+  string          = [s]{"}{"},
+  stringstyle     = \color{vitaGreen},
+  comment         = [l]{//},
+  commentstyle    = \color{gray}\itshape,
+}
+\lstdefinestyle{bash}{
+  basicstyle      = \ttfamily\small,
+  backgroundcolor = \color{codeGray},
+  frame           = single,
+  rulecolor       = \color{codeBorder},
+  breaklines      = true,
+  showstringspaces= false,
+  commentstyle    = \color{gray}\itshape,
+}
+
+% ── En-têtes ──────────────────────────────────────────────
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\itshape\leftmark}
+\fancyhead[R]{\small VitaChain --- PFE 2026}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\fancypagestyle{plain}{
+  \fancyhf{}
+  \fancyfoot[C]{\thepage}
+  \renewcommand{\headrulewidth}{0pt}
+}
+
+% ── Listes ────────────────────────────────────────────────
+\usepackage{enumitem}
+\setlist[itemize]{itemsep=2pt,topsep=3pt}
+\setlist[enumerate]{itemsep=2pt,topsep=3pt}
+
+% ── Commande placeholder figure ───────────────────────────
+% Utilisation : \fig{nom_fichier}{Légende}{label}
+% Mettre les captures dans un dossier "figures/" sur Overleaf
+% Remplacer le bloc gris par \includegraphics dès que l'image est prête
+\newcommand{\fig}[3]{%
+  \begin{figure}[H]
+    \centering
+    \IfFileExists{figures/#1.png}{%
+      \includegraphics[width=0.93\textwidth]{figures/#1.png}%
+    }{%
+      \IfFileExists{figures/#1.jpg}{%
+        \includegraphics[width=0.93\textwidth]{figures/#1.jpg}%
+      }{%
+        \fcolorbox{codeBorder}{codeGray}{%
+          \begin{minipage}[c][4cm][c]{0.90\textwidth}
+            \centering
+            \textcolor{gray}{\Large$\square$}\\[6pt]
+            \textcolor{gray}{\small\itshape
+              À insérer : \texttt{figures/#1.png}}
+          \end{minipage}}%
+      }%
+    }%
+    \caption{#2}
+    \label{fig:#3}
+  \end{figure}}
+
+% ── Macro commodités ──────────────────────────────────────
+\newcommand{\code}[1]{\texttt{\small #1}}
+\newcommand{\api}[1]{\texttt{\small\color{vitaBlue}#1}}
+
+% ── Profondeur TOC ────────────────────────────────────────
+\setcounter{tocdepth}{3}
+\setcounter{secnumdepth}{3}
+
+% =============================================================
+\begin{document}
+
+
+% ── PAGES LIMINAIRES (numérotation romaine) ───────────────
+\pagenumbering{roman}
+\setcounter{page}{2}
+
+% ── DÉDICACES ─────────────────────────────────────────────
+\chapter*{Dédicaces}
+\addcontentsline{toc}{chapter}{Dédicaces}
+
+À mes chers parents, pour leur soutien indéfectible, leur amour et leurs sacrifices
+tout au long de mon parcours académique. Aucun mot ne saurait exprimer ma profonde
+gratitude et mon amour sincère.
+
+À mes frères et sœurs, pour leur encouragement constant et leur présence à mes côtés.
+
+À mes enseignants ainsi qu'à toutes les personnes qui m'ont encouragé durant ce projet.
+
+À tous mes amis et collègues, qui ont partagé avec moi les moments de joie et de
+difficulté.
+
+À tous ceux qui me sont chers\ldots
+
+\newpage
+
+% ── REMERCIEMENTS ─────────────────────────────────────────
+\chapter*{Remerciements}
+\addcontentsline{toc}{chapter}{Remerciements}
+
+Au terme de ce travail, il nous est agréable d'adresser nos sincères
+remerciements à toutes les personnes qui ont contribué, de près ou de
+loin, à sa réalisation.
+
+Nous tenons à exprimer notre profonde gratitude à notre encadrante,
+\textbf{Mme Ouchra Hafsa}, pour ses précieux conseils, sa disponibilité
+et ses orientations tout au long de ce projet.
+
+Nous remercions également l'ensemble du corps enseignant de la
+\textbf{Faculté des Sciences Ben M'Sik} pour la qualité de la formation
+dispensée.
+
+Enfin, nous remercions nos familles et nos amis pour leur soutien moral
+tout au long de notre parcours.
+
+\newpage
+
+\tableofcontents\newpage
+\listoffigures\newpage
+\listoftables\newpage
+
+% ── CORPS DU RAPPORT (numérotation arabe) ─────────────────
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+% =============================================================
+% CHAPITRE 1 — CAHIER DES CHARGES
+% =============================================================
+\chapter{Cahier des charges}
+
+\section{Introduction}
+
+Dans un contexte mondial marqué par des défis croissants liés à la sécurité alimentaire,
+à la durabilité agricole et à la gestion des ressources naturelles, les technologies
+numériques et l'Internet des objets (IoT) offrent des opportunités sans précédent pour
+transformer les pratiques du secteur agroalimentaire. Le présent rapport documente la
+conception, l'analyse et la réalisation de \textbf{VitaChain}, une plateforme numérique
+intégrée dédiée à l'agriculture intelligente et à la chaîne d'approvisionnement
+alimentaire au Maroc.
+
+Ce premier chapitre établit le cadre général du projet à travers une présentation du
+contexte, des problématiques identifiées, des objectifs visés et des besoins fonctionnels
+et non fonctionnels auxquels la solution doit répondre.
+
+\section{Contexte du projet}
+
+Le secteur agricole marocain représente une composante stratégique de l'économie nationale.
+Cependant, les agriculteurs marocains, en particulier les petits et moyens exploitants,
+font face à des difficultés structurelles : manque d'accès aux données agronomiques en
+temps réel, absence de canaux directs vers les acheteurs professionnels, et gaspillage
+alimentaire important dans la restauration et la grande distribution.
+
+VitaChain s'inscrit dans le cadre des initiatives de transformation numérique du secteur
+agricole. Le projet vise à proposer un écosystème numérique unifié combinant :
+
+\begin{itemize}
+  \item \textbf{La surveillance IoT des parcelles agricoles} via des capteurs de sol
+        connectés (module Katara) ;
+  \item \textbf{Une place de marché agricole directe} entre agriculteurs et restaurateurs
+        (module FarMarket) ;
+  \item \textbf{Une solution anti-gaspillage alimentaire} permettant aux restaurants de
+        redistribuer leurs surplus aux citoyens (module SecondServe) ;
+  \item \textbf{Un panneau d'administration centralisé} pour la gouvernance de la
+        plateforme.
+\end{itemize}
+
+Le projet est réalisé dans le cadre d'un Projet de Fin d'Études (PFE) en ingénierie
+logicielle, avec une architecture orientée production déployée sur un VPS Linux avec
+PostgreSQL, FastAPI, Next.js et Supabase.
+
+\section{Présentation du problème}
+
+Plusieurs problèmes structurels freinent le développement du secteur agroalimentaire
+marocain.
+
+\paragraph{Manque d'informations agronomiques en temps réel.}
+Les agriculteurs prennent leurs décisions d'irrigation et de fertilisation sur la base
+d'observations empiriques, sans disposer de données précises sur l'état du sol (humidité,
+température, pH, conductivité). Cela entraîne une surconsommation d'eau et d'intrants,
+réduisant les rendements et augmentant les coûts.
+
+\paragraph{Désintermédiation insuffisante dans la chaîne alimentaire.}
+La chaîne de distribution agricole au Maroc repose sur des intermédiaires traditionnels
+(grossistes, souk), qui captent une part importante de la valeur ajoutée au détriment
+des agriculteurs. Les restaurateurs ont du mal à s'approvisionner directement auprès de
+producteurs locaux de confiance.
+
+\paragraph{Gaspillage alimentaire dans la restauration.}
+Le secteur de la restauration génère des surplus alimentaires considérables chaque jour.
+En l'absence de canaux adaptés, ces invendus finissent généralement au rebut, alors qu'ils
+pourraient être redistribués à prix réduit aux citoyens.
+
+\paragraph{Absence de vérification et de traçabilité.}
+Dans les transactions entre professionnels, il n'existe pas de mécanisme fiable de
+vérification d'identité et de statut professionnel, ce qui génère une méfiance et freine
+les échanges.
+
+\section{Motivation du projet}
+
+La motivation principale de VitaChain est de proposer une solution technologique holistique
+qui s'attaque simultanément à ces quatre problèmes à travers une architecture modulaire,
+extensible et sécurisée. Les motivations spécifiques sont :
+
+\begin{itemize}
+  \item \textbf{Impact social et environnemental :} réduction du gaspillage alimentaire,
+        optimisation de l'usage de l'eau et des engrais, création de liens directs entre
+        producteurs et acheteurs ;
+  \item \textbf{Modernisation agricole :} adoption de l'agriculture de précision grâce à
+        des capteurs IoT accessibles aux agriculteurs marocains ;
+  \item \textbf{Inclusion économique :} permettre aux petits agriculteurs de valoriser
+        leur production en accédant directement au marché de la restauration ;
+  \item \textbf{Défi technologique :} concevoir et déployer en production une architecture
+        full-stack moderne intégrant IoT, RLS, workers asynchrones et authentification
+        multi-rôle.
+\end{itemize}
+
+\section{Étude de l'existant}
+
+Plusieurs solutions numériques existent sur le marché international et national, mais
+aucune ne couvre l'intégralité du périmètre de VitaChain.
+
+\begin{table}[H]
+  \centering
+  \caption{Comparaison des solutions existantes}
+  \label{tab:existant}
+  \small
+  \begin{tabularx}{\linewidth}{Xcccc}
+    \toprule
+    \textbf{Solution} & \textbf{IoT Agricole} & \textbf{Marketplace B2B}
+                      & \textbf{Anti-gaspillage} & \textbf{Marché marocain} \\
+    \midrule
+    Agromonitoring    & \checkmark & $\times$ & $\times$ & $\times$ \\
+    Too Good To Go    & $\times$   & $\times$ & \checkmark & Partiel  \\
+    AgriApp           & $\times$   & \checkmark & $\times$ & $\times$ \\
+    Fellah Trade      & $\times$   & \checkmark & $\times$ & \checkmark \\
+    \rowcolor{rowHead}
+    \textbf{VitaChain} & \checkmark & \checkmark & \checkmark & \checkmark \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+Les limites des solutions existantes sont les suivantes :
+
+\begin{itemize}
+  \item Les solutions IoT agricoles (Agromonitoring, Farmonaut) sont conçues pour des
+        exploitations industrielles avec un coût d'entrée élevé.
+  \item Les marketplaces B2B agricoles marocaines (Fellah Trade) n'intègrent pas de
+        mécanisme de vérification KYC ni de suivi de commande en temps réel.
+  \item Les applications anti-gaspillage (Too Good To Go) ne sont pas adaptées au
+        contexte marocain.
+  \item Aucune solution ne propose un tableau de bord IoT couplé à une place de marché
+        et une fonctionnalité anti-gaspillage dans une même plateforme.
+\end{itemize}
+
+\section{Objectifs du projet}
+
+Les objectifs de VitaChain sont organisés en quatre axes.
+
+\paragraph{Axe 1 --- Module Katara (Surveillance IoT).}
+\begin{itemize}
+  \item Permettre aux agriculteurs de créer et gérer leurs parcelles agricoles
+        géoréférencées.
+  \item Intégrer des capteurs ESP32 envoyant des données de sol (humidité, température,
+        pH, conductivité électrique) en temps réel.
+  \item Afficher des graphiques d'historique et des alertes déclenchées sur des seuils
+        configurables.
+  \item Fournir des diagnostics agronomiques automatisés via intelligence artificielle
+        (Google Gemini).
+  \item Intégrer des données météorologiques (OpenWeatherMap) et satellitaires
+        (Sentinel-2 NDVI).
+\end{itemize}
+
+\paragraph{Axe 2 --- Module FarMarket (Marketplace Agricole).}
+\begin{itemize}
+  \item Permettre aux agriculteurs vérifiés de publier des annonces de vente de produits
+        agricoles avec photos.
+  \item Permettre aux restaurateurs de parcourir le catalogue, filtrer par
+        région/produit/prix, et passer des commandes.
+  \item Gérer le cycle de vie complet d'une commande (acceptation, suivi, livraison,
+        paiement).
+  \item Protéger la confidentialité des restaurateurs vis-à-vis des agriculteurs
+        (anonymisation).
+  \item Intégrer un système de notation agriculteur par les restaurateurs.
+\end{itemize}
+
+\paragraph{Axe 3 --- Module SecondServe (Anti-gaspillage).}
+\begin{itemize}
+  \item Permettre aux restaurants de publier leurs surplus alimentaires à prix réduit.
+  \item Permettre aux citoyens de réserver et commander ces offres.
+  \item Assurer la continuité de session entre VitaChain et l'application SecondServe
+        via SSO (magic-link OTP).
+\end{itemize}
+
+\paragraph{Axe 4 --- Gouvernance et Administration.}
+\begin{itemize}
+  \item Mettre en place un processus de vérification KYC pour les professionnels.
+  \item Permettre aux administrateurs de gérer les utilisateurs, les rôles et les
+        contenus de la plateforme.
+\end{itemize}
+
+\section{Périmètre du projet}
+
+\paragraph{Inclus dans le périmètre :}
+inscription multi-rôle ; vérification KYC ; module Katara complet ; module FarMarket
+complet ; module SecondServe ; panneau d'administration ; infrastructure de production
+(Docker, NGINX, TLS, sauvegardes, monitoring).
+
+\paragraph{Hors périmètre :}
+module BotaBa9a (architecture définie, implémentation différée) ; application mobile
+native ; intégration de passerelles de paiement réelles ; gestion logistique propre.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+  % ── Boîtes des modules (empilées) ──
+  \fill[blue!75, rounded corners=6pt]    (-5.4, 4.4) rectangle (5.4, 5.8);
+  \fill[green!50!black, rounded corners=6pt] (-5.4, 2.6) rectangle (5.4, 4.0);
+  \fill[orange!70, rounded corners=6pt]  (-5.4, 0.8) rectangle (5.4, 2.2);
+  \fill[gray!60, rounded corners=6pt]    (-5.4,-1.0) rectangle (5.4, 0.4);
+
+  % ── Labels modules ──
+  \node[font=\bfseries\small, text=white] at (0, 5.1)
+    {Katara --- Surveillance IoT agricole};
+  \node[font=\bfseries\small, text=white] at (0, 3.3)
+    {FarMarket --- Marketplace Agricole B2B};
+  \node[font=\bfseries\small, text=white] at (0, 1.5)
+    {SecondServe --- Anti-gaspillage alimentaire};
+  \node[font=\bfseries\small, text=white] at (0,-0.3)
+    {Administration};
+
+  % ── Boîtes acteurs (droite) ──
+  \fill[blue!15]  (6.0, 4.65) rectangle (9.0, 5.55);
+  \draw[blue!60, rounded corners=3pt] (6.0, 4.65) rectangle (9.0, 5.55);
+  \node[font=\footnotesize, text=blue!80] at (7.5, 5.1) {Agriculteur + ESP32};
+
+  \fill[green!15]  (6.0, 2.85) rectangle (9.0, 3.75);
+  \draw[green!45!black, rounded corners=3pt] (6.0, 2.85) rectangle (9.0, 3.75);
+  \node[font=\footnotesize, text=green!45!black] at (7.5, 3.3) {Restaurateur};
+
+  \fill[orange!15] (6.0, 1.05) rectangle (9.0, 1.95);
+  \draw[orange!70, rounded corners=3pt] (6.0, 1.05) rectangle (9.0, 1.95);
+  \node[font=\footnotesize, text=orange!80] at (7.5, 1.5) {Citoyen};
+
+  \fill[gray!15]  (6.0,-0.75) rectangle (9.0, 0.15);
+  \draw[gray!55, rounded corners=3pt] (6.0,-0.75) rectangle (9.0, 0.15);
+  \node[font=\footnotesize, text=gray!70] at (7.5,-0.3) {Administrateur};
+
+  % ── Flèches ──
+  \draw[->, thick, blue!60]        (5.4, 5.1) -- (6.0, 5.1);
+  \draw[->, thick, green!40!black] (5.4, 3.3) -- (6.0, 3.3);
+  \draw[->, thick, orange!70]      (5.4, 1.5) -- (6.0, 1.5);
+  \draw[->, thick, gray!55]        (5.4,-0.3) -- (6.0,-0.3);
+
+  % ── Titre ──
+  \node[font=\large\bfseries, text=blue!80] at (0, 6.6)
+    {Plateforme VitaChain};
+  \node[font=\small\itshape, text=gray!70] at (0, 6.1)
+    {Architecture modulaire --- périmètre fonctionnel};
+\end{tikzpicture}
+\caption{Périmètre fonctionnel de VitaChain --- diagramme en couches des quatre modules}
+\label{fig:1.1}
+\end{figure}
+
+\section{Acteurs}
+
+VitaChain implique quatre types d'acteurs principaux et un acteur système.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{fig1_2_acteurs}
+    \caption{Diagramme des acteurs}
+    \label{fig:fig1_2}
+\end{figure}
+
+\begin{table}[H]
+  \centering
+  \caption{Acteurs humains de VitaChain}
+  \label{tab:acteurs}
+  \begin{tabularx}{\linewidth}{llX}
+    \toprule
+    \textbf{Acteur} & \textbf{Rôle} & \textbf{Description} \\
+    \midrule
+    Agriculteur   & FARMER     & Producteur agricole. Crée des parcelles, associe des
+                                 capteurs, publie des annonces, reçoit des commandes.
+                                 Doit être vérifié (KYC). \\
+    Restaurateur  & RESTAURANT & Acheteur professionnel. Consulte le catalogue, passe
+                                 des commandes, évalue les agriculteurs, publie des
+                                 offres surplus. Doit être vérifié. \\
+    Citoyen       & CITIZEN    & Consommateur final. Consulte et commande des offres
+                                 surplus via SecondServe. \\
+    Administrateur& ADMIN      & Gestionnaire. Approuve les KYC, modère les contenus,
+                                 gère les utilisateurs et les rôles. \\
+    \midrule
+    Dispositif ESP32 & ---     & Capteur IoT. Envoie des données télémétriques via HTTP
+                                 (authentification par clé d'API). \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\section{Besoins fonctionnels}
+
+\subsection*{Module Authentification \& KYC}
+\begin{enumerate}[label=BF-AUTH-\arabic*]
+  \item L'utilisateur peut s'inscrire avec un email, un mot de passe et un rôle.
+  \item L'utilisateur peut se connecter et obtenir un jeton JWT portant son rôle et
+        son statut de vérification.
+  \item Un professionnel peut soumettre des documents KYC (CIN, RC, carte agricole).
+  \item L'administrateur peut approuver ou rejeter une demande KYC.
+  \item Les actions professionnelles sont bloquées pour les profils non vérifiés.
+\end{enumerate}
+
+\subsection*{Module Katara}
+\begin{enumerate}[label=BF-KAT-\arabic*]
+  \item L'agriculteur peut créer, modifier et supprimer des parcelles géoréférencées
+        (polygone GeoJSON).
+  \item L'agriculteur peut associer un dispositif ESP32 à une parcelle et recevoir une
+        clé d'API unique.
+  \item Le dispositif ESP32 peut envoyer des données de télémétrie (humidité sol,
+        température sol, pH, conductivité, batterie).
+  \item L'agriculteur peut visualiser les données en temps réel et l'historique sous
+        forme de graphiques (24h, 7j, 30j).
+  \item L'agriculteur peut configurer des seuils d'alerte par métrique et recevoir un
+        email en cas de dépassement.
+  \item L'agriculteur peut demander un diagnostic agronomique IA et le consulter.
+  \item L'agriculteur peut consulter les prévisions météorologiques pour sa parcelle.
+  \item L'agriculteur peut consulter les images NDVI Sentinel-2 pour sa parcelle.
+  \item Le système détecte automatiquement les dispositifs hors ligne
+        (silence $>$ 1 heure).
+\end{enumerate}
+
+\subsection*{Module FarMarket}
+\begin{enumerate}[label=BF-FAR-\arabic*]
+  \item L'agriculteur vérifié peut créer une annonce avec titre, description, type de
+        produit, prix, quantité, région et jusqu'à 5 photos.
+  \item Le restaurateur vérifié peut parcourir le catalogue et filtrer par région,
+        type de produit et fourchette de prix.
+  \item Le restaurateur peut passer une commande multi-articles.
+  \item L'agriculteur reçoit les commandes entrantes de manière anonymisée.
+  \item L'agriculteur peut accepter/rejeter et mettre à jour le statut de chaque
+        article.
+  \item Le restaurateur peut confirmer un paiement en espèces à la livraison (COD).
+  \item Le restaurateur peut laisser une évaluation (1--5 étoiles + commentaire) après
+        livraison.
+  \item Les annonces expirent automatiquement après 7 jours.
+\end{enumerate}
+
+\subsection*{Module SecondServe}
+\begin{enumerate}[label=BF-SEC-\arabic*]
+  \item Le restaurateur peut publier des offres de surplus alimentaires.
+  \item Le citoyen peut consulter les offres, les filtrer par ville et passer une
+        commande.
+  \item L'utilisateur VitaChain peut accéder à SecondServe via un lien magique SSO.
+\end{enumerate}
+
+\subsection*{Module Administration}
+\begin{enumerate}[label=BF-ADM-\arabic*]
+  \item L'administrateur peut consulter et traiter la file d'attente des demandes KYC.
+  \item L'administrateur peut lister, filtrer, bannir/débannir et changer le rôle
+        d'un utilisateur.
+  \item L'administrateur peut consulter le tableau de bord FarMarket.
+\end{enumerate}
+
+\section{Besoins non fonctionnels}
+
+\begin{table}[H]
+  \centering
+  \caption{Besoins non fonctionnels de VitaChain}
+  \label{tab:bnf}
+  \begin{tabularx}{\linewidth}{lX}
+    \toprule
+    \textbf{Catégorie} & \textbf{Exigence} \\
+    \midrule
+    Performance
+      & L'endpoint d'ingestion télémétrique doit répondre en moins de 50~ms (p50). \\
+    Disponibilité
+      & Disponibilité cible de 99,5~\% (24h/24, 7j/7). \\
+    Sécurité
+      & Toutes les communications chiffrées (HTTPS/TLS 1.3). Données protégées par
+        RLS au niveau de la base de données. \\
+    Authentification
+      & Jetons JWT de durée de vie 1~heure avec rafraîchissement automatique. \\
+    Isolation des données
+      & Matrice RLS 22 cellules (rôle $\times$ table $\times$ verbe). \\
+    Scalabilité
+      & Architecture Docker/Gunicorn/NGINX permettant une montée en charge
+        horizontale. \\
+    Maintenabilité
+      & Tests pytest, pipelines CI/CD GitHub Actions (5 jobs). \\
+    Sauvegarde
+      & Sauvegarde nocturne pg\_dump + rclone vers Backblaze B2. \\
+    Observabilité
+      & Sentry (erreurs), Uptime Kuma (disponibilité). \\
+    Internationalisation
+      & Interface SecondServe en français et arabe. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\section{Contraintes techniques}
+
+\paragraph{Contraintes d'infrastructure.}
+Déploiement sur un VPS Linux avec ressources limitées. Utilisation de Supabase comme
+backend-as-a-service. Conteneurisation obligatoire via Docker.
+
+\paragraph{Contraintes de sécurité.}
+La clé de service Supabase ne doit jamais être exposée côté client (AUTH-05). Toutes
+les mutations de données doivent passer par les politiques RLS de PostgreSQL. Les clés
+d'API des dispositifs IoT doivent être hachées avec bcrypt avant stockage. Aucune donnée
+personnelle du restaurateur ne doit être visible par l'agriculteur.
+
+\paragraph{Contraintes de développement.}
+Le backend FastAPI doit respecter la structure de routeurs modulaires par domaine métier.
+Le frontend Next.js doit utiliser les composants serveur (RSC) pour les lectures d'état
+d'authentification. Les migrations de base de données doivent être idempotentes et
+versionnées séquentiellement.
+
+\paragraph{Contraintes matérielles (IoT).}
+Microcontrôleur ESP32 avec connectivité Wi-Fi. Protocole HTTP/1.1 (POST JSON).
+Authentification par en-têtes HTTP (\code{X-Device-Id} + \code{X-Device-Api-Key}).
+
+\section{Planning prévisionnel}
+
+Le développement de VitaChain a été planifié selon une méthodologie agile Scrum,
+organisée en sprints de deux semaines.
+
+\begin{figure}[H]
+\centering
+\begin{ganttchart}[
+  hgrid,
+  vgrid        = {*{1}{draw=gray!20, dashed}},
+  x unit       = 0.56cm,
+  y unit title = 0.72cm,
+  y unit chart = 0.60cm,
+  title label font = \tiny\bfseries,
+  bar label font   = \footnotesize,
+  title height = 1,
+  bar height   = 0.60,
+]{1}{22}
+  \gantttitle{Planning prévisionnel VitaChain --- 22 semaines}{22} \\
+  \gantttitlelist{1,...,22}{1} \\
+  \ganttbar[bar/.append style={fill=gray!55}]
+    {Sprint 0 --- Infrastructure}{1}{2} \\
+  \ganttbar[bar/.append style={fill=purple!55}]
+    {Sprint 1 --- Authentification \& KYC}{3}{4} \\
+  \ganttbar[bar/.append style={fill=blue!80}]
+    {Sprint 2 --- Katara : Parcelles}{5}{6} \\
+  \ganttbar[bar/.append style={fill=blue!65}]
+    {Sprint 3 --- Katara : Tableaux de bord}{7}{8} \\
+  \ganttbar[bar/.append style={fill=blue!45}]
+    {Sprint 4 --- Katara : Alertes \& IA}{9}{10} \\
+  \ganttbar[bar/.append style={fill=green!55!black}]
+    {Sprint 5 --- FarMarket : Annonces}{11}{12} \\
+  \ganttbar[bar/.append style={fill=green!45!black}]
+    {Sprint 6 --- FarMarket : Commandes}{13}{14} \\
+  \ganttbar[bar/.append style={fill=green!35!black}]
+    {Sprint 7 --- FarMarket : Paiement \& Avis}{15}{16} \\
+  \ganttbar[bar/.append style={fill=orange!70}]
+    {Sprint 8 --- SecondServe}{17}{18} \\
+  \ganttbar[bar/.append style={fill=red!50}]
+    {Sprint 9 --- Administration}{19}{20} \\
+  \ganttbar[bar/.append style={fill=gray!40}]
+    {Sprint 10 --- Tests \& Livraison}{21}{22}
+\end{ganttchart}
+\caption{Diagramme de Gantt prévisionnel --- planning des sprints VitaChain (22 semaines)}
+\label{fig:1.3}
+\end{figure}
+
+\begin{table}[H]
+  \centering
+  \caption{Planning prévisionnel des sprints}
+  \label{tab:planning}
+  \begin{tabularx}{\linewidth}{llcX}
+    \toprule
+    \textbf{Phase} & \textbf{Sprints} & \textbf{Durée} & \textbf{Contenu} \\
+    \midrule
+    Infrastructure & Sprint 0   & 2 sem. & VPS, Supabase, CI/CD, Docker, NGINX, HTTPS \\
+    Authentification & Sprint 1 & 2 sem. & Inscription, connexion, rôles, JWT, RLS, KYC \\
+    Katara IoT  & Sprints 2--4  & 6 sem. & Parcelles, dispositifs, télémétrie, alertes, IA \\
+    FarMarket   & Sprints 5--7  & 6 sem. & Annonces, catalogue, commandes, paiements,
+                                           évaluations \\
+    SecondServe & Sprint 8      & 2 sem. & Offres surplus, commandes citoyens, SSO \\
+    Administration & Sprint 9   & 2 sem. & File KYC, gestion utilisateurs, tableau de bord \\
+    Tests \& Livraison & Sprint 10 & 2 sem. & Tests de charge, corrections, documentation \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\section{Conclusion}
+
+Ce premier chapitre a permis d'établir le cadre complet du projet VitaChain : son contexte
+dans la transformation numérique agricole marocaine, les problèmes structurels qu'il
+adresse, ses objectifs fonctionnels et non fonctionnels, ainsi que les contraintes
+techniques qui guident sa conception. La plateforme couvre quatre modules complémentaires
+--- Katara, FarMarket, SecondServe et Administration --- répondant chacun à un besoin
+identifié dans la chaîne agroalimentaire. Le chapitre suivant détaille l'analyse et la
+conception de ces modules.
+
+% =============================================================
+% CHAPITRE 2 — ANALYSE ET CONCEPTION
+% =============================================================
+\chapter{Analyse et Conception}
+
+\section{Introduction}
+
+Ce chapitre présente la démarche d'analyse et de conception adoptée pour VitaChain.
+Nous commençons par identifier les sous-modules du système et les cas d'utilisation
+associés à chaque acteur, puis nous décrivons l'architecture logicielle et le modèle
+de données. La conception s'appuie sur des patterns architecturaux éprouvés pour
+garantir la sécurité, la modularité et la maintenabilité de la plateforme.
+
+\section{Analyse}
+
+\subsection{Identification des sous-modules}
+
+L'analyse fonctionnelle de VitaChain révèle une architecture modulaire organisée autour
+de cinq sous-systèmes indépendants mais interconnectés.
+
+\begin{figure}[H]
+\centering
+\resizebox{0.97\linewidth}{!}{%
+\begin{tikzpicture}[
+  racine/.style={draw=blue!70, fill=blue!80, text=white, rounded corners=5pt,
+                 font=\bfseries, minimum width=4.2cm, minimum height=1.0cm, align=center},
+  module/.style={rounded corners=4pt, font=\small\bfseries,
+                 minimum width=3.0cm, minimum height=0.9cm, align=center},
+  comp/.style={draw=gray!50, fill=gray!8, rounded corners=3pt, font=\footnotesize,
+               minimum width=2.8cm, minimum height=0.7cm, align=center},
+  arr/.style={->, thick, gray!55, shorten >=2pt, shorten <=2pt}
+]
+  \node[racine] (vc) at (0,0) {VitaChain};
+
+  \node[module, draw=purple!60, fill=purple!10]         (auth) at (-10.5,-2.5) {Auth \& KYC};
+  \node[module, draw=blue!60,   fill=blue!10]           (kat)  at (-5.5, -2.5) {Katara (IoT)};
+  \node[module, draw=green!60!black, fill=green!10]     (far)  at  (0.0, -2.5) {FarMarket};
+  \node[module, draw=orange!70, fill=orange!10]         (ss)   at  (5.5, -2.5) {SecondServe};
+  \node[module, draw=gray!60,   fill=gray!12]           (adm)  at (10.5,-2.5) {Administration};
+
+  \foreach \m in {auth,kat,far,ss,adm}
+    \draw[arr] (vc.south) -- ++(0,-0.55) -| (\m.north);
+
+  \node[comp] (c11) at (-10.5,-4.3) {Inscription};
+  \node[comp] (c12) at (-10.5,-5.2) {Connexion / JWT};
+  \node[comp] (c13) at (-10.5,-6.1) {Soumission KYC};
+
+  \node[comp] (c21) at (-5.5,-4.3) {Parcelles};
+  \node[comp] (c22) at (-5.5,-5.2) {Dispositifs ESP32};
+  \node[comp] (c23) at (-5.5,-6.1) {Télémétrie};
+  \node[comp] (c24) at (-5.5,-7.0) {Alertes / Seuils};
+  \node[comp] (c25) at (-5.5,-7.9) {Diagnostics IA};
+
+  \node[comp] (c31) at (0,-4.3) {Annonces};
+  \node[comp] (c32) at (0,-5.2) {Catalogue};
+  \node[comp] (c33) at (0,-6.1) {Commandes};
+  \node[comp] (c34) at (0,-7.0) {Évaluations};
+
+  \node[comp] (c41) at (5.5,-4.3) {Offres surplus};
+  \node[comp] (c42) at (5.5,-5.2) {Commandes COD};
+  \node[comp] (c43) at (5.5,-6.1) {SSO Magic Link};
+
+  \node[comp] (c51) at (10.5,-4.3) {File KYC};
+  \node[comp] (c52) at (10.5,-5.2) {Utilisateurs};
+  \node[comp] (c53) at (10.5,-6.1) {Modération};
+
+  \foreach \c in {c11,c12,c13}
+    \draw[arr] (auth.south) -- ++(0,-0.3) -| (\c.north);
+  \foreach \c in {c21,c22,c23,c24,c25}
+    \draw[arr] (kat.south)  -- ++(0,-0.3) -| (\c.north);
+  \foreach \c in {c31,c32,c33,c34}
+    \draw[arr] (far.south)  -- ++(0,-0.3) -| (\c.north);
+  \foreach \c in {c41,c42,c43}
+    \draw[arr] (ss.south)   -- ++(0,-0.3) -| (\c.north);
+  \foreach \c in {c51,c52,c53}
+    \draw[arr] (adm.south)  -- ++(0,-0.3) -| (\c.north);
+\end{tikzpicture}}
+\caption{Diagramme de décomposition modulaire de VitaChain}
+\label{fig:2.1}
+\end{figure}
+
+\paragraph{Sous-module 1 --- Auth \& KYC.}
+Gère l'inscription, la connexion, la gestion des sessions JWT et le processus de
+vérification d'identité professionnelle (KYC). Ce sous-module est transversal : il
+conditionne l'accès aux fonctionnalités de tous les autres modules.
+
+Composants : service d'inscription multi-rôle ; générateur de jetons JWT avec claims
+personnalisés (\code{user\_role}, \code{verification\_status}) ; gestionnaire de
+documents KYC (upload sécurisé, soumission, révision admin) ; Hook Supabase Custom
+Access Token pour la propagation des rôles dans les JWT.
+
+\paragraph{Sous-module 2 --- Katara (IoT Agricole).}
+Gère le cycle de vie des parcelles et des dispositifs IoT, l'ingestion et la
+visualisation des données télémétriques, ainsi que les services à valeur ajoutée
+(alertes, diagnostics IA, météo, NDVI).
+
+Composants : registre de parcelles (CRUD géoréférencé) ; gestionnaire de dispositifs
+ESP32 (appairage, clé d'API, historique) ; pipeline d'ingestion télémétrique
+(hot-path $<$ 50~ms) ; service de visualisation (graphiques temps réel et historique) ;
+moteur d'alertes sur seuils (LISTEN/NOTIFY + worker email) ; orchestrateur de
+diagnostics IA (Gemini + OWM + Sentinel-2) ; détecteur de dispositifs hors ligne
+(CRON worker).
+
+\paragraph{Sous-module 3 --- FarMarket (Marketplace).}
+Gère la publication et la consultation d'annonces agricoles, le cycle de vie des
+commandes entre restaurateurs et agriculteurs, et le système de notation.
+
+Composants : gestionnaire d'annonces (CRUD, photos, expiration) ; catalogue public
+(filtres, pagination, recherche textuelle pg\_trgm) ; moteur de commandes
+(multi-articles, anonymisation, suivi de statut) ; service de paiement (COD
+simulation, audit log) ; système d'évaluation (1--5~étoiles, contrainte achat
+vérifié).
+
+\paragraph{Sous-module 4 --- SecondServe (Anti-gaspillage).}
+Application distincte (Vite/React) connectée au même backend Supabase, gérant les
+offres surplus des restaurants et les commandes des citoyens.
+
+Composants : gestionnaire d'offres surplus (publication restaurant, visibilité
+conditionnelle) ; catalogue citoyen (filtres par ville) ; moteur de commandes citoyen
+(checkout, suivi) ; SSO inter-application (magic-link OTP depuis VitaChain).
+
+\paragraph{Sous-module 5 --- Administration.}
+File d'attente KYC (revue, approbation, rejet) ; gestion des utilisateurs (liste,
+rôle, ban) ; tableau de bord FarMarket (statistiques, modération).
+
+\subsection{Sous Modules}
+
+\subsubsection{Authentification et verification KYC}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{fig2_2_uc_auth.jpeg}
+    \caption{Diagramme d'authentification et verification KYC}
+    \label{fig:fig1_2}
+\end{figure}
+\paragraph{UC-AUTH-01 : Inscription d'un professionnel.}
+\textit{Acteur :} Agriculteur / Restaurateur. \textit{Précondition :} l'utilisateur
+n'a pas de compte VitaChain.
+\begin{enumerate}
+  \item L'utilisateur accède à la page d'inscription.
+  \item Il saisit son email, son mot de passe et sélectionne son rôle.
+  \item Le système crée un compte Supabase Auth et un profil \code{profiles} avec
+        statut PENDING.
+  \item L'utilisateur est redirigé vers son tableau de bord avec accès limité.
+\end{enumerate}
+\textit{Postcondition :} compte créé avec \code{verification\_status = PENDING}.
+
+\paragraph{UC-AUTH-02 : Soumission KYC.}
+\textit{Acteur :} Agriculteur / Restaurateur (PENDING).
+\begin{enumerate}
+  \item L'utilisateur accède à la section \og Vérification \fg{}.
+  \item Il télécharge ses documents (CIN, RC ou carte agricole) dans Supabase Storage.
+  \item Il soumet sa demande via \api{POST /api/v1/kyc/submit}.
+  \item L'administrateur reçoit une notification et la demande apparaît dans la file
+        d'attente KYC.
+\end{enumerate}
+\textit{Postcondition :} demande KYC créée avec statut EN\_ATTENTE.
+
+\paragraph{UC-AUTH-03 : Approbation KYC par l'administrateur.}
+\textit{Acteur :} Administrateur.
+\begin{enumerate}
+  \item L'administrateur consulte la file d'attente.
+  \item Il examine les documents soumis.
+  \item Il approuve ou rejette la demande.
+  \item Le système met à jour \code{profiles.verification\_status} à VERIFIED ou
+        REJECTED.
+  \item Un email de notification est envoyé via Brevo.
+\end{enumerate}
+\textit{Postcondition :} l'utilisateur peut réaliser des actions professionnelles.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{gestion des utilisateur.jpeg}
+    \caption{Diagrammes de gestion des utilisateurs}
+    \label{fig:fig_gestion_utilisateurs}
+\end{figure}
+
+\subsubsection{Gestion des parcelles}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{fig2_3a_uc_katara_parcelles.jpeg}
+    \caption{Diagramme des parcelles katara}
+    \label{fig:fig1_2}
+\end{figure}
+\subsubsection{Gestion des dispositives IOT }
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{fig2_3b_uc_katara_iot.jpeg}
+    \caption{Diagramme iot katara}
+    \label{fig:fig1_2}
+\end{figure}
+\subsubsection{Gestion des telemetries}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{fig2_3c_uc_katara_telemetrie.jpeg}
+    \caption{Diagramme de telemetrie katara}
+    \label{fig:fig1_2}
+\end{figure}
+\subsubsection{Gestion du diagnostique ai}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{fig2_3d_uc_katara_diagnostic.jpeg}
+    \caption{Diagramme de diagnostique katara}
+    \label{fig:fig1_2}
+\end{figure}
+
+\paragraph{UC-KAT-01 : Enregistrement d'une parcelle.}
+\textit{Acteur :} Agriculteur (VERIFIED).
+\begin{enumerate}
+  \item L'agriculteur clique sur \og Nouvelle parcelle \fg{} et renseigne le nom,
+        le type de culture et la surface.
+  \item Il dessine le contour sur la carte Leaflet (polygone GeoJSON).
+  \item Il soumet le formulaire via \api{POST /api/v1/katara/parcels}.
+\end{enumerate}
+\textit{Postcondition :} parcelle créée avec géométrie GeoJSON stockée.
+
+\paragraph{UC-KAT-02 : Appairage d'un dispositif ESP32.}
+\textit{Acteur :} Agriculteur (VERIFIED).
+\begin{enumerate}
+  \item L'agriculteur sélectionne une parcelle et clique sur \og Associer un capteur \fg{}.
+  \item Il saisit l'identifiant du dispositif (format \code{ESP-KAT-NNN}).
+  \item Le backend génère une clé d'API unique (\code{vk\_<32 hex>}), la hache
+        (bcrypt) et la stocke.
+  \item La clé en clair est affichée \textbf{une seule fois} à l'agriculteur.
+\end{enumerate}
+\textit{Postcondition :} dispositif associé avec statut PENDING $\to$ ACTIVE à la
+première télémétrie.
+
+\paragraph{UC-KAT-03 : Ingestion de données télémétriques.}
+\textit{Acteur :} Dispositif ESP32.
+\begin{enumerate}
+  \item L'ESP32 envoie une requête HTTP POST avec \code{X-Device-Id} et
+        \code{X-Device-Api-Key}.
+  \item Le backend appelle la fonction SQL \code{m1\_katara\_ingest()} (SECURITY
+        DEFINER).
+  \item La fonction vérifie la clé (bcrypt), insère la mesure, met à jour
+        \code{last\_seen} et envoie un NOTIFY.
+  \item Le worker de seuils écoute le NOTIFY et vérifie les dépassements.
+  \item Si un seuil est franchi, un email d'alerte est envoyé à l'agriculteur.
+\end{enumerate}
+\textit{Postcondition :} mesure enregistrée. Durée totale $<$ 50~ms (p50).
+
+\paragraph{UC-KAT-04 : Demande de diagnostic IA.}
+\textit{Acteur :} Agriculteur (VERIFIED).
+\begin{enumerate}
+  \item L'agriculteur clique sur \og Demander un diagnostic \fg{}.
+  \item Le backend crée un enregistrement de diagnostic avec statut PENDING.
+  \item Un worker asynchrone collecte les données : dernières mesures, prévisions
+        météo (OWM), images NDVI (Sentinel-2).
+  \item Les données sont envoyées à l'API Gemini.
+  \item Le résumé diagnostique est stocké ; statut passe à COMPLETED.
+  \item Un email de notification est envoyé.
+\end{enumerate}
+\textit{Postcondition :} diagnostic consultable avec résumé en langage naturel.
+
+\subsubsection{Gestion des commandes}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{fig2_4b_uc_farmarket_commandes.jpeg}
+    \caption{Diagramme des commandes Farmarket}
+    \label{fig:fig1_2}
+\end{figure}
+\subsubsection{Gestion des evaluation}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{fig2_4c_uc_farmarket_eval.jpeg}
+    \caption{Diagramme de evaluation Farmarket}
+    \label{fig:fig1_2}
+\end{figure}
+
+\paragraph{UC-FAR-01 : Publication d'une annonce agricole.}
+\textit{Acteur :} Agriculteur (VERIFIED).
+\begin{enumerate}
+  \item L'agriculteur renseigne le titre, la description, le type de produit, le prix
+        (MAD/kg), la quantité et la région.
+  \item Il télécharge jusqu'à 5 photos du produit.
+  \item Il soumet l'annonce via \api{POST /api/v1/farmarket/ads}.
+\end{enumerate}
+\textit{Postcondition :} annonce ACTIVE visible dans le catalogue, expiration à J+7.
+
+\paragraph{UC-FAR-02 : Passage d'une commande.}
+\textit{Acteur :} Restaurateur (VERIFIED).
+\begin{enumerate}
+  \item Le restaurateur ajoute des articles au panier depuis plusieurs agriculteurs.
+  \item Il sélectionne le mode de paiement (COD ou PSP\_TRANSFER) et la région de
+        livraison.
+  \item Le système calcule les frais logistiques selon la région.
+  \item La commande est créée avec instantanés de prix (\code{unit\_price\_snapshot})
+        pour chaque article.
+  \item Chaque agriculteur reçoit une notification de nouvelle commande.
+\end{enumerate}
+\textit{Postcondition :} commande PENDING ; les agriculteurs voient leurs articles
+entrants anonymisés.
+
+\paragraph{UC-FAR-03 : Suivi et livraison d'une commande.}
+\textit{Acteurs :} Agriculteur (par article), Restaurateur (vue globale).
+\begin{enumerate}
+  \item L'agriculteur consulte ses articles entrants (vue anonymisée).
+  \item Il accepte ou rejette chaque article.
+  \item Le statut de l'article évolue : PENDING $\to$ ACCEPTED $\to$ PICKED\_UP
+        $\to$ IN\_TRANSIT $\to$ DELIVERED.
+  \item Le restaurateur confirme le paiement COD après réception.
+\end{enumerate}
+\textit{Postcondition :} commande DELIVERED, paiement confirmé.
+
+\subsubsection{Gestion des offres}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{fig2_5a_uc_ss_offres.jpeg}
+    \caption{Diagramme des offres SecondServe}
+    \label{fig:fig1_2}
+\end{figure}
+
+\paragraph{UC-SEC-01 : Accès SSO depuis VitaChain.}
+\textit{Acteur :} Restaurateur / Citoyen.
+\begin{enumerate}
+  \item L'utilisateur clique sur \og Accéder à SecondServe \fg{} depuis VitaChain.
+  \item Le backend génère un OTP Supabase à usage unique via
+        \api{POST /api/v1/secondserve/handoff}.
+  \item L'utilisateur est redirigé vers SecondServe avec le token dans l'URL.
+  \item SecondServe échange le token contre une session Supabase valide.
+\end{enumerate}
+\textit{Postcondition :} utilisateur connecté à SecondServe sans ressaisie
+d'identifiants.
+
+\subsection{Diagramme de classes d'analyse}
+
+L'analyse orientée objet du domaine de VitaChain identifie les classes principales
+suivantes.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{fig2_6_classes.png}
+    \caption{Diagramme de classes d'analyse}
+    \label{fig:fig2_6_classes}
+\end{figure}
+
+\paragraph{Classes du domaine Auth.}
+\code{User} (email, password\_hash, created\_at) --- géré par Supabase Auth ;
+\code{Profile} (id, role, verification\_status, full\_name, phone, locale) ;
+\code{KycDocument} (id, user\_id, type, storage\_path, status, reviewed\_at,
+reviewed\_by).
+
+\paragraph{Classes du domaine Katara.}
+\code{Parcel} (id, farmer\_id, name, geojson, crop\_type, surface\_area\_ha) ;
+\code{Device} (id, device\_id, parcel\_id, api\_key\_hash, status, last\_seen) ;
+\code{TelemetryReading} (id, device\_id, parcel\_id, soil\_moisture, soil\_temperature,
+soil\_ph, soil\_conductivity, battery\_level, recorded\_at) ;
+\code{AlertThreshold} (id, parcel\_id, metric, min\_value, max\_value, enabled) ;
+\code{AiDiagnostic} (id, parcel\_id, status, diagnostic\_summary).
+
+\paragraph{Classes du domaine FarMarket.}
+\code{FarmarketAd} (id, farmer\_id, title, product\_type, price\_mad, quantity\_kg,
+region, photo\_paths, status, expires\_at) ;
+\code{Order} (id, restaurant\_id, status, delivery\_region, subtotal\_mad,
+logistics\_fee\_mad, total\_mad, payment\_method, payment\_status) ;
+\code{OrderItem} (id, order\_id, ad\_id, farmer\_id, quantity\_kg, unit\_price\_mad,
+line\_total\_mad, status) ;
+\code{FarmerRating} (id, farmer\_id, restaurant\_id, rating, review).
+
+\paragraph{Relations clés.}
+\code{Profile} 1---N \code{Parcel} ;
+\code{Parcel} 1---N \code{Device} (1 actif max) ;
+\code{Device} 1---N \code{TelemetryReading} ;
+\code{Profile} (RESTAURANT) 1---N \code{Order} ;
+\code{Order} 1---N \code{OrderItem} ;
+\code{OrderItem} N---1 \code{FarmarketAd}.
+
+\section{Conception}
+
+\subsection{Génération du modèle physique de données (MPD)}
+
+Le modèle physique de données est implémenté en PostgreSQL~17 via Supabase. Il comprend
+12 tables principales, 5 vues, 8 types ENUM et plusieurs fonctions et triggers de
+sécurité.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{mdp.png}
+    \caption{Modèle Physique de Données (MPD) complet}
+    \label{fig:fig1_2}
+\end{figure}
+
+\begin{table}[H]
+  \centering
+  \caption{Types énumérés PostgreSQL de VitaChain}
+  \label{tab:enums}
+  \small
+  \begin{tabularx}{\linewidth}{lX}
+    \toprule
+    \textbf{Type} & \textbf{Valeurs} \\
+    \midrule
+    \code{user\_role}
+      & FARMER, RESTAURANT, CITIZEN, ADMIN \\
+    \code{verification\_status}
+      & PENDING, VERIFIED, REJECTED \\
+    \code{device\_status}
+      & PENDING, ACTIVE, OFFLINE, UNLINKED \\
+    \code{m2\_farmarket\_ad\_status}
+      & ACTIVE, EXPIRED, DELETED \\
+    \code{m2\_farmarket\_order\_status}
+      & PENDING, PARTIALLY\_ACCEPTED, ACCEPTED, REJECTED,
+        IN\_PROGRESS, DELIVERED, CANCELLED \\
+    \code{m2\_farmarket\_item\_status}
+      & PENDING, ACCEPTED, REJECTED, PICKED\_UP, IN\_TRANSIT, DELIVERED \\
+    \code{m2\_farmarket\_region}
+      & 12 régions administratives du Maroc (Tanger-Tétouan-Al Hoceïma,
+        Oriental, Fès-Meknès, Rabat-Salé-Kénitra, Béni Mellal-Khénifra,
+        Casablanca-Settat, Marrakech-Safi, Drâa-Tafilalet, Souss-Massa,
+        Guelmim-Oued Noun, Laâyoune-Sakia El Hamra,
+        Dakhla-Oued Ed-Dahab) \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\begin{table}[H]
+  \centering
+  \caption{Vues PostgreSQL de VitaChain}
+  \label{tab:vues}
+  \small
+  \begin{tabularx}{\linewidth}{lX}
+    \toprule
+    \textbf{Vue} & \textbf{Description} \\
+    \midrule
+    \code{m1\_katara\_telemetry\_latest}
+      & Dernière mesure par parcelle (DISTINCT ON). \\
+    \code{m1\_katara\_parcel\_device\_history}
+      & Historique de tous les dispositifs associés à une parcelle. \\
+    \code{v\_farmer\_incoming\_items}
+      & Articles entrants pour les agriculteurs avec
+        \code{resto\_handle = sha256(restaurant\_id || farmer\_id)}. \\
+    \code{v\_farmarket\_farmer\_public}
+      & Profil public d'un agriculteur pour le catalogue. \\
+    \code{v\_farmarket\_farmer\_rating\_stats}
+      & Moyenne et nombre d'évaluations par agriculteur. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\subsection{Génération du script SQL}
+
+Les migrations de base de données sont organisées en 50 fichiers SQL numérotés
+séquentiellement dans le répertoire \code{db/migrations/}. Chaque fichier est idempotent
+et suit la convention de nommage \code{NNNN\_description.sql}.
+
+\begin{table}[H]
+  \centering
+  \caption{Extrait des migrations SQL de VitaChain}
+  \label{tab:migrations}
+  \small
+  \begin{tabularx}{\linewidth}{clX}
+    \toprule
+    \textbf{N°} & \textbf{Fichier} & \textbf{Contenu} \\
+    \midrule
+    0001 & \code{0001\_extensions\_enums.sql}
+         & Extensions pg\_trgm, pgcrypto ; types ENUM. \\
+    0002 & \code{0002\_profiles.sql}
+         & Table \code{profiles}, contraintes, index. \\
+    0003 & \code{0003\_signup\_trigger.sql}
+         & Trigger \code{handle\_new\_user()} pour création automatique
+           du profil. \\
+    0006 & \code{0006\_jwt\_role\_hook.sql}
+         & Hook Supabase Custom Access Token (role dans JWT). \\
+    0008 & \code{0008\_rls\_has\_role\_helper.sql}
+         & Fonctions \code{has\_role()}, \code{is\_admin()} SECURITY
+           DEFINER. \\
+    0016 & \code{0016\_katara\_parcels.sql}
+         & Table \code{m1\_katara\_parcels}, RLS, index. \\
+    0017 & \code{0017\_katara\_devices.sql}
+         & Table \code{m1\_katara\_devices}, contraintes unicité,
+           \code{verify\_device\_api\_key()}. \\
+    0018 & \code{0018\_katara\_telemetry.sql}
+         & Table \code{m1\_katara\_telemetry}, fonction
+           \code{m1\_katara\_ingest()}, FORCE RLS. \\
+    0031 & \code{0031\_farmarket\_ads.sql}
+         & Table \code{m2\_farmarket\_ads}, index trgm, storage policies. \\
+    0040 & \code{0040\_farmarket\_orders.sql}
+         & Tables commandes et articles, vue anonymisation. \\
+    0046 & \code{0046\_farmarket\_ratings.sql}
+         & Table évaluations, contrainte achat vérifié. \\
+    0048 & \code{0048\_ss\_signup.sql}
+         & Trigger SecondServe : bypass profil VitaChain pour
+           \code{ss\_app} metadata. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+Le listing~\ref{lst:ingest} présente la fonction SQL atomique d'ingestion
+télémétrique, cœur du module Katara.
+
+\begin{lstlisting}[style=sql, caption={Fonction \texttt{m1\_katara\_ingest()} --- ingestion atomique télémétrique},
+                   label=lst:ingest]
+CREATE OR REPLACE FUNCTION public.m1_katara_ingest(
+  p_device_id         TEXT,
+  p_api_key           TEXT,
+  p_soil_moisture     NUMERIC,
+  p_soil_temperature  NUMERIC,
+  p_soil_ph           NUMERIC,
+  p_soil_conductivity NUMERIC,
+  p_battery_level     NUMERIC,
+  p_recorded_at       TIMESTAMPTZ DEFAULT now()
+) RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  v_parcel_id UUID;
+  v_farmer_id UUID;
+BEGIN
+  -- Verification bcrypt de la cle d'API (temps constant)
+  IF NOT public.verify_device_api_key(p_device_id, p_api_key) THEN
+    RAISE EXCEPTION 'invalid_device_credentials';
+  END IF;
+
+  -- Recuperation du contexte
+  SELECT parcel_id, farmer_id INTO v_parcel_id, v_farmer_id
+    FROM m1_katara_devices
+   WHERE device_id = p_device_id AND status = 'ACTIVE';
+
+  -- Insertion idempotente
+  INSERT INTO m1_katara_telemetry (
+    device_id, parcel_id, farmer_id,
+    soil_moisture, soil_temperature, soil_ph,
+    soil_conductivity, battery_level, recorded_at)
+  VALUES (
+    p_device_id, v_parcel_id, v_farmer_id,
+    p_soil_moisture, p_soil_temperature, p_soil_ph,
+    p_soil_conductivity, p_battery_level, p_recorded_at)
+  ON CONFLICT (device_id, recorded_at) DO NOTHING;
+
+  -- Mise a jour last_seen + activation si PENDING
+  UPDATE m1_katara_devices
+     SET last_seen = now(),
+         status = CASE WHEN status = 'PENDING'
+                       THEN 'ACTIVE' ELSE status END
+   WHERE device_id = p_device_id;
+
+  -- Notification aux workers (threshold + diagnostic)
+  PERFORM pg_notify('katara_telemetry',
+    json_build_object(
+      'device_id', p_device_id,
+      'parcel_id', v_parcel_id,
+      'farmer_id', v_farmer_id)::text);
+END;
+$$;
+\end{lstlisting}
+
+\subsection{Design Patterns utilisés}
+
+\begin{table}[H]
+  \centering
+  \caption{Design Patterns utilisés dans VitaChain}
+  \label{tab:patterns}
+  \small
+  \begin{tabularx}{\linewidth}{llX}
+    \toprule
+    \textbf{Pattern} & \textbf{Module} & \textbf{Description} \\
+    \midrule
+    Repository Pattern
+      & Backend
+      & \code{db.py} expose \code{service\_client()} et
+        \code{user\_scoped\_client()} --- abstraction de l'accès Supabase. \\
+    Router Pattern
+      & FastAPI
+      & Chaque domaine est encapsulé dans un \code{APIRouter} monté
+        de manière modulaire. \\
+    Dependency Injection
+      & FastAPI
+      & \code{get\_current\_user()}, \code{require\_role()},
+        \code{require\_verified()} sont des dépendances FastAPI. \\
+    Outbox Pattern
+      & Notifications
+      & Table \code{notifications\_outbox} : les mutations écrivent dans
+        l'outbox, un worker lit et envoie les emails. \\
+    CQRS (léger)
+      & FarMarket
+      & Séparation lecture (catalogue public, vue anonymisée) / écriture
+        (commandes) avec politiques RLS distinctes. \\
+    SECURITY DEFINER
+      & Base de données
+      & Fonctions critiques (\code{m1\_katara\_ingest},
+        \code{verify\_device\_api\_key}, \code{has\_role}) s'exécutent
+        avec les droits du propriétaire. \\
+    Snapshot
+      & FarMarket
+      & Prix et identifiant agriculteur copiés au moment de la commande
+        dans \code{order\_items}. \\
+    Magic Link SSO
+      & SecondServe
+      & OTP Supabase à usage unique pour le handoff inter-application. \\
+    Observer (LISTEN/NOTIFY)
+      & Katara
+      & La base publie des événements ; les workers Python s'abonnent
+        via LISTEN. \\
+    FORCE RLS
+      & Télémétrie
+      & \code{ALTER TABLE ... FORCE ROW LEVEL SECURITY} --- même le
+        propriétaire de la table est soumis aux politiques. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\subsection{Architecture du module}
+
+VitaChain suit une architecture \textbf{N-tiers} organisée en couches distinctes.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+  % ── Tier 1 : Présentation ──
+  \fill[blue!10, rounded corners=6pt]  (-7.2,-0.7) rectangle (7.2, 0.7);
+  \draw[blue!60, rounded corners=6pt]  (-7.2,-0.7) rectangle (7.2, 0.7);
+  \node[font=\small\bfseries, text=blue!80] at (-6.0,0) {Tier 1};
+  \node[font=\footnotesize, draw=blue!50,   fill=white, rounded corners=3pt,
+        minimum width=3.0cm, minimum height=0.65cm] at (-2.5, 0) {Next.js 15 (RSC/SSR)};
+  \node[font=\footnotesize, draw=orange!60, fill=orange!6, rounded corners=3pt,
+        minimum width=3.0cm, minimum height=0.65cm] at (1.2,  0) {SecondServe (Vite 6)};
+  \node[font=\footnotesize, draw=gray!50,   fill=gray!6,   rounded corners=3pt,
+        minimum width=2.6cm, minimum height=0.65cm] at (4.7,  0) {NGINX 1.27};
+  \node[font=\tiny\itshape, text=gray!70] at (0, 0.95) {Couche Présentation};
+
+  % ── Tier 2 : API ──
+  \fill[green!10, rounded corners=6pt]      (-7.2,-2.5) rectangle (7.2,-1.1);
+  \draw[green!50!black, rounded corners=6pt] (-7.2,-2.5) rectangle (7.2,-1.1);
+  \node[font=\small\bfseries, text=green!50!black] at (-6.0,-1.8) {Tier 2};
+  \node[font=\footnotesize, draw=green!50!black, fill=white, rounded corners=3pt,
+        minimum width=3.0cm, minimum height=0.65cm] at (-2.5,-1.8) {FastAPI (Python 3.12)};
+  \node[font=\footnotesize, draw=green!40!black, fill=green!5, rounded corners=3pt,
+        minimum width=3.0cm, minimum height=0.65cm] at (1.2,-1.8)  {Workers asynchrones};
+  \node[font=\footnotesize, draw=gray!50, fill=gray!6, rounded corners=3pt,
+        minimum width=2.6cm, minimum height=0.65cm] at (4.7,-1.8)  {Pydantic v2};
+  \node[font=\tiny\itshape, text=gray!70] at (0,-1.05) {Couche API};
+
+  % ── Tier 3 : Données ──
+  \fill[purple!8,  rounded corners=6pt] (-7.2,-4.3) rectangle (7.2,-2.9);
+  \draw[purple!50, rounded corners=6pt] (-7.2,-4.3) rectangle (7.2,-2.9);
+  \node[font=\small\bfseries, text=purple!70] at (-6.0,-3.6) {Tier 3};
+  \node[font=\footnotesize, draw=purple!50, fill=white, rounded corners=3pt,
+        minimum width=3.0cm, minimum height=0.65cm] at (-2.5,-3.6) {PostgreSQL 17 + RLS};
+  \node[font=\footnotesize, draw=purple!45, fill=purple!5, rounded corners=3pt,
+        minimum width=3.0cm, minimum height=0.65cm] at (1.2,-3.6) {Supabase Auth (JWT)};
+  \node[font=\footnotesize, draw=purple!40, fill=purple!5, rounded corners=3pt,
+        minimum width=2.6cm, minimum height=0.65cm] at (4.7,-3.6) {Storage (S3)};
+  \node[font=\tiny\itshape, text=gray!70] at (0,-2.85) {Couche Données};
+
+  % ── Tier 4 : Infrastructure ──
+  \fill[gray!10, rounded corners=6pt] (-7.2,-6.1) rectangle (7.2,-4.7);
+  \draw[gray!45, rounded corners=6pt] (-7.2,-6.1) rectangle (7.2,-4.7);
+  \node[font=\small\bfseries, text=gray!65] at (-6.0,-5.4) {Tier 4};
+  \node[font=\footnotesize, draw=gray!45, fill=white, rounded corners=3pt,
+        minimum width=2.4cm, minimum height=0.65cm] at (-4.0,-5.4) {Docker Compose};
+  \node[font=\footnotesize, draw=gray!45, fill=white, rounded corners=3pt,
+        minimum width=2.4cm, minimum height=0.65cm] at (-1.2,-5.4) {Let's Encrypt TLS};
+  \node[font=\footnotesize, draw=gray!45, fill=white, rounded corners=3pt,
+        minimum width=2.4cm, minimum height=0.65cm] at (1.8,-5.4)  {Sentry + Kuma};
+  \node[font=\footnotesize, draw=gray!45, fill=white, rounded corners=3pt,
+        minimum width=2.4cm, minimum height=0.65cm] at (4.8,-5.4)  {Backblaze B2};
+  \node[font=\tiny\itshape, text=gray!70] at (0,-4.65) {Couche Infrastructure};
+
+  % ── Flèches entre tiers ──
+  \draw[->, thick, gray!40] (0,-0.7) -- (0,-1.1);
+  \draw[->, thick, gray!40] (0,-2.5) -- (0,-2.9);
+  \draw[->, thick, gray!40] (0,-4.3) -- (0,-4.7);
+\end{tikzpicture}
+\caption{Architecture globale de VitaChain --- diagramme en couches N-tiers}
+\label{fig:2.8}
+\end{figure}
+
+\paragraph{Couche Présentation (Tier 1).}
+\textbf{Frontend Next.js~15} : interface principale (agriculteurs, restaurateurs,
+admin). Composants serveur (RSC) pour les lectures d'état auth. Middleware Supabase
+SSR pour la protection des routes \code{/dashboard}. \textbf{Application SecondServe
+(Vite/React)} : SPA indépendante pour les citoyens.
+
+\paragraph{Couche API (Tier 2).}
+\textbf{FastAPI (Python 3.12)} : API REST versionnée (\code{/api/v1/}). Validation
+Pydantic~v2. Authentification Bearer JWT. Routeurs modulaires par domaine.
+\textbf{Workers asynchrones} : processus Python dédiés pour les tâches longues
+(diagnostics IA, emails, détection hors ligne, expiration d'annonces).
+
+\paragraph{Couche Données (Tier 3).}
+\textbf{PostgreSQL~17 (Supabase)} : base de données relationnelle avec RLS,
+fonctions SECURITY DEFINER, LISTEN/NOTIFY. \textbf{Supabase Storage} : stockage
+objet pour photos d'annonces et documents KYC. \textbf{Supabase Auth} : gestion
+des utilisateurs, sessions JWT, Custom Access Token Hook.
+
+\paragraph{Couche Infrastructure (Tier 4).}
+\textbf{NGINX~1.27} : reverse proxy, terminaison TLS, rate-limiting.
+\textbf{Docker Compose} : orchestration des services. \textbf{Backblaze B2} :
+sauvegardes nocturnes. \textbf{Sentry} : capture d'erreurs.
+\textbf{Uptime Kuma} : monitoring de disponibilité.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{deploiment.png}
+    \caption{Diagramme de déploiement VitaChain — infrastructure Docker/VPS}
+    \label{fig:fig1_2}
+\end{figure}
+
+\section{Conclusion}
+
+Ce chapitre a présenté l'analyse et la conception de VitaChain. L'identification des
+sous-modules a permis de délimiter clairement les responsabilités de chaque composant.
+Les cas d'utilisation ont formalisé les interactions entre acteurs et système. Le
+modèle physique de données, avec ses 12 tables, ses fonctions SECURITY DEFINER et ses
+vues d'agrégation, constitue le socle de sécurité et de performance. Les design
+patterns adoptés garantissent la modularité et la maintenabilité de la solution. Le
+chapitre suivant détaille la phase de réalisation.
+
+% =============================================================
+% CHAPITRE 3 — RÉALISATION
+% =============================================================
+\chapter{Réalisation}
+
+\section{Introduction}
+
+Ce chapitre présente la réalisation concrète du projet VitaChain. Nous y décrivons la
+méthodologie de développement adoptée, les sprints réalisés, les technologies et outils
+utilisés, ainsi qu'une présentation des interfaces de chaque module.
+
+\section{Planning réel}
+
+\subsection{Méthodologie adoptée}
+
+Le développement de VitaChain a suivi une méthodologie \textbf{Scrum} adaptée au
+contexte d'un projet académique. Les principes appliqués sont :
+
+\begin{itemize}
+  \item \textbf{Développement itératif :} 10 sprints de 2 semaines.
+  \item \textbf{Story-driven development :} chaque fonctionnalité est définie par une
+        user story formalisée dans \code{docs/stories/} avec critères d'acceptation et
+        définition of done.
+  \item \textbf{Intégration continue :} pipeline GitHub Actions en 5 jobs (frontend,
+        backend, db, infra, détection de fuites de secrets) à chaque push.
+  \item \textbf{Tests automatisés :} pytest (backend), pgTAP (RLS), tests E2E (flux
+        KYC et multi-parcelles).
+  \item \textbf{Pre-commit hooks :} ruff, ESLint, shellcheck, vérification AUTH-05
+        avant chaque commit.
+\end{itemize}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{scrum_process.png}
+    \caption{Diagramme de processus Scrum adapté --- VitaChain}
+    \label{fig:3.1_scrum}
+\end{figure}
+
+\subsection{Tableau des sprints réalisés}
+
+\begin{table}[H]
+  \centering
+  \caption{Sprints réalisés --- VitaChain}
+  \label{tab:sprints}
+  \small
+  \begin{tabularx}{\linewidth}{lccX}
+    \toprule
+    \textbf{Sprint} & \textbf{Durée} & \textbf{Stories} & \textbf{Résultat} \\
+    \midrule
+    Sprint 0 --- Infrastructure & 2 sem. & INF-01 à INF-08
+      & VPS, Supabase, CI/CD, Docker, NGINX, HTTPS, backups, monitoring. \\
+    Sprint 1 --- Authentification & 2 sem. & AUTH-01 à AUTH-07
+      & Inscription, connexion, JWT, RLS, KYC, matrice de droits. \\
+    Sprint 2 --- Katara Parcelles & 2 sem. & KAT-01 à KAT-03
+      & Registre parcelles, appairage ESP32, ingestion télémétrie. \\
+    Sprint 3 --- Katara Tableaux & 2 sem. & KAT-04, KAT-05, KAT-08
+      & Graphiques, historique, multi-parcelles. \\
+    Sprint 4 --- Katara Services & 2 sem. & KAT-06, KAT-07, KAT-09--14
+      & Alertes email, diagnostics IA, météo, NDVI, détecteur offline. \\
+    Sprint 5 --- FarMarket Annonces & 2 sem. & FAR-01, FAR-02, FAR-07, FAR-08
+      & Création annonces, photos, catalogue, expiration. \\
+    Sprint 6 --- FarMarket Commandes & 2 sem. & FAR-03, FAR-04, FAR-05
+      & Commandes multi-articles, anonymisation, suivi statut. \\
+    Sprint 7 --- FarMarket Avancé & 2 sem. & FAR-06, FAR-09, FAR-10
+      & Paiement COD, évaluations, tableau de bord admin. \\
+    Sprint 8 --- SecondServe & 2 sem. & SEC-01 à SEC-04
+      & Offres surplus, commandes citoyens, SSO magic-link. \\
+    Sprint 9 --- Administration & 2 sem. & ADM-01 à ADM-04
+      & File KYC, gestion utilisateurs, modération FarMarket. \\
+    Sprint 10 --- Tests \& Livraison & 2 sem. & ---
+      & Tests de charge (Locust), corrections, documentation. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\subsection{Répartition des tâches et charges}
+
+\begin{table}[H]
+  \centering
+  \caption{Répartition des charges par composant}
+  \label{tab:charges}
+  \begin{tabularx}{\linewidth}{Xcc}
+    \toprule
+    \textbf{Composant} & \textbf{Charge estimée (h)} & \textbf{\%} \\
+    \midrule
+    Infrastructure \& DevOps & 60  & 13 \\
+    Base de données           & 80  & 17 \\
+    Backend FastAPI           & 120 & 26 \\
+    Frontend Next.js          & 100 & 22 \\
+    Application SecondServe   & 40  &  9 \\
+    IoT / ESP32               & 20  &  4 \\
+    Tests \& Documentation    & 40  &  9 \\
+    \midrule
+    \textbf{Total}            & \textbf{460} & \textbf{100} \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\pie[
+  radius       = 3.6,
+  text         = legend,
+  after number = \%,
+  color = {
+    blue!80,
+    blue!50,
+    green!65!black,
+    green!45!black,
+    orange!70,
+    yellow!55!orange,
+    gray!55
+  },
+  explode = {0, 0, 0.08, 0, 0, 0, 0}
+]{
+  13/{Infra \& DevOps},
+  17/{Base de données},
+  26/{Backend FastAPI},
+  22/{Frontend Next.js},
+  9/{SecondServe},
+  4/{IoT / ESP32},
+  9/{Tests \& Docs}
+}
+\end{tikzpicture}
+\caption{Répartition des charges de développement par composant (total~$\approx$~460h)}
+\label{fig:3.2}
+\end{figure}
+
+\section{Technologies utilisées}
+
+\subsection{Langages et Frameworks}
+
+\begin{table}[H]
+  \centering
+  \caption{Langages et frameworks --- VitaChain}
+  \label{tab:langages}
+  \small
+  \begin{tabularx}{\linewidth}{llX}
+    \toprule
+    \textbf{Technologie} & \textbf{Version} & \textbf{Usage} \\
+    \midrule
+    Python      & 3.12   & Langage du backend FastAPI et des workers. \\
+    FastAPI     & 0.115  & Framework API REST asynchrone, validation Pydantic~v2. \\
+    TypeScript  & 5.x    & Langage frontend (Next.js et SecondServe). \\
+    Next.js     & 15.1.6 & Framework React SSR/RSC pour le frontend principal. \\
+    React       & 19.0.0 & Bibliothèque UI (Next.js et SecondServe). \\
+    Vite        & 6.2.0  & Build tool pour l'application SecondServe (SPA). \\
+    React Router& v7     & Routage SPA dans SecondServe. \\
+    SQL         & PG 17  & Requêtes et définition du schéma PostgreSQL. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{img0.jpeg}
+    \caption{Logos des principaux langages et frameworks utilisés}
+    \label{fig:3.1_scrum}
+\end{figure}
+
+\subsection{Logiciels et outils de développement}
+
+\begin{table}[H]
+  \centering
+  \caption{Outils de développement --- VitaChain}
+  \label{tab:outils}
+  \small
+  \begin{tabularx}{\linewidth}{lX}
+    \toprule
+    \textbf{Outil} & \textbf{Usage} \\
+    \midrule
+    VS Code          & Éditeur principal (extensions Python, TypeScript, Tailwind). \\
+    Git / GitHub     & Contrôle de version, collaboration, CI/CD. \\
+    GitHub Actions   & Pipeline CI/CD automatisé (5 jobs). \\
+    Docker / Compose & Conteneurisation et orchestration des services. \\
+    Postman          & Test manuel des endpoints API REST. \\
+    Locust           & Tests de charge sur l'endpoint d'ingestion Katara. \\
+    DBeaver          & Administration et inspection de la base de données. \\
+    Leaflet          & Cartes interactives pour la sélection des parcelles. \\
+    Arduino IDE      & Développement du firmware ESP32. \\
+    Ruff             & Linter et formateur Python ultra-rapide. \\
+    ESLint           & Linter TypeScript/JavaScript. \\
+    pytest           & Framework de tests unitaires Python. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{img1.jpeg}
+    \caption{Logos des principaux outils de développement}
+    \label{fig:3.1_scrum}
+\end{figure}
+
+\subsection{Serveurs et services Cloud}
+
+\begin{table}[H]
+  \centering
+  \caption{Services Cloud et infrastructure --- VitaChain}
+  \label{tab:cloud}
+  \small
+  \begin{tabularx}{\linewidth}{lX}
+    \toprule
+    \textbf{Service} & \textbf{Rôle} \\
+    \midrule
+    Supabase
+      & Backend-as-a-Service : PostgreSQL~17, Auth (JWT), Storage, Realtime. \\
+    VPS Linux
+      & Hébergement de production : Docker Compose (frontend, backend,
+        nginx, certbot, kuma, backup). \\
+    NGINX 1.27
+      & Reverse proxy, terminaison TLS, rate-limiting, compression gzip. \\
+    Let's Encrypt / Certbot
+      & Certificats TLS/HTTPS avec renouvellement automatique. \\
+    Backblaze B2
+      & Stockage objet pour les sauvegardes nocturnes (pg\_dump via rclone). \\
+    Sentry
+      & Capture d'erreurs et tracking des releases (frontend + backend). \\
+    Uptime Kuma
+      & Monitoring de disponibilité, alertes Telegram/email. \\
+    OpenWeatherMap API
+      & Prévisions météo pour les parcelles Katara. \\
+    Sentinel-2 (Copernicus)
+      & Images satellites NDVI pour l'analyse végétale des parcelles. \\
+    Google Gemini API
+      & Intelligence artificielle pour les diagnostics agronomiques. \\
+    Brevo (Sendinblue)
+      & Service d'envoi d'emails transactionnels. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{archi_cloud.png}
+    \caption{Architecture Cloud --- diagramme des services externes intégrés}
+    \label{fig:3.5_cloud}
+\end{figure}
+
+\section{Interfaces de l'application}
+
+\subsection{Module Authentification}
+
+Le module d'authentification est le point d'entrée de VitaChain. Il propose une
+interface claire et sécurisée pour l'inscription, la connexion et la vérification
+d'identité professionnelle.
+
+\paragraph{Page d'inscription.}
+La page présente un formulaire en deux panneaux : à gauche, un aperçu de l'écosystème
+VitaChain ; à droite, le formulaire de création de compte avec sélection du rôle
+(Agriculteur / Restaurateur / Citoyen).
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{kat1.png}
+    \caption{Interface — Page d’inscription VitaChain avec sélecteur de rôle}
+    \label{fig:3.5_inscription}
+\end{figure}
+
+\paragraph{Page de connexion.}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{kat2.png}
+    \caption{Interface — Page de connexion VitaChain}
+    \label{fig:3.6_connexion}
+\end{figure}
+\paragraph{Page d'onboarding KYC.}
+Après inscription, les professionnels sont invités à soumettre leurs documents de
+vérification. L'interface guide l'utilisateur étape par étape : sélection du type de
+document, téléchargement du fichier, confirmation de soumission.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{kat3.png}
+    \caption{Interface — Formulaire de soumission KYC avec upload de documents (1/4)}
+    \label{fig:3.7_kyc1}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{kat4.png}
+    \caption{Interface — Formulaire de soumission KYC (2/4)}
+    \label{fig:3.7_kyc2}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{kat5.png}
+    \caption{Interface — Formulaire de soumission KYC (3/4)}
+    \label{fig:3.7_kyc3}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{kat6.png}
+    \caption{Interface — Formulaire de soumission KYC (4/4)}
+    \label{fig:3.7_kyc4}
+\end{figure}
+
+\subsection{Module Katara --- Surveillance IoT}
+
+\paragraph{Tableau de bord Katara (vue multi-parcelles).}
+La page d'accueil du module Katara présente une vue synthétique de toutes les parcelles
+avec les indicateurs clés : dernières mesures de sol, statut des dispositifs, nombre
+d'alertes actives et résumé météo.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{kat7.png}
+    \caption{Interface — Tableau de bord Katara multi-parcelles avec KPI strip (1/2)}
+    \label{fig:3.9_katara1}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{kat8.png}
+    \caption{Interface — Tableau de bord Katara multi-parcelles avec KPI strip (2/2)}
+    \label{fig:3.9_katara2}
+\end{figure}
+
+\paragraph{Création d'une parcelle.}
+Le formulaire intègre une carte Leaflet permettant à l'agriculteur de dessiner le
+contour géographique exact de son champ (polygone GeoJSON).
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{kat9.png}
+    \caption{Interface --- Formulaire de création de parcelle avec carte Leaflet interactive}
+    \label{fig:3.10_parcelle}
+\end{figure}
+
+\paragraph{Télémétrie en temps réel.}
+Chaque parcelle dispose d'une vue détaillée avec des onglets. L'onglet télémétrie
+affiche des graphiques Sparkline pour les 4 métriques de sol sur les périodes 24h, 7j
+et 30j.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{kat10.png}
+    \caption{Interface --- Graphiques de télémétrie temps réel pour une parcelle (4 métriques)}
+    \label{fig:3.11_telemetrie}
+\end{figure}
+
+\paragraph{Gestion des seuils d'alerte.}
+L'agriculteur configure des seuils min/max pour chaque métrique. Le dépassement
+déclenche automatiquement un email d'alerte via le worker Katara.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{kat11.png}
+    \caption{Interface --- Configuration des seuils d'alerte par métrique}
+    \label{fig:3.12_seuils}
+\end{figure}
+
+\paragraph{Diagnostic IA.}
+Le système agrège les données télémétriques, météorologiques et satellitaires, puis
+génère un résumé agronomique en langage naturel via Gemini.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{kat12.png}
+    \caption{Interface --- Résultat d'un diagnostic agronomique IA (Gemini)}
+    \label{fig:3.13_diagnostic}
+\end{figure}
+
+\paragraph{Vue météo et satellite NDVI.}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{kat13.png}
+    \caption{Interface --- Prévisions météo OpenWeatherMap pour une parcelle}
+    \label{fig:3.14_meteo}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{kat14.png}
+    \caption{Interface --- Image NDVI Sentinel-2 pour une parcelle agricole}
+    \label{fig:3.15_ndvi}
+\end{figure}
+
+\paragraph{Gestion des dispositifs ESP32.}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{kat15.png}
+    \caption{Interface --- Liste des dispositifs IoT avec statut (ACTIVE/OFFLINE)}
+    \label{fig:3.16_dispositifs}
+\end{figure}
+
+\subsection{Module FarMarket --- Marketplace Agricole}
+
+\paragraph{Tableau de bord agriculteur --- Mes annonces.}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{farm0.png}
+    \caption{Interface --- Tableau de bord agriculteur FarMarket avec liste des annonces}
+    \label{fig:3.16_dispositifs}
+\end{figure}
+
+\paragraph{Création d'une annonce avec photos.}
+Le formulaire permet d'uploader jusqu'à 5 photos du produit. Les photos sont stockées
+dans le bucket Supabase \code{farmarket-photos} avec politiques RLS.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{farm3.png}
+    \caption{Interface --- Formulaire de création d'annonce agricole avec galerie photos}
+    \label{fig:3.16_dispositifs}
+\end{figure}
+
+
+\paragraph{Catalogue restaurateur.}
+Le restaurateur accède à un catalogue paginé d'annonces actives avec filtres par
+région (12 régions du Maroc), type de produit et fourchette de prix. Une recherche
+textuelle floue (pg\_trgm) est disponible.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{farm4.png}
+    \caption{Interface --- Catalogue FarMarket avec filtres et cartes d'annonces}
+    \label{fig:3.16_dispositifs}
+\end{figure}
+
+
+\paragraph{Détail d'une annonce.}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{farm5.png}
+    \caption{Interface --- Page détail d'une annonce avec profil agriculteur, note moyenne et avis}
+    \label{fig:3.16_dispositifs}
+\end{figure}
+
+\paragraph{Panier et processus de commande.}
+Le restaurateur ajoute des articles au panier depuis plusieurs agriculteurs différents.
+Le système calcule automatiquement les frais logistiques selon la région de livraison.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{farm6.png}
+    \caption{Interface --- Panier restaurateur avec résumé de commande et frais logistiques}
+    \label{fig:3.16_dispositifs}
+\end{figure}
+
+
+\paragraph{Suivi de commande --- vue restaurateur.}
+
+
+
+
+
+\paragraph{Articles entrants --- vue agriculteur (anonymisée).}
+L'agriculteur voit ses articles entrants via la vue \code{v\_farmer\_incoming\_items}.
+Le nom du restaurateur est masqué, remplacé par un \code{resto\_handle} opaque
+(sha256).
+
+\paragraph{Confirmation de paiement COD.}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{farm7.png}
+    \caption{Interface --- Confirmation de paiement en espèces (COD) par le restaurateur}
+    \label{fig:3.16_dispositifs}
+\end{figure}
+
+\paragraph{Laisser une évaluation.}
+
+\subsection{Module SecondServe --- Anti-gaspillage}
+
+SecondServe est une application distincte (Vite/React), partagée sur le même projet
+Supabase, dédiée à la redistribution des surplus alimentaires des restaurants aux
+citoyens.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{ss1.png}
+    \caption{Interface --- Page d'accueil SecondServe avec liste des offres surplus disponibles}
+    \label{fig:3.16_dispositifs}
+\end{figure}
+
+
+\paragraph{Catalogue des offres.}
+Le citoyen filtre les offres par ville et par type de cuisine. Chaque carte d'offre
+affiche le nom du plat, le prix réduit, la quantité restante et l'heure limite de
+réservation.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{ss3.png}
+    \caption{Interface --- Catalogue des offres surplus avec filtres par ville}
+    \label{fig:3.16_dispositifs}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{ss4.png}
+    \caption{Interface --- Tableau de bord citoyen SecondServe avec historique des commandes}
+    \label{fig:3.16_dispositifs}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{ss5.png}
+    \caption{Interface --- Tableau de bord restaurateur SecondServe (gestion des offres)}
+    \label{fig:3.16_dispositifs}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{ss6.png}
+    \caption{Interface --- Reçu de commande SecondServe}
+    \label{fig:3.16_dispositifs}
+\end{figure}
+
+
+\subsection{Module Administration}
+
+\paragraph{File d'attente KYC.}
+L'administrateur voit la liste des demandes en attente avec accès aux documents soumis.
+Il peut approuver ou rejeter chaque demande. L'action déclenche la mise à jour du
+statut et l'envoi d'un email.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{AD1.png}
+    \caption{Interface --- File d'attente KYC avec téléchargement de documents et boutons d'action}
+    \label{fig:3.16_dispositifs}
+\end{figure}
+
+
+\paragraph{Gestion des utilisateurs.}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{AD2.png}
+    \caption{Interface --- Console de gestion des utilisateurs avec filtres et actions}
+    \label{fig:3.16_dispositifs}
+\end{figure}
+
+
+\paragraph{Tableau de bord FarMarket (administration).}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{AD3.png}
+    \caption{Interface --- Tableau de bord admin FarMarket avec statistiques globales}
+    \label{fig:3.16_dispositifs}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{AD4.png}
+    \caption{Interface --- Tableau de bord admin SecondServe avec statistiques globales}
+    \label{fig:3.16_dispositifs}
+\end{figure}
+
+
+\subsection{Dispositif IoT --- ESP32}
+
+Le dispositif IoT au cœur du module Katara est un microcontrôleur \textbf{ESP32}
+équipé de capteurs de sol mesurant les paramètres agronomiques et les transmettant
+au backend VitaChain via HTTP.
+
+\paragraph{Capteurs intégrés :}
+capteur d'humidité du sol (capacitif) ; capteur de température du sol (DS18B20) ;
+capteur de pH du sol (électrode pH + module analogique) ; capteur de conductivité
+électrique (EC meter) ; mesure de niveau de batterie (diviseur résistif sur ADC).
+
+\fig{fig3_34_esp32_schema}{Schéma du dispositif IoT --- ESP32 avec capteurs de sol connectés}{3.34}
+
+\paragraph{Protocole de communication.}
+Le firmware envoie une requête HTTP POST toutes les $N$ minutes (configurable) vers
+l'endpoint \api{POST /api/v1/katara/ingest}.
+
+\begin{lstlisting}[style=json,caption={Payload télémétrique ESP32},label=lst:payload]
+{
+  "soil_moisture":     42.5,
+  "soil_temperature":  21.3,
+  "soil_ph":            6.8,
+  "soil_conductivity":  1.2,
+  "battery_level":     78.0,
+  "recorded_at": "2026-06-17T10:30:00Z"
+}
+\end{lstlisting}
+
+\begin{lstlisting}[style=bash,caption={En-têtes HTTP d'authentification du dispositif},label=lst:headers]
+X-Device-Id:      ESP-KAT-001
+X-Device-Api-Key: vk_a1b2c3d4e5f6...
+\end{lstlisting}
+
+\paragraph{Flux d'appairage.}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{fig3_35_appairage_seq1.png}
+    \caption{Diagramme de séquence --- Flux d'appairage d'un ESP32 avec VitaChain (1/3)}
+    \label{fig:3.35_appairage1}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{fig3_35_appairage_seq2.png}
+    \caption{Diagramme de séquence --- Flux d'appairage d'un ESP32 avec VitaChain (2/3)}
+    \label{fig:3.35_appairage2}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{fig3_35_appairage_seq3.png}
+    \caption{Diagramme de séquence --- Flux d'appairage d'un ESP32 avec VitaChain (3/3)}
+    \label{fig:3.35_appairage3}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{PT.jpeg}
+    \caption{Photo du prototype ESP32 avec capteurs de sol assemblés sur breadboard}{3.36}
+    \label{fig:3.35_appairage3}
+\end{figure}
+
+\section{Conclusion}
+
+Ce chapitre a présenté la réalisation complète de VitaChain. La méthodologie Scrum a
+permis de livrer 50+ stories réparties sur 10 sprints en environ 460 heures de
+développement. La plateforme intègre un stack technologique moderne et couvre quatre
+modules fonctionnels complets. Le dispositif ESP32 assure la collecte des données
+agronomiques en temps réel avec une latence d'ingestion inférieure à 50~ms.
+
+% =============================================================
+% CHAPITRE 4 — CONCLUSION GÉNÉRALE
+% =============================================================
+\chapter{Conclusion Générale}
+
+\section{Bilan}
+
+VitaChain est une plateforme numérique agroalimentaire complète, conçue et réalisée de
+A~à~Z dans le cadre de ce Projet de Fin d'Études. Le projet a atteint l'ensemble de ses
+objectifs initiaux.
+
+\paragraph{Objectifs techniques atteints.}
+\begin{itemize}
+  \item Architecture full-stack production-ready : FastAPI, Next.js~15, PostgreSQL~17,
+        Docker, NGINX, TLS.
+  \item Système d'authentification robuste avec JWT multi-rôle, Row-Level Security
+        (22 politiques) et processus KYC.
+  \item Module Katara opérationnel : ingestion IoT $<$ 50~ms (p50), alertes temps réel
+        via LISTEN/NOTIFY, diagnostics IA, intégration OWM et Sentinel-2.
+  \item Module FarMarket complet : cycle de vie des annonces, commandes
+        multi-agriculteurs, anonymisation B2B, paiement COD, évaluations.
+  \item Module SecondServe fonctionnel : offres surplus, commandes citoyens, SSO
+        inter-application via magic-link.
+  \item Administration centralisée : KYC, gestion utilisateurs, modération.
+  \item Infrastructure DevOps : 50 migrations SQL, CI/CD GitHub Actions (5 jobs),
+        sauvegardes nocturnes, monitoring Sentry + Uptime Kuma.
+\end{itemize}
+
+\paragraph{Défis surmontés.}
+\begin{itemize}
+  \item \textbf{Sécurité multi-rôle complexe :} conception et test de la matrice RLS
+        22-cellules pour éviter les fuites de données inter-utilisateurs.
+  \item \textbf{Performance IoT :} fonction SQL atomique SECURITY DEFINER combinant
+        vérification, insertion, dénormalisation et notification en un seul appel pour
+        atteindre la cible $<$ 50~ms.
+  \item \textbf{Anonymisation B2B :} vue \code{v\_farmer\_incoming\_items} avec hash
+        sha256 déterministe préservant l'utilité tout en protégeant l'identité du
+        restaurateur.
+  \item \textbf{SSO inter-application :} handoff SecondServe par OTP Supabase à usage
+        unique.
+\end{itemize}
+
+\paragraph{Chiffres clés du projet.}
+\begin{itemize}
+  \item 50 migrations SQL ; 12 tables PostgreSQL ; 5 vues de sécurité
+  \item $\approx$~60 endpoints REST API
+  \item 4 modules fonctionnels livrés
+  \item $\approx$~460 heures de développement sur 10 sprints
+\end{itemize}
+
+\section{Perspectives}
+
+\paragraph{Court terme.}
+\begin{itemize}
+  \item \textbf{Module BotaBa9a :} finaliser l'implémentation du module de surveillance
+        de chaîne du froid, dont l'architecture est déjà définie.
+  \item \textbf{Notifications push :} ajouter des notifications push web (Web Push API)
+        en complément des emails pour les alertes Katara et mises à jour FarMarket.
+  \item \textbf{Application mobile :} développer une application React Native pour
+        améliorer l'accessibilité aux agriculteurs en zone rurale.
+\end{itemize}
+
+\paragraph{Moyen terme.}
+\begin{itemize}
+  \item \textbf{Paiement en ligne :} intégrer une vraie passerelle de paiement
+        (CMI, PayZone Maroc).
+  \item \textbf{Intelligence artificielle avancée :} enrichir les diagnostics Katara
+        avec des modèles ML spécialisés (prédiction de rendement, recommandation
+        d'irrigation).
+  \item \textbf{Traçabilité :} explorer l'ajout d'une couche de traçabilité sur la
+        chaîne d'approvisionnement FarMarket.
+\end{itemize}
+
+\paragraph{Long terme.}
+\begin{itemize}
+  \item \textbf{Marketplace de données agronomiques :} permettre aux agriculteurs de
+        monétiser leurs données anonymisées auprès d'instituts de recherche.
+  \item \textbf{Intégration API nationale :} connecter VitaChain aux systèmes
+        d'information du Ministère de l'Agriculture marocain (MAPMDREF).
+  \item \textbf{Réseau de capteurs mutualisé :} déployer des nœuds IoT communautaires
+        permettant à plusieurs agriculteurs d'une même zone de partager
+        l'infrastructure de capteurs.
+\end{itemize}
+
+VitaChain démontre la faisabilité technique et la pertinence d'une plateforme numérique
+intégrée pour le secteur agroalimentaire marocain. La combinaison de l'IoT, du
+marketplace B2B et de l'anti-gaspillage dans un seul écosystème constitue une
+proposition de valeur différenciante et un point de départ solide pour un déploiement
+à grande échelle.
+
+% =============================================================
+% ANNEXES
+% =============================================================
+\appendix
+
+\chapter{Configuration du dispositif ESP32}
+\label{annexe:a}
+
+\section{Schéma de câblage des capteurs}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{Screenshot 2026-06-19 023415.png}
+    \caption{Schéma de câblage complet ESP32 --- capteurs de sol, alimentation et connectivité Wi-Fi}{A.1}
+    \label{fig:3.35_appairage3}
+\end{figure}
+
+\section{Format du payload télémétrique}
+
+Le dispositif ESP32 envoie un payload JSON à intervalle configurable (défaut :
+5~minutes) :
+
+\begin{lstlisting}[style=json,caption={Payload JSON complet envoyé par l'ESP32},label=lst:payloadfull]
+{
+  "soil_moisture":      45.2,
+  "soil_temperature":   22.1,
+  "soil_ph":             6.75,
+  "soil_conductivity":   1.35,
+  "battery_level":      82.0,
+  "recorded_at": "2026-06-17T10:30:00.000Z"
+}
+\end{lstlisting}
+
+En-têtes HTTP requis :
+\begin{lstlisting}[style=bash,label=lst:headersannex]
+Content-Type:     application/json
+X-Device-Id:      ESP-KAT-001
+X-Device-Api-Key: vk_<32_hex_chars>
+\end{lstlisting}
+
+Réponse attendue en succès :
+\begin{lstlisting}[style=json,label=lst:response]
+{"status": "ok", "recorded_at": "2026-06-17T10:30:00.000Z"}
+\end{lstlisting}
+
+\section{Procédure d'appairage d'un nouveau dispositif}
+
+\begin{enumerate}
+  \item L'agriculteur crée une parcelle dans l'interface VitaChain.
+  \item Il accède à l'onglet \og Dispositifs \fg{} et clique sur
+        \og Associer un capteur \fg{}.
+  \item Il saisit l'identifiant du dispositif imprimé sur le boîtier ESP32
+        (format \code{ESP-KAT-NNN}).
+  \item Le backend génère la clé d'API et l'affiche \textbf{une seule fois}.
+  \item L'agriculteur saisit la clé dans le fichier \code{devices.json} de l'ESP32.
+  \item L'ESP32 envoie sa première mesure ; le dispositif passe automatiquement en
+        statut ACTIVE.
+\end{enumerate}
+
+\section{Codes d'erreur de l'endpoint d'ingestion}
+
+\begin{table}[H]
+  \centering
+  \caption{Codes d'erreur de \texttt{POST /api/v1/katara/ingest}}
+  \label{tab:erreurs}
+  \begin{tabularx}{\linewidth}{clX}
+    \toprule
+    \textbf{Code HTTP} & \textbf{Erreur} & \textbf{Cause} \\
+    \midrule
+    200 & OK                        & Mesure enregistrée avec succès. \\
+    401 & invalid\_device\_credentials & Clé d'API incorrecte ou dispositif
+                                         inexistant. \\
+    409 & duplicate\_timestamp       & Mesure déjà reçue pour ce
+                                       (device\_id, recorded\_at). \\
+    422 & validation\_error          & Payload JSON invalide ou valeurs hors
+                                       plage. \\
+    429 & rate\_limited              & Trop de requêtes (limite NGINX :
+                                       30~req/s). \\
+    503 & service\_unavailable       & Base de données Supabase inaccessible. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\chapter{Matrice des droits d'accès (RLS)}
+\label{annexe:b}
+
+\section{Matrice rôle \texorpdfstring{$\times$}{x} table \texorpdfstring{$\times$}{x} verbe}
+
+La matrice suivante résume les politiques Row-Level Security implémentées dans
+PostgreSQL pour VitaChain.
+
+\begin{longtable}{p{5.5cm}ccccc}
+  \caption{Matrice complète RLS --- VitaChain (22 cellules vérifiées)}
+  \label{tab:rls}\\
+  \toprule
+  \textbf{Table / Opération}
+    & \textbf{FARMER} & \textbf{RESTO} & \textbf{CITIZEN}
+    & \textbf{ADMIN}  & \textbf{Service} \\
+  \midrule
+  \endfirsthead
+  \multicolumn{6}{c}{\small\itshape Suite du tableau~\ref{tab:rls}}\\
+  \toprule
+  \textbf{Table / Opération}
+    & \textbf{FARMER} & \textbf{RESTO} & \textbf{CITIZEN}
+    & \textbf{ADMIN}  & \textbf{Service} \\
+  \midrule
+  \endhead
+  \bottomrule
+  \endlastfoot
+
+  \code{profiles} (SELECT)
+    & C(own) & C(own) & C(own) & \checkmark & \checkmark \\
+  \code{profiles} (UPDATE)
+    & C(own) & C(own) & C(own) & \checkmark & \checkmark \\
+  \code{kyc\_documents} (SELECT)
+    & C(own) & C(own) & $\times$ & \checkmark & \checkmark \\
+  \code{kyc\_documents} (INSERT)
+    & \checkmark & \checkmark & $\times$ & $\times$ & \checkmark \\
+  \code{m1\_katara\_parcels} (SELECT)
+    & C(own) & $\times$ & $\times$ & \checkmark & \checkmark \\
+  \code{m1\_katara\_parcels} (INSERT)
+    & V & $\times$ & $\times$ & $\times$ & \checkmark \\
+  \code{m1\_katara\_devices} (SELECT)
+    & C(own) & $\times$ & $\times$ & \checkmark & \checkmark \\
+  \code{m1\_katara\_telemetry} (SELECT)
+    & C(own) & $\times$ & $\times$ & \checkmark & \checkmark \\
+  \code{m1\_katara\_telemetry} (INSERT)
+    & $\times$ & $\times$ & $\times$ & $\times$ & \checkmark \\
+  \code{m2\_farmarket\_ads} (SELECT)
+    & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark \\
+  \code{m2\_farmarket\_ads} (INSERT)
+    & V & $\times$ & $\times$ & $\times$ & \checkmark \\
+  \code{m2\_farmarket\_orders} (SELECT)
+    & $\times$ & C(own) & $\times$ & \checkmark & \checkmark \\
+  \code{m2\_farmarket\_orders} (INSERT)
+    & $\times$ & V & $\times$ & $\times$ & \checkmark \\
+  \code{m2\_farmarket\_order\_items} (SELECT)
+    & C(anon.) & C(own) & $\times$ & \checkmark & \checkmark \\
+  \code{m2\_farmarket\_farmer\_ratings} (SELECT)
+    & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark \\
+  \code{m2\_farmarket\_farmer\_ratings} (INSERT)
+    & $\times$ & D & $\times$ & $\times$ & \checkmark \\
+\end{longtable}
+
+\vspace{6pt}
+\noindent
+\textbf{Légende :}
+\begin{itemize}
+  \item \checkmark{} : accès autorisé sans condition supplémentaire.
+  \item $\times$ : accès interdit.
+  \item C(own) : accès conditionnel --- uniquement ses propres données
+        (\code{auth.uid() = user\_id}).
+  \item C(anon.) : accès via la vue anonymisée
+        (\code{v\_farmer\_incoming\_items}).
+  \item V : autorisé uniquement si \code{verification\_status = 'VERIFIED'}
+        (WITH CHECK).
+  \item D : autorisé uniquement si au moins 1 article DELIVERED de cet
+        agriculteur (WITH CHECK).
+\end{itemize}
+
+\section{Fonctions SECURITY DEFINER}
+
+\begin{table}[H]
+  \centering
+  \caption{Fonctions PostgreSQL SECURITY DEFINER --- VitaChain}
+  \label{tab:secdef}
+  \small
+  \begin{tabularx}{\linewidth}{llX}
+    \toprule
+    \textbf{Fonction} & \textbf{Signature} & \textbf{Description} \\
+    \midrule
+    \code{has\_role(role)}
+      & \code{(user\_role)} $\rightarrow$ \code{bool}
+      & Vérifie le rôle JWT sans récursion RLS. \\
+    \code{is\_admin()}
+      & \code{()} $\rightarrow$ \code{bool}
+      & Raccourci pour \code{has\_role('ADMIN')}. \\
+    \code{verify\_device\_api\_key}
+      & \code{(text, text)} $\rightarrow$ \code{bool}
+      & Comparaison bcrypt en temps constant. \\
+    \code{m1\_katara\_ingest}
+      & \code{(...)} $\rightarrow$ \code{void}
+      & Ingestion atomique : vérif + INSERT + UPDATE + NOTIFY. \\
+    \code{ss\_place\_order}
+      & \code{(...)} $\rightarrow$ \code{uuid}
+      & Commande SecondServe avec contrôle de stock atomique. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\end{document}

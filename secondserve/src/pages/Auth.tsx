@@ -132,6 +132,10 @@ export function Auth() {
         ss_role: role,
         ss_name: name,
         ss_city: city || 'Casablanca',
+        // Whatever language the signup form is currently shown in becomes the
+        // account's language everywhere, on every device (handle_new_ss_user
+        // persists this to ss_profiles.locale).
+        ss_locale: language,
       };
       if (role === 'restaurant') {
         ssMeta.ss_commerce_type = commerceType || 'Patisserie';
@@ -152,6 +156,7 @@ export function Auth() {
         const msg = (signUpError.message || '').toLowerCase();
         if (msg.includes('already') || msg.includes('registered')) {
           toast.error(t('authErrEmailInUse'));
+          setIsLogin(true);
         } else if (msg.includes('password')) {
           toast.error(t('authErrWeakPassword'));
         } else {

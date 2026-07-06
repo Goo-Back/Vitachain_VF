@@ -1,0 +1,75 @@
+{
+  "citizen": {
+    "home": {
+      "greeting": {
+        "morning": "صباح الخير",
+        "afternoon": "مساء الخير",
+        "evening": "مساء الخير"
+      },
+      "heroTitle": "ما الذي تودّ اكتشافه اليوم؟",
+      "viewFarmarketAds": "عرض إعلانات FarMarket",
+      "surplusMeals": "وجبات مكافحة التبذير",
+      "tiles": {
+        "availableAds": "الإعلانات المتاحة",
+        "featured": "مميّزة",
+        "regions": "الجهات الممثَّلة"
+      },
+      "featuredSection": {
+        "title": "الإعلانات المميّزة",
+        "subtitle": "مجموعة مختارة من المنتجين المحليين حاليًا.",
+        "viewAll": "عرض الكل",
+        "empty": "لا توجد إعلانات متاحة حاليًا."
+      },
+      "secondServePromo": {
+        "tag": "مكافحة التبذير",
+        "title": "وفّر الوجبات ووفّر المال",
+        "description": "ينشر المطاعم الشركاء فائض اليوم بأسعار مخفّضة على منصة SecondServe.",
+        "cta": "فتح SecondServe"
+      }
+    },
+    "marketplace": {
+      "tag": "FarMarket",
+      "description": "اكتشف المنتجين المحليين. تتم الطلبات عبر المطاعم الشريكة.",
+      "empty": {
+        "title": "لم يتم العثور على أي إعلان.",
+        "subtitle": "حاول توسيع معايير البحث."
+      },
+      "pagination": {
+        "previous": "السابق",
+        "next": "التالي",
+        "page": "الصفحة {page}"
+      }
+    },
+    "adCard": {
+      "soldOut": "نفدت الكمية",
+      "featured": "مميّز",
+      "outOfStock": "غير متوفر",
+      "kgAvailable": "{qty} كلغ متوفر"
+    },
+    "adDetail": {
+      "breadcrumbCatalog": "الكتالوج",
+      "description": "الوصف",
+      "noDescription": "لم يقدّم المنتج أي وصف.",
+      "otherAds": "إعلانات أخرى لهذا المنتج",
+      "reviews": "آراء حول هذا المنتج",
+      "featured": "مميّز",
+      "productType": "نوع المنتج",
+      "stock": "الكمية المتوفرة",
+      "stockValue": "{qty} كلغ",
+      "region": "جهة المنشأ",
+      "validUntil": "الإعلان صالح إلى غاية {date}.",
+      "howToOrderTitle": "كيف يمكن الطلب؟",
+      "howToOrderBody": "تمر طلبات FarMarket عبر المطاعم الشريكة. تتيح لك هذه الصفحة اكتشاف المنتجين المحليين ومنتجاتهم."
+    },
+    "farmerProfile": {
+      "breadcrumbCatalog": "الكتالوج",
+      "eyebrow": "منتج",
+      "verified": "منتج موثّق",
+      "memberSince": "عضو منذ",
+      "activeAds": "الإعلانات النشطة",
+      "adsTitle": "إعلانات هذا المنتج",
+      "noAds": "لا توجد إعلانات نشطة حاليًا.",
+      "reviewsTitle": "آراء المطاعم"
+    }
+  }
+}

@@ -1,0 +1,75 @@
+{
+  "citizen": {
+    "home": {
+      "greeting": {
+        "morning": "Bonjour",
+        "afternoon": "Bon après-midi",
+        "evening": "Bonsoir"
+      },
+      "heroTitle": "Que souhaitez-vous découvrir aujourd'hui ?",
+      "viewFarmarketAds": "Voir les annonces FarMarket",
+      "surplusMeals": "Repas anti-gaspi",
+      "tiles": {
+        "availableAds": "Annonces disponibles",
+        "featured": "En vedette",
+        "regions": "Régions représentées"
+      },
+      "featuredSection": {
+        "title": "Annonces en vedette",
+        "subtitle": "Une sélection de producteurs locaux du moment.",
+        "viewAll": "Tout voir",
+        "empty": "Aucune annonce disponible pour le moment."
+      },
+      "secondServePromo": {
+        "tag": "Anti-gaspillage",
+        "title": "Sauvez des repas, économisez de l'argent",
+        "description": "Les restaurants partenaires publient leurs invendus du jour à prix réduit sur SecondServe.",
+        "cta": "Ouvrir SecondServe"
+      }
+    },
+    "marketplace": {
+      "tag": "FarMarket",
+      "description": "Découvrez les producteurs locaux. Les commandes se font via les restaurants partenaires.",
+      "empty": {
+        "title": "Aucune annonce trouvée.",
+        "subtitle": "Essayez d'élargir vos filtres de recherche."
+      },
+      "pagination": {
+        "previous": "Précédent",
+        "next": "Suivant",
+        "page": "Page {page}"
+      }
+    },
+    "adCard": {
+      "soldOut": "Épuisé",
+      "featured": "En vedette",
+      "outOfStock": "Rupture",
+      "kgAvailable": "{qty} kg dispo."
+    },
+    "adDetail": {
+      "breadcrumbCatalog": "Catalogue",
+      "description": "Description",
+      "noDescription": "Aucune description fournie par le producteur.",
+      "otherAds": "Autres annonces de ce producteur",
+      "reviews": "Avis sur le producteur",
+      "featured": "En vedette",
+      "productType": "Type de produit",
+      "stock": "Stock disponible",
+      "stockValue": "{qty} kg",
+      "region": "Région d'origine",
+      "validUntil": "Annonce valide jusqu'au {date}.",
+      "howToOrderTitle": "Comment commander ?",
+      "howToOrderBody": "Les commandes FarMarket passent par les restaurants partenaires. Cette page vous permet de découvrir les producteurs locaux et leurs produits."
+    },
+    "farmerProfile": {
+      "breadcrumbCatalog": "Catalogue",
+      "eyebrow": "Producteur",
+      "verified": "Producteur vérifié",
+      "memberSince": "Membre depuis",
+      "activeAds": "Annonces actives",
+      "adsTitle": "Annonces de ce producteur",
+      "noAds": "Aucune annonce active pour le moment.",
+      "reviewsTitle": "Avis des restaurants"
+    }
+  }
+}

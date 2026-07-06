@@ -63,6 +63,7 @@ export function rowToUser(r: Row): User {
     phone: r.phone ?? undefined,
     coordinates: coords(r.lat, r.lng),
     mapLink: r.map_link ?? undefined,
+    locale: r.locale ?? undefined,
   };
 }
 
@@ -127,6 +128,7 @@ export function rowToOrder(r: Row): Order {
     offerSnapshot: r.offer_snapshot as Offer,
     paymentMethod: r.payment_method ?? undefined,
     paymentStatus: r.payment_status ?? undefined,
+    paidAt: r.paid_at ?? undefined,
     customerMessage: r.customer_message ?? undefined,
     pickupCode: r.pickup_code ?? undefined,
     expiresAt: r.expires_at ?? undefined,
@@ -245,7 +247,9 @@ export async function ensureSsProfile(userId: string, email: string): Promise<Us
 
   // 2. No ss_profiles row → this is a VitaChain-origin account. Map its role:
   //    FARMER is barred; RESTAURANT becomes a SecondServe partner (pending
-  //    SecondServe approval); everyone else (CITIZEN/ADMIN) becomes a consumer.
+  //    SecondServe approval); ADMIN is intentionally downgraded to consumer —
+  //    SecondServe admin functions live in the VitaChain console, not here;
+  //    CITIZEN becomes a consumer (the primary SecondServe user type).
   const { data: vc } = await supabase
     .from('profiles')
     .select('role')
@@ -260,6 +264,8 @@ export async function ensureSsProfile(userId: string, email: string): Promise<Us
   //    consumer→approved=true and restaurant→approved=false, so a shared
   //    restaurant lands unapproved until a SecondServe admin validates it
   //    (their dashboard works; their offers stay hidden until then).
+  //    City defaults to Casablanca: VitaChain profiles have no city field.
+  //    The user can update it from the SecondServe consumer dashboard.
   const fallback = {
     id: userId,
     role: ssRole,

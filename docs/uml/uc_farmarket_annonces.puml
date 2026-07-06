@@ -1,0 +1,112 @@
+@startuml UC_FarMarket_Gestion_Annonces
+!theme plain
+skinparam actorStyle awesome
+skinparam usecase {
+  BackgroundColor #E8F5E9
+  BorderColor #2E7D32
+  FontSize 13
+}
+skinparam actor {
+  BackgroundColor #C8E6C9
+  BorderColor #2E7D32
+}
+skinparam rectangle {
+  BackgroundColor #F1F8E9
+  BorderColor #2E7D32
+}
+skinparam note {
+  BackgroundColor #FFFDE7
+  BorderColor #F9A825
+}
+
+title Diagramme de Cas d'Utilisation — Gestion des Annonces (Module FarMarket)
+
+actor "Agriculteur\n(Vérifié)" as Farmer
+actor "Restaurant\n(Acheteur)" as Restaurant
+actor "Administrateur" as Admin
+actor "Cron Nightly" as Cron <<system>>
+
+rectangle "Module FarMarket — Gestion des Annonces" {
+
+  ' --- Agriculteur
+  usecase "Créer une annonce" as UC_CREATE
+  usecase "Modifier une annonce" as UC_UPDATE
+  usecase "Supprimer une annonce\n(soft-delete)" as UC_DELETE
+  usecase "Consulter ses annonces" as UC_LIST_OWN
+
+  ' --- Restaurant / tous
+  usecase "Parcourir le catalogue" as UC_BROWSE
+  usecase "Consulter une annonce" as UC_GET
+
+  ' --- Admin
+  usecase "Lister toutes les annonces" as UC_ADMIN_LIST
+  usecase "Mettre en avant une annonce\n(featured)" as UC_FEATURE
+
+  ' --- Système
+  usecase "Expirer les annonces\n(expires_at dépassé)" as UC_EXPIRE
+
+  ' --- Inclusions
+  usecase "Vérification statut\nAgriculteur Vérifié" as UC_FARMER_AUTH <<include>>
+  usecase "Upload photos\n(≤5, ≤2 MB)" as UC_PHOTO <<include>>
+  usecase "Filtrage catalogue\n(région, type, prix)" as UC_FILTER <<include>>
+  usecase "Réinitialisation stock\nannonce ACTIVE" as UC_STOCK_GUARD <<extend>>
+
+  note right of UC_CREATE
+    Format requis :
+    - titre (3-100 chars)
+    - prix en MAD/kg
+    - quantité en kg
+    - région (12 régions Maroc)
+    - expiration : +7 jours par défaut
+  end note
+
+  note right of UC_DELETE
+    Soft-delete :
+    status → DELETED
+    Ligne conservée pour audit
+    Photos Storage nettoyées
+  end note
+
+  note bottom of UC_BROWSE
+    Tri : annonces featured
+    en premier, puis plus
+    récentes. Pagination 20/page.
+  end note
+
+  note right of UC_EXPIRE
+    Déclenché chaque nuit.
+    ACTIVE → EXPIRED si
+    expires_at < now()
+  end note
+}
+
+' Relations Agriculteur
+Farmer --> UC_CREATE
+Farmer --> UC_UPDATE
+Farmer --> UC_DELETE
+Farmer --> UC_LIST_OWN
+
+' Relations Restaurant
+Restaurant --> UC_BROWSE
+Restaurant --> UC_GET
+
+' Relations Admin
+Admin --> UC_ADMIN_LIST
+Admin --> UC_FEATURE
+Admin --> UC_GET
+
+' Relations Cron
+Cron --> UC_EXPIRE
+
+' Inclusions
+UC_CREATE ..> UC_FARMER_AUTH : <<include>>
+UC_UPDATE ..> UC_FARMER_AUTH : <<include>>
+UC_DELETE ..> UC_FARMER_AUTH : <<include>>
+UC_CREATE ..> UC_PHOTO       : <<include>>
+UC_UPDATE ..> UC_PHOTO       : <<include>>
+UC_BROWSE ..> UC_FILTER      : <<include>>
+
+' Extension
+UC_CREATE ..> UC_STOCK_GUARD : <<extend>>
+
+@enduml
